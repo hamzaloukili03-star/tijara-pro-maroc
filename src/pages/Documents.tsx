@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { DocumentTemplate, DocumentType } from "@/components/DocumentTemplate";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Printer } from "lucide-react";
 
 const docTypes: { key: DocumentType; label: string }[] = [
@@ -25,6 +26,7 @@ const sampleClient = {
 
 const Documents = () => {
   const [activeType, setActiveType] = useState<DocumentType>("facture");
+  const { settings } = useCompanySettings();
 
   return (
     <AppLayout title="Documents" subtitle="Modèles de documents commerciaux">
@@ -60,6 +62,7 @@ const Documents = () => {
         client={sampleClient}
         lines={sampleLines}
         notes="Conditions de paiement : 30 jours fin de mois. Validité du devis : 30 jours."
+        company={settings}
       />
     </AppLayout>
   );

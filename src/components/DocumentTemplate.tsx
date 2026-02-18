@@ -1,7 +1,26 @@
 import { ReactNode } from "react";
-import logo from "@/assets/logo-tijarapro.jpg";
+import defaultLogo from "@/assets/logo-tijarapro.jpg";
 
 export type DocumentType = "devis" | "bon-commande" | "bon-livraison" | "facture" | "avoir";
+
+export interface CompanyInfo {
+  raison_sociale: string;
+  forme_juridique: string;
+  ice: string;
+  if_number: string;
+  rc: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  phone: string;
+  fax: string;
+  email: string;
+  website: string;
+  logo_url: string | null;
+  bank_name: string;
+  bank_rib: string;
+  capital: number;
+}
 
 interface DocumentLine {
   ref: string;
@@ -22,6 +41,7 @@ interface DocumentTemplateProps {
   };
   lines: DocumentLine[];
   notes?: string;
+  company?: CompanyInfo | null;
   children?: ReactNode;
 }
 
@@ -33,33 +53,47 @@ const typeLabels: Record<DocumentType, string> = {
   avoir: "Avoir",
 };
 
-export function DocumentTemplate({ type, docNumber, date, client, lines, notes }: DocumentTemplateProps) {
+export function DocumentTemplate({ type, docNumber, date, client, lines, notes, company }: DocumentTemplateProps) {
   const totalHT = lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
   const totalTVA = lines.reduce((sum, l) => sum + l.qty * l.unitPrice * (l.tva / 100), 0);
   const totalTTC = totalHT + totalTVA;
 
   const fmt = (n: number) => n.toLocaleString("fr-MA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const c = company;
+  const logoSrc = c?.logo_url || defaultLogo;
+  const companyName = c?.raison_sociale || "Société Exemple SARL";
+  const companyAddress = c ? `${c.address}${c.postal_code ? ` ${c.postal_code}` : ""} ${c.city}, Maroc` : "123 Boulevard Mohammed V\n20000 Casablanca, Maroc";
+  const companyIce = c?.ice || "001234567000089";
+  const companyIf = c?.if_number || "12345678";
+  const companyRc = c?.rc || "123456";
+  const companyPhone = c?.phone || "+212 5 22 00 00 00";
+  const companyEmail = c?.email || "contact@exemple.ma";
+  const companyWebsite = c?.website || "www.exemple.ma";
+  const companyBankName = c?.bank_name || "Banque Exemple";
+  const companyBankRib = c?.bank_rib || "000 000 0000000000000000 00";
+  const companyCapital = c?.capital || 100000;
+  const companyForme = c?.forme_juridique || "SARL";
+
   return (
     <div className="bg-card max-w-[210mm] mx-auto p-8 shadow-card border border-border print:shadow-none print:border-none" style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <img src={logo} alt="TijaraPro" className="h-12 mb-3" />
+          <img src={logoSrc} alt="Logo" className="h-12 mb-3" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Société Exemple SARL<br />
-            123 Boulevard Mohammed V<br />
-            20000 Casablanca, Maroc<br />
-            ICE : 001234567000089<br />
-            IF : 12345678<br />
-            RC : 123456
+            {companyName} {companyForme}<br />
+            {companyAddress}<br />
+            ICE : {companyIce}<br />
+            IF : {companyIf}<br />
+            RC : {companyRc}
           </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Tél : +212 5 22 00 00 00<br />
-            Email : contact@exemple.ma<br />
-            www.exemple.ma
+            Tél : {companyPhone}<br />
+            Email : {companyEmail}<br />
+            {companyWebsite}
           </p>
         </div>
       </div>
@@ -142,8 +176,8 @@ export function DocumentTemplate({ type, docNumber, date, client, lines, notes }
 
       {/* Footer */}
       <div className="border-t border-border pt-4 text-xs text-muted-foreground text-center leading-relaxed">
-        <p className="font-medium">Informations bancaires : Banque Exemple — RIB : 000 000 0000000000000000 00</p>
-        <p className="mt-1">Société Exemple SARL au capital de 100 000 MAD — RC Casablanca N° 123456 — IF 12345678 — ICE 001234567000089</p>
+        <p className="font-medium">Informations bancaires : {companyBankName} — RIB : {companyBankRib}</p>
+        <p className="mt-1">{companyName} {companyForme} au capital de {fmt(companyCapital)} MAD — RC {c?.city || "Casablanca"} N° {companyRc} — IF {companyIf} — ICE {companyIce}</p>
       </div>
     </div>
   );
