@@ -4,19 +4,20 @@ export type DocumentStatus = "brouillon" | "valide" | "livre" | "facture" | "pay
 
 export interface StatusConfig {
   label: string;
-  color: string; // tailwind bg class using design tokens
+  color: string;
   textColor: string;
   icon: string;
+  description: string;
 }
 
 export const STATUS_CONFIG: Record<DocumentStatus, StatusConfig> = {
-  brouillon: { label: "Brouillon", color: "bg-muted", textColor: "text-muted-foreground", icon: "pencil" },
-  valide: { label: "Validé", color: "bg-primary/15", textColor: "text-primary", icon: "check" },
-  livre: { label: "Livré", color: "bg-accent", textColor: "text-accent-foreground", icon: "truck" },
-  facture: { label: "Facturé", color: "bg-orange-100", textColor: "text-orange-700", icon: "file-text" },
-  paye: { label: "Payé", color: "bg-green-100", textColor: "text-green-700", icon: "wallet" },
-  clos: { label: "Clos", color: "bg-secondary/10", textColor: "text-secondary", icon: "lock" },
-  annule: { label: "Annulé", color: "bg-destructive/10", textColor: "text-destructive", icon: "x" },
+  brouillon: { label: "Brouillon", color: "bg-muted", textColor: "text-muted-foreground", icon: "pencil", description: "Document modifiable" },
+  valide: { label: "Validé", color: "bg-primary/15", textColor: "text-primary", icon: "check", description: "Lecture seule — en attente de livraison" },
+  livre: { label: "Livré", color: "bg-accent", textColor: "text-accent-foreground", icon: "truck", description: "Stock décrémenté — en attente de facturation" },
+  facture: { label: "Facturé", color: "bg-orange-100", textColor: "text-orange-700", icon: "file-text", description: "Échéancier généré — données financières verrouillées" },
+  paye: { label: "Payé", color: "bg-green-100", textColor: "text-green-700", icon: "wallet", description: "Solde réglé intégralement" },
+  clos: { label: "Clos", color: "bg-secondary/10", textColor: "text-secondary", icon: "lock", description: "Document verrouillé définitivement" },
+  annule: { label: "Annulé", color: "bg-destructive/10", textColor: "text-destructive", icon: "x", description: "Document annulé" },
 };
 
 export const VALID_TRANSITIONS: Record<DocumentStatus, DocumentStatus[]> = {
@@ -29,16 +30,16 @@ export const VALID_TRANSITIONS: Record<DocumentStatus, DocumentStatus[]> = {
   annule: [],
 };
 
-export const TRANSITION_ACTIONS: Record<string, { label: string; variant: "default" | "destructive" | "outline" }> = {
-  "brouillon->valide": { label: "Valider", variant: "default" },
-  "brouillon->annule": { label: "Supprimer", variant: "destructive" },
-  "valide->livre": { label: "Marquer livré", variant: "default" },
-  "valide->annule": { label: "Annuler", variant: "destructive" },
-  "livre->facture": { label: "Facturer", variant: "default" },
-  "livre->annule": { label: "Annuler", variant: "destructive" },
-  "facture->paye": { label: "Enregistrer paiement", variant: "default" },
-  "facture->annule": { label: "Annuler", variant: "destructive" },
-  "paye->clos": { label: "Clôturer", variant: "outline" },
+export const TRANSITION_ACTIONS: Record<string, { label: string; variant: "default" | "destructive" | "outline"; confirmMessage?: string }> = {
+  "brouillon->valide": { label: "Valider", variant: "default", confirmMessage: "Le document deviendra en lecture seule. Confirmer la validation ?" },
+  "brouillon->annule": { label: "Supprimer", variant: "destructive", confirmMessage: "Ce brouillon sera définitivement supprimé." },
+  "valide->livre": { label: "Marquer livré", variant: "default", confirmMessage: "Le stock sera automatiquement décrémenté. Confirmer la livraison ?" },
+  "valide->annule": { label: "Annuler", variant: "destructive", confirmMessage: "Seul un administrateur peut annuler un document validé. Confirmer ?" },
+  "livre->facture": { label: "Facturer", variant: "default", confirmMessage: "Un échéancier de paiement sera généré. Les données financières seront verrouillées." },
+  "livre->annule": { label: "Annuler", variant: "destructive", confirmMessage: "Le stock sera restauré suite à l'annulation après livraison. Confirmer ?" },
+  "facture->paye": { label: "Enregistrer paiement", variant: "default", confirmMessage: "Confirmer l'enregistrement du paiement ?" },
+  "facture->annule": { label: "Annuler", variant: "destructive", confirmMessage: "Le stock sera restauré et l'échéancier annulé. Confirmer ?" },
+  "paye->clos": { label: "Clôturer", variant: "outline", confirmMessage: "Le document sera verrouillé définitivement. Cette action est irréversible." },
 };
 
 export interface AuditLogEntry {
@@ -50,6 +51,7 @@ export interface AuditLogEntry {
   toStatus?: DocumentStatus;
   user: string;
   details?: string;
+  reason?: string;
 }
 
 export interface DocumentLine {
@@ -58,6 +60,24 @@ export interface DocumentLine {
   qty: number;
   unitPrice: number;
   tva: number;
+}
+
+export interface DocumentAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
+export interface PaymentScheduleEntry {
+  id: string;
+  dueDate: string;
+  amount: number;
+  paid: boolean;
+  paidDate?: string;
 }
 
 export interface ERPDocument {
@@ -76,6 +96,10 @@ export interface ERPDocument {
   paymentCondition?: string;
   amountPaid: number;
   auditLog: AuditLogEntry[];
+  attachments: DocumentAttachment[];
+  paymentSchedule: PaymentScheduleEntry[];
+  stockMovementRecorded: boolean;
+  stockRestored: boolean;
 }
 
 export function canTransition(from: DocumentStatus, to: DocumentStatus): boolean {
@@ -95,6 +119,18 @@ export function isEditable(status: DocumentStatus): boolean {
   return status === "brouillon";
 }
 
+export function canAttach(status: DocumentStatus): boolean {
+  return status !== "clos" && status !== "annule";
+}
+
+export function isFinanciallyLocked(status: DocumentStatus): boolean {
+  return ["facture", "paye", "clos", "annule"].includes(status);
+}
+
+export function isFullyLocked(status: DocumentStatus): boolean {
+  return ["clos", "annule"].includes(status);
+}
+
 export function calculateTotals(lines: DocumentLine[]) {
   const totalHT = lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
   const totalTVA = lines.reduce((sum, l) => sum + l.qty * l.unitPrice * (l.tva / 100), 0);
@@ -110,7 +146,8 @@ export function createAuditEntry(
   action: string,
   fromStatus?: DocumentStatus,
   toStatus?: DocumentStatus,
-  details?: string
+  details?: string,
+  reason?: string
 ): AuditLogEntry {
   return {
     id: generateId(),
@@ -121,5 +158,38 @@ export function createAuditEntry(
     toStatus,
     user: "Utilisateur",
     details,
+    reason,
   };
+}
+
+export function generatePaymentSchedule(totalTTC: number, condition?: string): PaymentScheduleEntry[] {
+  const today = new Date();
+  if (condition === "30j") {
+    const due = new Date(today);
+    due.setDate(due.getDate() + 30);
+    return [{ id: generateId(), dueDate: due.toLocaleDateString("fr-MA"), amount: totalTTC, paid: false }];
+  }
+  if (condition === "30-60j") {
+    const d1 = new Date(today); d1.setDate(d1.getDate() + 30);
+    const d2 = new Date(today); d2.setDate(d2.getDate() + 60);
+    const half = Math.round(totalTTC / 2 * 100) / 100;
+    return [
+      { id: generateId(), dueDate: d1.toLocaleDateString("fr-MA"), amount: half, paid: false },
+      { id: generateId(), dueDate: d2.toLocaleDateString("fr-MA"), amount: totalTTC - half, paid: false },
+    ];
+  }
+  // Default: immediate
+  return [{ id: generateId(), dueDate: today.toLocaleDateString("fr-MA"), amount: totalTTC, paid: false }];
+}
+
+export function getTransitionDetails(from: DocumentStatus, to: DocumentStatus, doc: ERPDocument): string {
+  if (to === "valide") return "Document validé — passage en lecture seule. Réservation stock enregistrée.";
+  if (to === "livre") return `Stock décrémenté : ${doc.lines.map(l => `${l.ref} ×${l.qty}`).join(", ")}.`;
+  if (to === "facture") return `Échéancier généré. Montant TTC : ${doc.totalTTC.toLocaleString("fr-MA")} MAD.`;
+  if (to === "paye") return `Paiement enregistré. Solde = 0.`;
+  if (to === "clos") return "Document clôturé et verrouillé définitivement.";
+  if (to === "annule" && from === "livre") return `Stock restauré : ${doc.lines.map(l => `${l.ref} ×${l.qty}`).join(", ")}. Annulation après livraison.`;
+  if (to === "annule" && from === "facture") return `Stock restauré et échéancier annulé. Annulation après facturation.`;
+  if (to === "annule") return "Document annulé.";
+  return "";
 }

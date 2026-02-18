@@ -3,10 +3,13 @@ import {
   type ERPDocument,
   type DocumentStatus,
   type DocumentLine,
+  type DocumentAttachment,
   canTransition,
   calculateTotals,
   createAuditEntry,
   generateId,
+  generatePaymentSchedule,
+  getTransitionDetails,
 } from "@/lib/document-lifecycle";
 import { toast } from "@/hooks/use-toast";
 
@@ -30,13 +33,17 @@ export function useDocuments(module: "ventes" | "achats") {
       amountPaid: 0,
       notes: "",
       auditLog: [createAuditEntry(id, "Création du document", undefined, "brouillon")],
+      attachments: [],
+      paymentSchedule: [],
+      stockMovementRecorded: false,
+      stockRestored: false,
     };
     setDocuments((prev) => [doc, ...prev]);
     toast({ title: "Document créé", description: `${doc.number} créé avec succès.` });
     return doc;
   }, [documents.length, module]);
 
-  const transitionDocument = useCallback((docId: string, toStatus: DocumentStatus) => {
+  const transitionDocument = useCallback((docId: string, toStatus: DocumentStatus, reason?: string) => {
     setDocuments((prev) =>
       prev.map((doc) => {
         if (doc.id !== docId) return doc;
@@ -49,24 +56,35 @@ export function useDocuments(module: "ventes" | "achats") {
           return doc;
         }
 
-        const entry = createAuditEntry(docId, `Transition ${doc.status} → ${toStatus}`, doc.status, toStatus);
-        let details = "";
-
-        if (toStatus === "livre") {
-          details = "Stock décrémenté automatiquement.";
-        } else if (toStatus === "facture") {
-          details = "Échéance de paiement générée.";
-        } else if (toStatus === "annule" && doc.status === "livre") {
-          details = "Stock restauré suite à annulation après livraison.";
-        }
-
-        if (details) entry.details = details;
+        const details = getTransitionDetails(doc.status, toStatus, doc);
+        const entry = createAuditEntry(docId, `Transition ${doc.status} → ${toStatus}`, doc.status, toStatus, details, reason);
 
         const updated: ERPDocument = {
           ...doc,
           status: toStatus,
           auditLog: [...doc.auditLog, entry],
         };
+
+        // Stock decrement on delivery
+        if (toStatus === "livre") {
+          updated.stockMovementRecorded = true;
+        }
+
+        // Generate payment schedule on invoicing
+        if (toStatus === "facture") {
+          updated.paymentSchedule = generatePaymentSchedule(doc.totalTTC, doc.paymentCondition);
+        }
+
+        // Mark paid
+        if (toStatus === "paye") {
+          updated.amountPaid = doc.totalTTC;
+          updated.paymentSchedule = doc.paymentSchedule.map(p => ({ ...p, paid: true, paidDate: new Date().toLocaleDateString("fr-MA") }));
+        }
+
+        // Restore stock on cancel after delivery
+        if (toStatus === "annule" && (doc.status === "livre" || doc.status === "facture")) {
+          updated.stockRestored = true;
+        }
 
         toast({ title: "Statut mis à jour", description: `${doc.number} → ${toStatus}` });
         return updated;
@@ -86,5 +104,42 @@ export function useDocuments(module: "ventes" | "achats") {
     });
   }, []);
 
-  return { documents, createDocument, transitionDocument, deleteDocument };
+  const addAttachment = useCallback((docId: string, attachment: DocumentAttachment) => {
+    setDocuments((prev) =>
+      prev.map((doc) => {
+        if (doc.id !== docId) return doc;
+        if (doc.status === "clos" || doc.status === "annule") {
+          toast({ title: "Action impossible", description: "Impossible d'ajouter des pièces jointes sur un document clos ou annulé.", variant: "destructive" });
+          return doc;
+        }
+        const entry = createAuditEntry(docId, `Pièce jointe ajoutée : ${attachment.name}`, doc.status, doc.status);
+        return {
+          ...doc,
+          attachments: [...doc.attachments, attachment],
+          auditLog: [...doc.auditLog, entry],
+        };
+      })
+    );
+  }, []);
+
+  const removeAttachment = useCallback((docId: string, attachmentId: string) => {
+    setDocuments((prev) =>
+      prev.map((doc) => {
+        if (doc.id !== docId) return doc;
+        if (doc.status === "clos" || doc.status === "annule") {
+          toast({ title: "Action impossible", description: "Document verrouillé.", variant: "destructive" });
+          return doc;
+        }
+        const att = doc.attachments.find(a => a.id === attachmentId);
+        const entry = createAuditEntry(docId, `Pièce jointe supprimée : ${att?.name || ""}`, doc.status, doc.status);
+        return {
+          ...doc,
+          attachments: doc.attachments.filter(a => a.id !== attachmentId),
+          auditLog: [...doc.auditLog, entry],
+        };
+      })
+    );
+  }, []);
+
+  return { documents, createDocument, transitionDocument, deleteDocument, addAttachment, removeAttachment };
 }
