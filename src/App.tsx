@@ -9,9 +9,12 @@ import Stock from "./pages/Stock";
 import Ventes from "./pages/Ventes";
 import Facturation from "./pages/Facturation";
 import Reglements from "./pages/Reglements";
-import BI from "./pages/BI";
-import Conformite from "./pages/Conformite";
+import TableauxDeBord from "./pages/TableauxDeBord";
 import Documents from "./pages/Documents";
+import SystemeUtilisateurs from "./pages/SystemeUtilisateurs";
+import SystemeSociete from "./pages/SystemeSociete";
+import SystemeParametres from "./pages/SystemeParametres";
+import SystemeLogs from "./pages/SystemeLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,9 +32,12 @@ const App = () => (
           <Route path="/ventes" element={<Ventes />} />
           <Route path="/facturation" element={<Facturation />} />
           <Route path="/reglements" element={<Reglements />} />
-          <Route path="/bi" element={<BI />} />
-          <Route path="/conformite" element={<Conformite />} />
+          <Route path="/tableaux-de-bord" element={<TableauxDeBord />} />
           <Route path="/documents" element={<Documents />} />
+          <Route path="/systeme/utilisateurs" element={<SystemeUtilisateurs />} />
+          <Route path="/systeme/societe" element={<SystemeSociete />} />
+          <Route path="/systeme/parametres" element={<SystemeParametres />} />
+          <Route path="/systeme/logs" element={<SystemeLogs />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

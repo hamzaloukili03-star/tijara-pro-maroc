@@ -2,8 +2,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { BarChart3 } from "lucide-react";
 
-const BI = () => (
-  <AppLayout title="Business Intelligence" subtitle="Tableaux de bord et analyses">
+const TableauxDeBord = () => (
+  <AppLayout title="Tableaux de Bord & Analyses" subtitle="Indicateurs de performance et rapports">
     <EmptyState
       icon={<BarChart3 className="h-8 w-8" />}
       title="Aucune donnée à analyser"
@@ -12,4 +12,4 @@ const BI = () => (
   </AppLayout>
 );
 
-export default BI;
+export default TableauxDeBord;
