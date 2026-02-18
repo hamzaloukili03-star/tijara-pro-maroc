@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
+import { Breadcrumbs } from "./Breadcrumbs";
 import { Bell, Search, User } from "lucide-react";
 
 interface AppLayoutProps {
@@ -15,7 +16,8 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-card shadow-topbar border-b border-border px-4 lg:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="pl-12 lg:pl-0">
+          <div className="pl-12 lg:pl-0 space-y-1">
+            <Breadcrumbs />
             <h1 className="text-lg font-semibold text-foreground">{title}</h1>
             {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           </div>

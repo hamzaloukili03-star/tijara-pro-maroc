@@ -1,15 +1,32 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { ModulePlaceholder } from "@/components/ModulePlaceholder";
-import { TrendingUp } from "lucide-react";
+import { DocumentListView } from "@/components/DocumentListView";
+import { useDocuments } from "@/hooks/useDocuments";
+import { toast } from "@/hooks/use-toast";
 
-const Ventes = () => (
-  <AppLayout title="Ventes" subtitle="Gestion commerciale et suivi des ventes">
-    <ModulePlaceholder
-      title="Module Ventes"
-      description="Gérez vos clients, devis, commandes et suivi commercial."
-      icon={<TrendingUp className="h-8 w-8" />}
-    />
-  </AppLayout>
-);
+const sampleLines = [
+  { ref: "ART-001", description: "Produit A", qty: 10, unitPrice: 150.0, tva: 20 },
+  { ref: "ART-002", description: "Service B", qty: 5, unitPrice: 300.0, tva: 20 },
+];
+
+const Ventes = () => {
+  const { documents, createDocument, transitionDocument, deleteDocument } = useDocuments("ventes");
+
+  const handleCreate = () => {
+    createDocument("devis", "Client Exemple SA", sampleLines);
+  };
+
+  return (
+    <AppLayout title="Ventes" subtitle="Gestion commerciale et suivi des ventes">
+      <DocumentListView
+        documents={documents}
+        onTransition={transitionDocument}
+        onDelete={deleteDocument}
+        onCreate={handleCreate}
+        moduleLabel="Ventes"
+      />
+    </AppLayout>
+  );
+};
 
 export default Ventes;

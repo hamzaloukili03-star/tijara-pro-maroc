@@ -1,13 +1,15 @@
 import { AppLayout } from "@/components/AppLayout";
-import { ModulePlaceholder } from "@/components/ModulePlaceholder";
+import { EmptyState } from "@/components/EmptyState";
 import { Shield } from "lucide-react";
 
 const Conformite = () => (
   <AppLayout title="Conformité Marocaine" subtitle="Réglementations fiscales et légales">
-    <ModulePlaceholder
-      title="Conformité Marocaine"
-      description="Assurez la conformité avec les réglementations fiscales marocaines : TVA, IS, IR, liasse fiscale."
+    <EmptyState
       icon={<Shield className="h-8 w-8" />}
+      title="Module conformité"
+      description="Configurez les paramètres fiscaux marocains : TVA, IS, IR, liasse fiscale et déclarations obligatoires."
+      actionLabel="Configurer"
+      onAction={() => {}}
     />
   </AppLayout>
 );

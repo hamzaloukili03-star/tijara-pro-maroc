@@ -1,15 +1,30 @@
 import { AppLayout } from "@/components/AppLayout";
-import { ModulePlaceholder } from "@/components/ModulePlaceholder";
-import { ShoppingCart } from "lucide-react";
+import { DocumentListView } from "@/components/DocumentListView";
+import { useDocuments } from "@/hooks/useDocuments";
 
-const Achats = () => (
-  <AppLayout title="Achats" subtitle="Gestion des achats et fournisseurs">
-    <ModulePlaceholder
-      title="Module Achats"
-      description="Gérez vos fournisseurs, bons de commande, réceptions et factures d'achat."
-      icon={<ShoppingCart className="h-8 w-8" />}
-    />
-  </AppLayout>
-);
+const sampleLines = [
+  { ref: "MAT-001", description: "Matière première X", qty: 100, unitPrice: 25.0, tva: 20 },
+  { ref: "MAT-002", description: "Fourniture Y", qty: 50, unitPrice: 80.0, tva: 20 },
+];
+
+const Achats = () => {
+  const { documents, createDocument, transitionDocument, deleteDocument } = useDocuments("achats");
+
+  const handleCreate = () => {
+    createDocument("bon-commande", "Fournisseur Exemple SARL", sampleLines);
+  };
+
+  return (
+    <AppLayout title="Achats" subtitle="Gestion des achats et fournisseurs">
+      <DocumentListView
+        documents={documents}
+        onTransition={transitionDocument}
+        onDelete={deleteDocument}
+        onCreate={handleCreate}
+        moduleLabel="Achats"
+      />
+    </AppLayout>
+  );
+};
 
 export default Achats;
