@@ -16,7 +16,12 @@ import {
   Building2,
   Cog,
   ClipboardList,
+  LogOut,
+  User,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { ROLE_MODULE_ACCESS, ROLE_LABELS } from "@/types/auth";
+import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/logo-tijarapro.jpg";
 
 const systemeSubItems = [
@@ -40,13 +45,24 @@ export function AppSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [systemeOpen, setSystemeOpen] = useState(false);
   const location = useLocation();
+  const { profile, roles, signOut } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
 
+  const hasAccess = (path: string) => {
+    if (roles.length === 0) return true; // First user before role assignment
+    const allowed = ROLE_MODULE_ACCESS[path];
+    if (!allowed) return true;
+    return allowed.some((r) => roles.includes(r));
+  };
+
   const isSystemeActive = location.pathname === "/" || location.pathname.startsWith("/systeme");
+
+  const visibleSystemeSubs = systemeSubItems.filter((s) => hasAccess(s.path));
+  const visibleModules = mainModules.filter((m) => hasAccess(m.path));
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -64,18 +80,12 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-        {/* Système Central - collapsible */}
+        {/* Système Central */}
         <div>
           <button
-            onClick={() => {
-              if (collapsed) return;
-              setSystemeOpen(!systemeOpen);
-            }}
+            onClick={() => { if (!collapsed) setSystemeOpen(!systemeOpen); }}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 w-full
-              ${isSystemeActive
-                ? "bg-sidebar-accent text-sidebar-primary-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-              }
+              ${isSystemeActive ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}
               ${collapsed ? "justify-center" : ""}
             `}
             title={collapsed ? "Système Central" : undefined}
@@ -95,24 +105,18 @@ export function AppSidebar() {
                 to="/"
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all
-                  ${location.pathname === "/"
-                    ? "bg-sidebar-accent text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                  }
+                  ${location.pathname === "/" ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}
                 `}
               >
                 Vue d'ensemble
               </Link>
-              {systemeSubItems.map((sub) => (
+              {visibleSystemeSubs.map((sub) => (
                 <Link
                   key={sub.path}
                   to={sub.path}
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all
-                    ${isActive(sub.path)
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                    }
+                    ${isActive(sub.path) ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}
                   `}
                 >
                   <sub.icon className="h-3.5 w-3.5 shrink-0" />
@@ -123,17 +127,13 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Main modules */}
-        {mainModules.map((mod) => (
+        {visibleModules.map((mod) => (
           <Link
             key={mod.path}
             to={mod.path}
             onClick={() => setMobileOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200
-              ${isActive(mod.path)
-                ? "bg-sidebar-accent text-sidebar-primary-foreground border-l-2 border-sidebar-primary"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-              }
+              ${isActive(mod.path) ? "bg-sidebar-accent text-sidebar-primary-foreground border-l-2 border-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}
               ${collapsed ? "justify-center" : ""}
             `}
             title={collapsed ? mod.title : undefined}
@@ -144,15 +144,39 @@ export function AppSidebar() {
         ))}
       </nav>
 
-      {/* Collapse button */}
-      <div className="hidden lg:flex px-2 py-3 border-t border-sidebar-border">
+      {/* User info + logout */}
+      <div className="px-2 py-3 border-t border-sidebar-border space-y-2">
+        {!collapsed && profile && (
+          <div className="px-3 py-2">
+            <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{profile.full_name || profile.email}</p>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {roles.map((r) => (
+                <Badge key={r} variant="outline" className="text-[9px] border-sidebar-border text-sidebar-foreground">
+                  {ROLE_LABELS[r]}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={signOut}
           className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent/50 text-sm transition-colors"
+          title="Déconnexion"
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          {!collapsed && <span>Réduire</span>}
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span>Déconnexion</span>}
         </button>
+
+        <div className="hidden lg:block">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent/50 text-sm transition-colors"
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {!collapsed && <span>Réduire</span>}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -167,10 +191,7 @@ export function AppSidebar() {
       </button>
 
       {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-foreground/40 z-40"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="lg:hidden fixed inset-0 bg-foreground/40 z-40" onClick={() => setMobileOpen(false)} />
       )}
 
       <aside
