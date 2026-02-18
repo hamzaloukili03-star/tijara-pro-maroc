@@ -176,6 +176,142 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_note_lines: {
+        Row: {
+          created_at: string
+          credit_note_id: string
+          description: string
+          id: string
+          product_id: string | null
+          quantity: number
+          sort_order: number
+          total_ht: number
+          total_ttc: number
+          total_tva: number
+          tva_rate: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          credit_note_id: string
+          description?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          sort_order?: number
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
+          tva_rate?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          credit_note_id?: string
+          description?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          sort_order?: number
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
+          tva_rate?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_note_lines_credit_note_id_fkey"
+            columns: ["credit_note_id"]
+            isOneToOne: false
+            referencedRelation: "credit_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_note_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credit_note_date: string
+          credit_note_number: string
+          credit_note_type: string
+          customer_id: string | null
+          id: string
+          invoice_id: string | null
+          reason: string
+          status: string
+          subtotal_ht: number
+          supplier_id: string | null
+          total_ttc: number
+          total_tva: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credit_note_date?: string
+          credit_note_number: string
+          credit_note_type: string
+          customer_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          reason?: string
+          status?: string
+          subtotal_ht?: number
+          supplier_id?: string | null
+          total_ttc?: number
+          total_tva?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credit_note_date?: string
+          credit_note_number?: string
+          credit_note_type?: string
+          customer_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          reason?: string
+          status?: string
+          subtotal_ht?: number
+          supplier_id?: string | null
+          total_ttc?: number
+          total_tva?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -241,6 +377,216 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      document_counters: {
+        Row: {
+          doc_type: string
+          doc_year: number
+          id: string
+          last_number: number
+        }
+        Insert: {
+          doc_type: string
+          doc_year: number
+          id?: string
+          last_number?: number
+        }
+        Update: {
+          doc_type?: string
+          doc_year?: number
+          id?: string
+          last_number?: number
+        }
+        Relationships: []
+      }
+      invoice_attachments: {
+        Row: {
+          created_at: string
+          credit_note_id: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          invoice_id: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          credit_note_id?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          invoice_id?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          credit_note_id?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          invoice_id?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_attachments_credit_note_id_fkey"
+            columns: ["credit_note_id"]
+            isOneToOne: false
+            referencedRelation: "credit_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_attachments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_lines: {
+        Row: {
+          created_at: string
+          description: string
+          discount_percent: number
+          id: string
+          invoice_id: string
+          product_id: string | null
+          quantity: number
+          sort_order: number
+          total_ht: number
+          total_ttc: number
+          total_tva: number
+          tva_rate: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          discount_percent?: number
+          id?: string
+          invoice_id: string
+          product_id?: string | null
+          quantity?: number
+          sort_order?: number
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
+          tva_rate?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount_percent?: number
+          id?: string
+          invoice_id?: string
+          product_id?: string | null
+          quantity?: number
+          sort_order?: number
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
+          tva_rate?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          due_date: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          invoice_type: string
+          notes: string | null
+          payment_terms: string | null
+          remaining_balance: number
+          status: string
+          subtotal_ht: number
+          supplier_id: string | null
+          total_ttc: number
+          total_tva: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          invoice_type: string
+          notes?: string | null
+          payment_terms?: string | null
+          remaining_balance?: number
+          status?: string
+          subtotal_ht?: number
+          supplier_id?: string | null
+          total_ttc?: number
+          total_tva?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          invoice_type?: string
+          notes?: string | null
+          payment_terms?: string | null
+          remaining_balance?: number
+          status?: string
+          subtotal_ht?: number
+          supplier_id?: string | null
+          total_ttc?: number
+          total_tva?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -507,6 +853,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      next_document_number: { Args: { p_type: string }; Returns: string }
     }
     Enums: {
       app_role:
