@@ -3,13 +3,17 @@ import { ChevronRight, Home } from "lucide-react";
 
 const routeLabels: Record<string, string> = {
   "": "Système Central",
+  systeme: "Système Central",
+  utilisateurs: "Utilisateurs & Rôles",
+  societe: "Paramètres Société",
+  parametres: "Paramètres Système",
+  logs: "Logs d'activité",
   achats: "Achats",
   stock: "Stock",
   ventes: "Ventes",
   facturation: "Facturation",
   reglements: "Règlements & Trésorerie",
-  bi: "Business Intelligence",
-  conformite: "Conformité Marocaine",
+  "tableaux-de-bord": "Tableaux de Bord & Analyses",
   documents: "Documents",
 };
 

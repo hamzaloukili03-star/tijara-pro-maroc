@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Link } from "react-router-dom";
-import { Settings, Users, Building2, ShoppingCart, Package, TrendingUp, FileText, Wallet, BarChart3, Shield } from "lucide-react";
+import { Settings, Users, Building2, ShoppingCart, Package, TrendingUp, FileText, Wallet, BarChart3 } from "lucide-react";
 
 const modules = [
   { label: "Achats", icon: ShoppingCart, path: "/achats", desc: "Fournisseurs & commandes" },
@@ -8,15 +8,13 @@ const modules = [
   { label: "Ventes", icon: TrendingUp, path: "/ventes", desc: "Clients & devis" },
   { label: "Facturation", icon: FileText, path: "/facturation", desc: "Factures & avoirs" },
   { label: "Règlements", icon: Wallet, path: "/reglements", desc: "Paiements & trésorerie" },
-  { label: "BI", icon: BarChart3, path: "/bi", desc: "Analyses & rapports" },
-  { label: "Conformité", icon: Shield, path: "/conformite", desc: "Fiscal & légal" },
-  { label: "Documents", icon: FileText, path: "/documents", desc: "Modèles commerciaux" },
+  { label: "Tableaux de Bord", icon: BarChart3, path: "/tableaux-de-bord", desc: "Analyses & rapports" },
 ];
 
 const stats = [
   { label: "Utilisateurs actifs", value: "—", icon: Users },
   { label: "Entreprises", value: "—", icon: Building2 },
-  { label: "Modules actifs", value: "8", icon: Settings },
+  { label: "Modules actifs", value: "6", icon: Settings },
 ];
 
 const Index = () => (
@@ -40,7 +38,7 @@ const Index = () => (
         <Settings className="h-5 w-5 text-primary" />
         Modules ERP
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {modules.map((mod) => (
           <Link
             key={mod.path}

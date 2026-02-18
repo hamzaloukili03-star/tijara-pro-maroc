@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { DocumentListView } from "@/components/DocumentListView";
 import { useDocuments } from "@/hooks/useDocuments";
-import { toast } from "@/hooks/use-toast";
 
 const sampleLines = [
   { ref: "ART-001", description: "Produit A", qty: 10, unitPrice: 150.0, tva: 20 },
