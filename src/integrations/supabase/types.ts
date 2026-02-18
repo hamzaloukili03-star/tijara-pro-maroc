@@ -53,6 +53,174 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string | null
+          bank_name: string
+          created_at: string
+          currency: string
+          current_balance: number
+          id: string
+          initial_balance: number
+          is_active: boolean
+          is_default: boolean
+          rib: string | null
+          swift: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number?: string | null
+          bank_name: string
+          created_at?: string
+          currency?: string
+          current_balance?: number
+          id?: string
+          initial_balance?: number
+          is_active?: boolean
+          is_default?: boolean
+          rib?: string | null
+          swift?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string | null
+          bank_name?: string
+          created_at?: string
+          currency?: string
+          current_balance?: number
+          id?: string
+          initial_balance?: number
+          is_active?: boolean
+          is_default?: boolean
+          rib?: string | null
+          swift?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          city: string | null
+          code: string
+          contact_name: string | null
+          created_at: string
+          credit_limit: number | null
+          email: string | null
+          fax: string | null
+          ice: string | null
+          id: string
+          if_number: string | null
+          is_active: boolean
+          name: string
+          notes: string | null
+          patente: string | null
+          payment_terms: string | null
+          phone: string | null
+          rc: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          code: string
+          contact_name?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          email?: string | null
+          fax?: string | null
+          ice?: string | null
+          id?: string
+          if_number?: string | null
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          patente?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rc?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          code?: string
+          contact_name?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          email?: string | null
+          fax?: string | null
+          ice?: string | null
+          id?: string
+          if_number?: string | null
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          patente?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rc?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          category: string | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          min_stock: number
+          name: string
+          purchase_price: number
+          sale_price: number
+          tva_rate: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          min_stock?: number
+          name: string
+          purchase_price?: number
+          sale_price?: number
+          tva_rate?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          category?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          min_stock?: number
+          name?: string
+          purchase_price?: number
+          sale_price?: number
+          tva_rate?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -89,6 +257,69 @@ export type Database = {
         }
         Relationships: []
       }
+      suppliers: {
+        Row: {
+          address: string | null
+          city: string | null
+          code: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          fax: string | null
+          ice: string | null
+          id: string
+          if_number: string | null
+          is_active: boolean
+          name: string
+          notes: string | null
+          patente: string | null
+          payment_terms: string | null
+          phone: string | null
+          rc: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          code: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          ice?: string | null
+          id?: string
+          if_number?: string | null
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          patente?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rc?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          code?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          ice?: string | null
+          id?: string
+          if_number?: string | null
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          patente?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rc?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -107,6 +338,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      warehouses: {
+        Row: {
+          address: string | null
+          city: string | null
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -32,11 +32,20 @@ const systemeSubItems = [
 ];
 
 const mainModules = [
-  { title: "Achats", icon: ShoppingCart, path: "/achats" },
-  { title: "Stock", icon: Package, path: "/stock" },
-  { title: "Ventes", icon: TrendingUp, path: "/ventes" },
+  { title: "Achats", icon: ShoppingCart, path: "/achats", subs: [
+    { title: "Fournisseurs", path: "/achats/fournisseurs" },
+  ]},
+  { title: "Stock", icon: Package, path: "/stock", subs: [
+    { title: "Produits", path: "/stock/produits" },
+    { title: "Dépôts", path: "/stock/depots" },
+  ]},
+  { title: "Ventes", icon: TrendingUp, path: "/ventes", subs: [
+    { title: "Clients", path: "/ventes/clients" },
+  ]},
   { title: "Facturation", icon: FileText, path: "/facturation" },
-  { title: "Règlements & Trésorerie", icon: Wallet, path: "/reglements" },
+  { title: "Règlements & Trésorerie", icon: Wallet, path: "/reglements", subs: [
+    { title: "Comptes Bancaires", path: "/reglements/comptes-bancaires" },
+  ]},
   { title: "Tableaux de Bord & Analyses", icon: BarChart3, path: "/tableaux-de-bord" },
 ];
 
@@ -128,19 +137,36 @@ export function AppSidebar() {
         </div>
 
         {visibleModules.map((mod) => (
-          <Link
-            key={mod.path}
-            to={mod.path}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200
-              ${isActive(mod.path) ? "bg-sidebar-accent text-sidebar-primary-foreground border-l-2 border-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}
-              ${collapsed ? "justify-center" : ""}
-            `}
-            title={collapsed ? mod.title : undefined}
-          >
-            <mod.icon className="h-5 w-5 shrink-0" />
-            {!collapsed && <span className="truncate">{mod.title}</span>}
-          </Link>
+          <div key={mod.path}>
+            <Link
+              to={mod.path}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200
+                ${isActive(mod.path) ? "bg-sidebar-accent text-sidebar-primary-foreground border-l-2 border-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}
+                ${collapsed ? "justify-center" : ""}
+              `}
+              title={collapsed ? mod.title : undefined}
+            >
+              <mod.icon className="h-5 w-5 shrink-0" />
+              {!collapsed && <span className="truncate">{mod.title}</span>}
+            </Link>
+            {!collapsed && (mod as any).subs && isActive(mod.path) && (
+              <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+                {((mod as any).subs as { title: string; path: string }[]).map((sub) => (
+                  <Link
+                    key={sub.path}
+                    to={sub.path}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                      ${location.pathname === sub.path ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}
+                    `}
+                  >
+                    <span className="truncate">{sub.title}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
 

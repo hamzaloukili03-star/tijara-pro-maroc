@@ -21,6 +21,12 @@ import SystemeLogs from "./pages/SystemeLogs";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 
+import ProductsPage from "./pages/master/ProductsPage";
+import CustomersPage from "./pages/master/CustomersPage";
+import SuppliersPage from "./pages/master/SuppliersPage";
+import WarehousesPage from "./pages/master/WarehousesPage";
+import BankAccountsPage from "./pages/master/BankAccountsPage";
+
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -47,9 +53,14 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/achats" element={<ProtectedRoute><Achats /></ProtectedRoute>} />
             <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
+            <Route path="/stock/produits" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+            <Route path="/stock/depots" element={<ProtectedRoute><WarehousesPage /></ProtectedRoute>} />
             <Route path="/ventes" element={<ProtectedRoute><Ventes /></ProtectedRoute>} />
+            <Route path="/ventes/clients" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+            <Route path="/achats/fournisseurs" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
             <Route path="/facturation" element={<ProtectedRoute><Facturation /></ProtectedRoute>} />
             <Route path="/reglements" element={<ProtectedRoute><Reglements /></ProtectedRoute>} />
+            <Route path="/reglements/comptes-bancaires" element={<ProtectedRoute><BankAccountsPage /></ProtectedRoute>} />
             <Route path="/tableaux-de-bord" element={<ProtectedRoute><TableauxDeBord /></ProtectedRoute>} />
             <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
             <Route path="/systeme/utilisateurs" element={<ProtectedRoute requiredRoles={["super_admin"]}><SystemeUtilisateurs /></ProtectedRoute>} />
