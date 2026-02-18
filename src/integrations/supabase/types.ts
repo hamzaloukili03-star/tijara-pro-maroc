@@ -101,6 +101,81 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          bank_name: string | null
+          bank_rib: string | null
+          bank_swift: string | null
+          capital: number | null
+          city: string | null
+          cnss: string | null
+          created_at: string
+          email: string | null
+          fax: string | null
+          forme_juridique: string | null
+          ice: string | null
+          id: string
+          if_number: string | null
+          logo_url: string | null
+          patente: string | null
+          phone: string | null
+          postal_code: string | null
+          raison_sociale: string
+          rc: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_name?: string | null
+          bank_rib?: string | null
+          bank_swift?: string | null
+          capital?: number | null
+          city?: string | null
+          cnss?: string | null
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          forme_juridique?: string | null
+          ice?: string | null
+          id?: string
+          if_number?: string | null
+          logo_url?: string | null
+          patente?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          raison_sociale?: string
+          rc?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_name?: string | null
+          bank_rib?: string | null
+          bank_swift?: string | null
+          capital?: number | null
+          city?: string | null
+          cnss?: string | null
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          forme_juridique?: string | null
+          ice?: string | null
+          id?: string
+          if_number?: string | null
+          logo_url?: string | null
+          patente?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          raison_sociale?: string
+          rc?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
