@@ -8,7 +8,7 @@ const sampleLines = [
 ];
 
 const Ventes = () => {
-  const { documents, createDocument, transitionDocument, deleteDocument } = useDocuments("ventes");
+  const { documents, createDocument, transitionDocument, deleteDocument, addAttachment, removeAttachment } = useDocuments("ventes");
 
   const handleCreate = () => {
     createDocument("devis", "Client Exemple SA", sampleLines);
@@ -21,6 +21,8 @@ const Ventes = () => {
         onTransition={transitionDocument}
         onDelete={deleteDocument}
         onCreate={handleCreate}
+        onAddAttachment={addAttachment}
+        onRemoveAttachment={removeAttachment}
         moduleLabel="Ventes"
       />
     </AppLayout>

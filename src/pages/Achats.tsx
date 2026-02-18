@@ -8,7 +8,7 @@ const sampleLines = [
 ];
 
 const Achats = () => {
-  const { documents, createDocument, transitionDocument, deleteDocument } = useDocuments("achats");
+  const { documents, createDocument, transitionDocument, deleteDocument, addAttachment, removeAttachment } = useDocuments("achats");
 
   const handleCreate = () => {
     createDocument("bon-commande", "Fournisseur Exemple SARL", sampleLines);
@@ -21,6 +21,8 @@ const Achats = () => {
         onTransition={transitionDocument}
         onDelete={deleteDocument}
         onCreate={handleCreate}
+        onAddAttachment={addAttachment}
+        onRemoveAttachment={removeAttachment}
         moduleLabel="Achats"
       />
     </AppLayout>
