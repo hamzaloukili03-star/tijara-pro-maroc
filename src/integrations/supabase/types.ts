@@ -395,6 +395,48 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          allow_admin_overrides: boolean
+          allow_negative_stock: boolean
+          created_at: string
+          default_currency: string
+          default_payment_terms: string
+          default_tva: number
+          doc_numbering_format: string
+          enable_attachments: boolean
+          id: string
+          tva_rates: Json
+          updated_at: string
+        }
+        Insert: {
+          allow_admin_overrides?: boolean
+          allow_negative_stock?: boolean
+          created_at?: string
+          default_currency?: string
+          default_payment_terms?: string
+          default_tva?: number
+          doc_numbering_format?: string
+          enable_attachments?: boolean
+          id?: string
+          tva_rates?: Json
+          updated_at?: string
+        }
+        Update: {
+          allow_admin_overrides?: boolean
+          allow_negative_stock?: boolean
+          created_at?: string
+          default_currency?: string
+          default_payment_terms?: string
+          default_tva?: number
+          doc_numbering_format?: string
+          enable_attachments?: boolean
+          id?: string
+          tva_rates?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
