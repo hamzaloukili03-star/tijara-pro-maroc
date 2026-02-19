@@ -1118,9 +1118,275 @@ export type Database = {
           },
         ]
       }
+      product_attribute_line_values: {
+        Row: {
+          id: string
+          line_id: string
+          price_extra: number
+          value_id: string
+        }
+        Insert: {
+          id?: string
+          line_id: string
+          price_extra?: number
+          value_id: string
+        }
+        Update: {
+          id?: string
+          line_id?: string
+          price_extra?: number
+          value_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attribute_line_values_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "product_attribute_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_attribute_line_values_value_id_fkey"
+            columns: ["value_id"]
+            isOneToOne: false
+            referencedRelation: "product_attribute_values"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_attribute_lines: {
+        Row: {
+          attribute_id: string
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          attribute_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          attribute_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attribute_lines_attribute_id_fkey"
+            columns: ["attribute_id"]
+            isOneToOne: false
+            referencedRelation: "product_attributes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_attribute_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_attribute_values: {
+        Row: {
+          attribute_id: string
+          color_hex: string | null
+          created_at: string
+          id: string
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          attribute_id: string
+          color_hex?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          value: string
+        }
+        Update: {
+          attribute_id?: string
+          color_hex?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attribute_values_attribute_id_fkey"
+            columns: ["attribute_id"]
+            isOneToOne: false
+            referencedRelation: "product_attributes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_attributes: {
+        Row: {
+          created_at: string
+          display_type: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          display_type?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          display_type?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      product_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          product_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          product_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          product_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_files_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_primary: boolean
+          product_id: string
+          sort_order: number
+          variant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_primary?: boolean
+          product_id: string
+          sort_order?: number
+          variant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_primary?: boolean
+          product_id?: string
+          sort_order?: number
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          barcode: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          product_id: string
+          purchase_price: number | null
+          sale_price: number | null
+          sku: string | null
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          barcode?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          product_id: string
+          purchase_price?: number | null
+          sale_price?: number | null
+          sku?: string | null
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          barcode?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          product_id?: string
+          purchase_price?: number | null
+          sale_price?: number | null
+          sku?: string | null
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           barcode: string | null
+          can_be_purchased: boolean
+          can_be_sold: boolean
           category: string | null
           code: string
           created_at: string
@@ -1130,14 +1396,19 @@ export type Database = {
           is_active: boolean
           min_stock: number
           name: string
+          product_type: string
           purchase_price: number
+          purchase_unit: string
           sale_price: number
           tva_rate: number
           unit: string
           updated_at: string
+          weight: number
         }
         Insert: {
           barcode?: string | null
+          can_be_purchased?: boolean
+          can_be_sold?: boolean
           category?: string | null
           code: string
           created_at?: string
@@ -1147,14 +1418,19 @@ export type Database = {
           is_active?: boolean
           min_stock?: number
           name: string
+          product_type?: string
           purchase_price?: number
+          purchase_unit?: string
           sale_price?: number
           tva_rate?: number
           unit?: string
           updated_at?: string
+          weight?: number
         }
         Update: {
           barcode?: string | null
+          can_be_purchased?: boolean
+          can_be_sold?: boolean
           category?: string | null
           code?: string
           created_at?: string
@@ -1164,11 +1440,14 @@ export type Database = {
           is_active?: boolean
           min_stock?: number
           name?: string
+          product_type?: string
           purchase_price?: number
+          purchase_unit?: string
           sale_price?: number
           tva_rate?: number
           unit?: string
           updated_at?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -2210,6 +2489,49 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      variant_attribute_values: {
+        Row: {
+          attribute_id: string
+          id: string
+          value_id: string
+          variant_id: string
+        }
+        Insert: {
+          attribute_id: string
+          id?: string
+          value_id: string
+          variant_id: string
+        }
+        Update: {
+          attribute_id?: string
+          id?: string
+          value_id?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variant_attribute_values_attribute_id_fkey"
+            columns: ["attribute_id"]
+            isOneToOne: false
+            referencedRelation: "product_attributes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variant_attribute_values_value_id_fkey"
+            columns: ["value_id"]
+            isOneToOne: false
+            referencedRelation: "product_attribute_values"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variant_attribute_values_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       warehouses: {
         Row: {
