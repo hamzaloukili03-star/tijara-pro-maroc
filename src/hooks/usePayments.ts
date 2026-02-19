@@ -1,0 +1,170 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+export interface Payment {
+  id: string;
+  payment_number: string;
+  payment_type: "client" | "supplier";
+  payment_method: "cash" | "cheque" | "transfer" | "lcn";
+  payment_date: string;
+  amount: number;
+  reference: string | null;
+  notes: string | null;
+  customer_id: string | null;
+  supplier_id: string | null;
+  bank_account_id: string | null;
+  cheque_number: string | null;
+  cheque_bank: string | null;
+  cheque_date: string | null;
+  lcn_due_date: string | null;
+  is_override: boolean;
+  override_reason: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  customer?: { name: string } | null;
+  supplier?: { name: string } | null;
+  bank_account?: { account_name: string; bank_name: string } | null;
+}
+
+export interface PaymentAllocation {
+  id: string;
+  payment_id: string;
+  invoice_id: string;
+  amount: number;
+  created_at: string;
+  invoice?: { invoice_number: string; total_ttc: number; remaining_balance: number } | null;
+}
+
+export function usePayments(paymentType: "client" | "supplier") {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPayments = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await (supabase as any)
+      .from("payments")
+      .select("*, customer:customers(name), supplier:suppliers(name), bank_account:bank_accounts(account_name, bank_name)")
+      .eq("payment_type", paymentType)
+      .order("created_at", { ascending: false });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPayments((data || []) as Payment[]);
+  }, [paymentType]);
+
+  useEffect(() => { fetchPayments(); }, [fetchPayments]);
+
+  const checkCashLimit = async (customerId: string, amount: number, date: string): Promise<{ allowed: boolean; totalToday: number }> => {
+    if (!customerId) return { allowed: true, totalToday: 0 };
+    const { data } = await (supabase as any)
+      .from("payments")
+      .select("amount")
+      .eq("customer_id", customerId)
+      .eq("payment_method", "cash")
+      .eq("payment_date", date)
+      .eq("is_override", false);
+    const totalToday = (data || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+    return { allowed: (totalToday + amount) <= 4999.99, totalToday };
+  };
+
+  const create = async (
+    payment: Partial<Payment>,
+    allocations: { invoice_id: string; amount: number }[]
+  ) => {
+    const prefix = paymentType === "client" ? "ENC" : "DEC";
+    const { data: number, error: nErr } = await supabase.rpc("next_document_number", { p_type: prefix });
+    if (nErr) {
+      toast({ title: "Erreur numérotation", description: nErr.message, variant: "destructive" });
+      return null;
+    }
+
+    const { data: pmt, error: pErr } = await (supabase as any)
+      .from("payments")
+      .insert({
+        ...payment,
+        payment_number: number,
+        payment_type: paymentType,
+        created_by: (await supabase.auth.getUser()).data.user?.id,
+      })
+      .select()
+      .single();
+
+    if (pErr) {
+      toast({ title: "Erreur", description: pErr.message, variant: "destructive" });
+      return null;
+    }
+
+    // Create allocations and update invoice balances
+    for (const alloc of allocations) {
+      await (supabase as any).from("payment_allocations").insert({
+        payment_id: pmt.id,
+        invoice_id: alloc.invoice_id,
+        amount: alloc.amount,
+      });
+
+      // Get current balance
+      const { data: inv } = await (supabase as any)
+        .from("invoices")
+        .select("remaining_balance")
+        .eq("id", alloc.invoice_id)
+        .single();
+
+      if (inv) {
+        const newBalance = Math.max(0, Number(inv.remaining_balance) - alloc.amount);
+        const updates: any = { remaining_balance: newBalance };
+        if (newBalance === 0) updates.status = "paid";
+        await (supabase as any).from("invoices").update(updates).eq("id", alloc.invoice_id);
+      }
+    }
+
+    // Audit log
+    await (supabase as any).from("audit_logs").insert({
+      action: "create_payment",
+      table_name: "payments",
+      record_id: pmt.id,
+      details: `Paiement ${number} de ${payment.amount} MAD`,
+      user_id: (await supabase.auth.getUser()).data.user?.id,
+    });
+
+    toast({ title: "Paiement enregistré", description: number as string });
+    await fetchPayments();
+    return pmt;
+  };
+
+  const remove = async (id: string) => {
+    // Get allocations to reverse
+    const { data: allocs } = await (supabase as any)
+      .from("payment_allocations")
+      .select("invoice_id, amount")
+      .eq("payment_id", id);
+
+    for (const alloc of (allocs || [])) {
+      const { data: inv } = await (supabase as any)
+        .from("invoices")
+        .select("remaining_balance, status")
+        .eq("id", alloc.invoice_id)
+        .single();
+      if (inv) {
+        await (supabase as any).from("invoices").update({
+          remaining_balance: Number(inv.remaining_balance) + Number(alloc.amount),
+          status: "validated",
+        }).eq("id", alloc.invoice_id);
+      }
+    }
+
+    const { error } = await (supabase as any).from("payments").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return false;
+    }
+    toast({ title: "Paiement supprimé" });
+    await fetchPayments();
+    return true;
+  };
+
+  return { payments, loading, fetchPayments, create, remove, checkCashLimit };
+}
