@@ -144,16 +144,16 @@ const sections: SidebarSection[] = [
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
   const [openSection, setOpenSection] = useState<string | null>(() => {
-    // Initialize with the active section
+    const path = window.location.pathname;
     const active = sections.find(s => s.subItems.length > 0 && (
       s.basePath === "/systeme"
-        ? (location.pathname === "/" || location.pathname.startsWith("/systeme"))
-        : location.pathname.startsWith(s.basePath)
+        ? (path === "/" || path.startsWith("/systeme"))
+        : path.startsWith(s.basePath)
     ));
     return active?.label ?? null;
   });
-  const location = useLocation();
   const { profile, roles, signOut } = useAuth();
 
   // Sync open section when route changes via sub-link click
