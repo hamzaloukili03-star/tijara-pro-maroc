@@ -365,7 +365,8 @@ const TableauxDeBord = () => {
                 <p className="text-sm opacity-75 mt-1">MAD disponible</p>
               </div>
               <div className="mt-6">
-                <Button size="sm" className="bg-white/15 hover:bg-white/25 text-white border-0 gap-2 rounded-xl backdrop-blur-sm shadow-lg">
+                <Button size="sm" className="bg-white/15 hover:bg-white/25 text-white border-0 gap-2 rounded-xl backdrop-blur-sm shadow-lg transition-all duration-300 hover:translate-x-0.5"
+                  onClick={() => window.location.href = "/reglements"}>
                   Voir détails <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
