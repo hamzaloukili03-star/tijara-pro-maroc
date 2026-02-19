@@ -198,7 +198,7 @@ export function AppSidebar() {
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-white/[0.08]">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/[0.08]">
         {!collapsed && (
           <img src={logo} alt="TijaraPro" className="h-8 object-contain brightness-0 invert drop-shadow-[0_0_8px_rgba(38,182,231,0.3)]" />
         )}
@@ -211,7 +211,7 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto scrollbar-thin">
+      <nav className="flex-1 py-3 space-y-0.5 px-2 overflow-y-auto scrollbar-thin">
         {sections.map((section) => {
           if (!hasAccess(section.basePath)) return null;
 
@@ -226,13 +226,13 @@ export function AppSidebar() {
                 key={section.label}
                 to={section.basePath}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200
                   ${sectionActive ? activeItemClass : inactiveItemClass}
                   ${collapsed ? "justify-center" : ""}
                 `}
                 title={collapsed ? section.label : undefined}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
                 {!collapsed && <span className="truncate">{section.label}</span>}
               </Link>
             );
@@ -243,17 +243,17 @@ export function AppSidebar() {
             <div key={section.label}>
               <button
                 onClick={() => toggleSection(section.label)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 w-full
                   ${sectionActive ? activeItemClass : inactiveItemClass}
                   ${collapsed ? "justify-center" : ""}
                 `}
                 title={collapsed ? section.label : undefined}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
                 {!collapsed && (
                   <>
                     <span className="truncate flex-1 text-left">{section.label}</span>
-                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-in-out ${sectionIsOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-in-out ${sectionIsOpen ? "rotate-180" : ""}`} />
                   </>
                 )}
               </button>
@@ -262,7 +262,7 @@ export function AppSidebar() {
                 <div
                   className="ml-4 border-l border-white/[0.08] pl-3 overflow-hidden transition-all duration-300 ease-in-out"
                   style={{
-                    maxHeight: sectionIsOpen ? `${section.subItems.length * 40 + 8}px` : "0px",
+                    maxHeight: sectionIsOpen ? `${section.subItems.length * 34 + 6}px` : "0px",
                     opacity: sectionIsOpen ? 1 : 0,
                     marginTop: sectionIsOpen ? "4px" : "0px",
                   }}
@@ -278,11 +278,11 @@ export function AppSidebar() {
                           key={sub.path}
                           to={sub.path}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200
                             ${subActive ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
                           `}
                         >
-                          <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                          <SubIcon className="h-3 w-3 shrink-0" />
                           <span className="truncate">{sub.title}</span>
                         </Link>
                       );
