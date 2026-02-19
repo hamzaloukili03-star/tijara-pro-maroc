@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { AppRole, Profile } from "@/types/auth";
+import type { AppRole } from "@/types/auth";
 
 export interface ManagedUser {
   id: string;
@@ -14,13 +14,26 @@ export interface ManagedUser {
   roles: AppRole[];
 }
 
+async function logAudit(action: string, recordId: string, details: string, oldData?: any, newData?: any) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("audit_logs").insert({
+    user_id: user.id,
+    action,
+    table_name: "profiles",
+    record_id: recordId,
+    details,
+    old_data: oldData ?? null,
+    new_data: newData ?? null,
+  });
+}
+
 export function useUserManagement() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    // Fetch profiles
     const { data: profiles, error: pErr } = await supabase
       .from("profiles")
       .select("*")
@@ -32,7 +45,6 @@ export function useUserManagement() {
       return;
     }
 
-    // Fetch all roles
     const { data: allRoles, error: rErr } = await supabase
       .from("user_roles")
       .select("*");
@@ -76,19 +88,36 @@ export function useUserManagement() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return false;
     }
+    const user = users.find(u => u.user_id === userId);
+    await logAudit(
+      isActive ? "user_deactivated" : "user_activated",
+      userId,
+      `${user?.full_name || user?.email} ${isActive ? "désactivé" : "activé"}`,
+      { is_active: isActive },
+      { is_active: !isActive },
+    );
     toast({ title: isActive ? "Utilisateur désactivé" : "Utilisateur activé" });
     await fetch();
     return true;
   };
 
   const setRole = async (userId: string, role: AppRole) => {
-    // Remove existing roles, then insert new one
+    const user = users.find(u => u.user_id === userId);
+    const oldRoles = user?.roles || [];
+
     await (supabase as any).from("user_roles").delete().eq("user_id", userId);
     const { error } = await (supabase as any).from("user_roles").insert({ user_id: userId, role });
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return false;
     }
+    await logAudit(
+      "role_changed",
+      userId,
+      `Rôle de ${user?.full_name || user?.email} changé: ${oldRoles.join(",")} → ${role}`,
+      { roles: oldRoles },
+      { roles: [role] },
+    );
     toast({ title: "Rôle mis à jour" });
     await fetch();
     return true;
@@ -104,5 +133,18 @@ export function useUserManagement() {
     return true;
   };
 
-  return { users, loading, fetch, toggleActive, setRole, resetPassword };
+  const deleteUser = async (targetUserId: string) => {
+    const { data, error } = await supabase.functions.invoke("delete-user", {
+      body: { target_user_id: targetUserId },
+    });
+    if (error || data?.error) {
+      toast({ title: "Erreur", description: error?.message || data?.error, variant: "destructive" });
+      return false;
+    }
+    toast({ title: "Utilisateur supprimé" });
+    await fetch();
+    return true;
+  };
+
+  return { users, loading, fetch, toggleActive, setRole, resetPassword, deleteUser };
 }

@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
-import { Search, Shield, RotateCcw, UserCheck, UserX, Loader2, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Search, Shield, RotateCcw, UserCheck, UserX, Loader2, Users, Trash2 } from "lucide-react";
 
 const ALL_ROLES: AppRole[] = ["super_admin", "admin", "accountant", "sales", "stock_manager"];
 
 const SystemeUtilisateurs = () => {
-  const { users, loading, toggleActive, setRole, resetPassword } = useUserManagement();
+  const { users, loading, toggleActive, setRole, resetPassword, deleteUser } = useUserManagement();
   const { hasRole, user: currentUser } = useAuth();
   const isSuperAdmin = hasRole("super_admin");
   const isAdmin = hasRole("admin") || isSuperAdmin;
@@ -24,9 +24,9 @@ const SystemeUtilisateurs = () => {
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  // Role change dialog
   const [roleDialogUser, setRoleDialogUser] = useState<ManagedUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<AppRole>("sales");
+  const [deleteTarget, setDeleteTarget] = useState<ManagedUser | null>(null);
 
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
@@ -46,6 +46,15 @@ const SystemeUtilisateurs = () => {
     setSelectedRole(u.roles[0] || "sales");
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteUser(deleteTarget.user_id);
+    setDeleteTarget(null);
+  };
+
+  // Roles available to assign (admin can't create super_admin)
+  const assignableRoles = isSuperAdmin ? ALL_ROLES : ALL_ROLES.filter(r => r !== "super_admin");
+
   return (
     <AppLayout title="Utilisateurs & Rôles" subtitle="Gestion des utilisateurs et des permissions">
       <div className="space-y-4">
@@ -53,28 +62,17 @@ const SystemeUtilisateurs = () => {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom ou email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+            <Input placeholder="Rechercher par nom ou email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={filterRole} onValueChange={setFilterRole}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Tous les rôles" />
-            </SelectTrigger>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tous les rôles" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les rôles</SelectItem>
-              {ALL_ROLES.map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-              ))}
+              {ALL_ROLES.map((r) => (<SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>))}
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tous les statuts" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
               <SelectItem value="active">Actifs</SelectItem>
@@ -92,16 +90,14 @@ const SystemeUtilisateurs = () => {
 
         {/* Table */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">Aucun utilisateur trouvé</div>
         ) : (
-          <div className="bg-card rounded-lg border shadow-card">
+          <div className="bg-card rounded-xl border shadow-card overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/50">
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
@@ -116,9 +112,10 @@ const SystemeUtilisateurs = () => {
                   const isTargetSuperAdmin = u.roles.includes("super_admin");
                   const canChangeRole = isSuperAdmin && !isSelf;
                   const canToggle = isAdmin && !isSelf && !(isTargetSuperAdmin && !isSuperAdmin);
+                  const canDelete = isSuperAdmin && !isSelf && !isTargetSuperAdmin;
 
                   return (
-                    <TableRow key={u.id}>
+                    <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
                       <TableCell>
@@ -150,18 +147,18 @@ const SystemeUtilisateurs = () => {
                             </Button>
                           )}
                           {canToggle && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleActive(u.user_id, u.is_active)}
-                              title={u.is_active ? "Désactiver" : "Activer"}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => toggleActive(u.user_id, u.is_active)} title={u.is_active ? "Désactiver" : "Activer"}>
                               {u.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                             </Button>
                           )}
                           {isAdmin && (
                             <Button variant="ghost" size="sm" onClick={() => resetPassword(u.email)} title="Réinitialiser mot de passe">
                               <RotateCcw className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(u)} title="Supprimer" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -180,14 +177,13 @@ const SystemeUtilisateurs = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Changer le rôle de {roleDialogUser?.full_name || roleDialogUser?.email}</DialogTitle>
+            <DialogDescription>Sélectionnez le nouveau rôle à attribuer.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as AppRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {ALL_ROLES.map((r) => (
+                {assignableRoles.map((r) => (
                   <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
                 ))}
               </SelectContent>
@@ -199,6 +195,24 @@ const SystemeUtilisateurs = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer <strong>{deleteTarget?.full_name || deleteTarget?.email}</strong> ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
