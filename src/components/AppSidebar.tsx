@@ -32,6 +32,7 @@ const systemeSubItems = [
 ];
 
 const mainModules = [
+  { title: "Tableaux de Bord & Analyses", icon: BarChart3, path: "/tableaux-de-bord" },
   { title: "Achats", icon: ShoppingCart, path: "/achats", subs: [
     { title: "Fournisseurs", path: "/achats/fournisseurs" },
   ]},
@@ -47,7 +48,6 @@ const mainModules = [
     { title: "Comptes Bancaires", path: "/reglements/comptes-bancaires" },
     { title: "Caisses", path: "/reglements/caisses" },
   ]},
-  { title: "Tableaux de Bord & Analyses", icon: BarChart3, path: "/tableaux-de-bord" },
 ];
 
 export function AppSidebar() {
