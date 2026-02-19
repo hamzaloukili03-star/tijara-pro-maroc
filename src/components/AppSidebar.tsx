@@ -75,27 +75,30 @@ export function AppSidebar() {
   const visibleModules = mainModules.filter((m) => hasAccess(m.path));
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
+      <div className="flex items-center gap-3 px-4 py-5 border-b border-white/[0.08]">
         {!collapsed && (
-          <img src={logo} alt="TijaraPro" className="h-8 object-contain brightness-0 invert" />
+          <img src={logo} alt="TijaraPro" className="h-8 object-contain brightness-0 invert drop-shadow-[0_0_8px_rgba(38,182,231,0.3)]" />
         )}
         {collapsed && (
-          <div className="w-8 h-8 rounded-md gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(38,182,231,0.25)]"
+            style={{ background: "linear-gradient(135deg, hsl(197,90%,50%), hsl(208,60%,30%))" }}>
             T
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+      <nav className="flex-1 py-4 space-y-1.5 px-2 overflow-y-auto scrollbar-thin">
         {/* Système Central */}
         <div>
           <button
             onClick={() => { if (!collapsed) setSystemeOpen(!systemeOpen); }}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
-              ${isSystemeActive ? "bg-gradient-to-r from-[hsl(197,90%,50%)] to-[hsl(197,100%,40%)] text-white shadow-[0_0_12px_hsla(197,100%,53%,0.3)]" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
+              ${isSystemeActive
+                ? "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]"
+                : "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent"}
               ${collapsed ? "justify-center" : ""}
             `}
             title={collapsed ? "Système Central" : undefined}
@@ -110,12 +113,12 @@ export function AppSidebar() {
           </button>
 
           {!collapsed && systemeOpen && (
-            <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+          <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
               <Link
                 to="/"
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all
-                  ${location.pathname === "/" ? "bg-white/12 text-white" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+                  ${location.pathname === "/" ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
                 `}
               >
                 Vue d'ensemble
@@ -125,8 +128,8 @@ export function AppSidebar() {
                   key={sub.path}
                   to={sub.path}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all
-                    ${isActive(sub.path) ? "bg-white/12 text-white" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+                    ${isActive(sub.path) ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
                   `}
                 >
                   <sub.icon className="h-3.5 w-3.5 shrink-0" />
@@ -143,7 +146,9 @@ export function AppSidebar() {
               to={mod.path}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                ${isActive(mod.path) ? "bg-gradient-to-r from-[hsl(197,90%,50%)] to-[hsl(197,100%,40%)] text-white shadow-[0_0_12px_hsla(197,100%,53%,0.3)]" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
+                ${isActive(mod.path)
+                  ? "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]"
+                  : "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent"}
                 ${collapsed ? "justify-center" : ""}
               `}
               title={collapsed ? mod.title : undefined}
@@ -152,14 +157,14 @@ export function AppSidebar() {
               {!collapsed && <span className="truncate">{mod.title}</span>}
             </Link>
             {!collapsed && (mod as any).subs && isActive(mod.path) && (
-              <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+              <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
                 {((mod as any).subs as { title: string; path: string }[]).map((sub) => (
                   <Link
                     key={sub.path}
                     to={sub.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                      ${location.pathname === sub.path ? "bg-white/12 text-white" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200
+                      ${location.pathname === sub.path ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
                     `}
                   >
                     <span className="truncate">{sub.title}</span>
@@ -172,13 +177,13 @@ export function AppSidebar() {
       </nav>
 
       {/* User info + logout */}
-      <div className="px-2 py-3 border-t border-sidebar-border space-y-2">
+      <div className="px-2 py-3 border-t border-white/[0.08] space-y-2">
         {!collapsed && profile && (
           <div className="px-3 py-2">
-            <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{profile.full_name || profile.email}</p>
+            <p className="text-xs font-medium text-white truncate">{profile.full_name || profile.email}</p>
             <div className="flex flex-wrap gap-1 mt-1">
               {roles.map((r) => (
-                <Badge key={r} variant="outline" className="text-[9px] border-sidebar-border text-sidebar-foreground">
+                <Badge key={r} variant="outline" className="text-[9px] border-white/[0.15] text-[hsl(210,20%,72%)]">
                   {ROLE_LABELS[r]}
                 </Badge>
               ))}
@@ -188,7 +193,7 @@ export function AppSidebar() {
 
         <button
           onClick={signOut}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent/50 text-sm transition-colors"
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[hsl(210,20%,72%)] hover:bg-white/[0.06] hover:text-white text-sm transition-all duration-200"
           title="Déconnexion"
         >
           <LogOut className="h-4 w-4" />
@@ -198,7 +203,7 @@ export function AppSidebar() {
         <div className="hidden lg:block">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent/50 text-sm transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[hsl(210,20%,72%)] hover:bg-white/[0.06] hover:text-white text-sm transition-all duration-200"
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             {!collapsed && <span>Réduire</span>}
@@ -223,14 +228,18 @@ export function AppSidebar() {
 
       <aside
         className={`
-          fixed lg:static z-50 top-0 left-0 h-screen text-secondary-foreground
+          fixed lg:static z-50 top-0 left-0 h-screen text-white
           transition-all duration-300 flex flex-col shrink-0
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "w-16" : "w-64"}
         `}
         style={{
-          background: "linear-gradient(180deg, hsl(208, 60%, 18%) 0%, hsl(208, 48%, 24%) 100%)",
-          boxShadow: "inset -1px 0 0 0 hsla(197, 100%, 53%, 0.08), 2px 0 20px -4px rgba(0,0,0,0.2)",
+          background: `
+            radial-gradient(circle at 10% 5%, rgba(38,182,231,0.08), transparent 40%),
+            linear-gradient(180deg, #0B2A45 0%, #0F2E4D 35%, #163E63 70%, #1A4B78 100%)
+          `,
+          boxShadow: "inset -1px 0 0 0 rgba(255,255,255,0.04), 3px 0 24px -6px rgba(0,0,0,0.3)",
+          minHeight: "100vh",
         }}
       >
         {sidebarContent}
