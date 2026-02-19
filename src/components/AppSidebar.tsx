@@ -45,6 +45,7 @@ const mainModules = [
   { title: "Facturation", icon: FileText, path: "/facturation" },
   { title: "Règlements & Trésorerie", icon: Wallet, path: "/reglements", subs: [
     { title: "Comptes Bancaires", path: "/reglements/comptes-bancaires" },
+    { title: "Caisses", path: "/reglements/caisses" },
   ]},
   { title: "Tableaux de Bord & Analyses", icon: BarChart3, path: "/tableaux-de-bord" },
 ];
