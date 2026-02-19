@@ -198,7 +198,7 @@ export function AppSidebar() {
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="flex items-center justify-center px-4 py-2 border-b border-white/[0.08]">
+      <div className="flex items-center justify-center px-2 py-0 border-b border-white/[0.08]">
         {!collapsed && (
           <img src={logo} alt="TijaraPro" className="h-24 w-auto object-contain drop-shadow-[0_0_10px_rgba(38,182,231,0.35)]" />
         )}
