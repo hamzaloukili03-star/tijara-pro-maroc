@@ -33,11 +33,11 @@ const fmt = (n: number) =>
   n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const modules = [
-  { label: "Achats", icon: ShoppingCart, path: "/achats", desc: "Fournisseurs & commandes", color: "hsl(38, 92%, 50%)" },
-  { label: "Stock", icon: Package, path: "/stock", desc: "Inventaire & mouvements", color: "hsl(152, 60%, 45%)" },
-  { label: "Ventes", icon: TrendingUp, path: "/ventes", desc: "Clients & devis", color: "hsl(197, 100%, 53%)" },
-  { label: "Facturation", icon: FileText, path: "/facturation", desc: "Factures & avoirs", color: "hsl(210, 60%, 16%)" },
-  { label: "Règlements", icon: Wallet, path: "/reglements", desc: "Paiements & trésorerie", color: "hsl(280, 60%, 55%)" },
+  { label: "Achats", icon: ShoppingCart, path: "/achats/commandes", desc: "Fournisseurs & commandes", color: "hsl(38, 92%, 50%)" },
+  { label: "Stock", icon: Package, path: "/stock/niveaux", desc: "Inventaire & mouvements", color: "hsl(152, 60%, 45%)" },
+  { label: "Ventes", icon: TrendingUp, path: "/ventes/devis", desc: "Clients & devis", color: "hsl(197, 100%, 53%)" },
+  { label: "Facturation", icon: FileText, path: "/facturation/clients", desc: "Factures & avoirs", color: "hsl(210, 60%, 16%)" },
+  { label: "Règlements", icon: Wallet, path: "/reglements/encaissements", desc: "Paiements & trésorerie", color: "hsl(280, 60%, 55%)" },
   { label: "Tableaux de Bord", icon: BarChart3, path: "/tableaux-de-bord", desc: "Analyses & rapports", color: "hsl(197, 100%, 53%)" },
 ];
 
@@ -72,10 +72,10 @@ const Index = () => {
   }, []);
 
   const kpiCards = [
-    { label: "Chiffre d'affaires", value: fmt(animRevenue), suffix: "MAD", icon: DollarSign, color: "hsl(197, 100%, 53%)", path: "/facturation", trend: "up" as const },
-    { label: "Impayés clients", value: fmt(animUnpaid), suffix: "MAD", icon: AlertCircle, color: "hsl(0, 84%, 60%)", path: "/reglements", trend: kpi.unpaid > 0 ? "down" as const : undefined },
-    { label: "Dettes fournisseurs", value: fmt(animDebt), suffix: "MAD", icon: Truck, color: "hsl(38, 92%, 50%)", path: "/achats" },
-    { label: "Trésorerie", value: fmt(animCash), suffix: "MAD", icon: Wallet, color: "hsl(152, 60%, 45%)", path: "/reglements" },
+    { label: "Chiffre d'affaires", value: fmt(animRevenue), suffix: "MAD", icon: DollarSign, color: "hsl(197, 100%, 53%)", path: "/facturation/clients", trend: "up" as const },
+    { label: "Impayés clients", value: fmt(animUnpaid), suffix: "MAD", icon: AlertCircle, color: "hsl(0, 84%, 60%)", path: "/reglements/impayes", trend: kpi.unpaid > 0 ? "down" as const : undefined },
+    { label: "Dettes fournisseurs", value: fmt(animDebt), suffix: "MAD", icon: Truck, color: "hsl(38, 92%, 50%)", path: "/achats/commandes" },
+    { label: "Trésorerie", value: fmt(animCash), suffix: "MAD", icon: Wallet, color: "hsl(152, 60%, 45%)", path: "/reglements/encaissements" },
   ];
 
   const stats = [
