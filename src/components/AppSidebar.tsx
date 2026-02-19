@@ -94,8 +94,8 @@ export function AppSidebar() {
         <div>
           <button
             onClick={() => { if (!collapsed) setSystemeOpen(!systemeOpen); }}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 w-full
-              ${isSystemeActive ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
+              ${isSystemeActive ? "bg-gradient-to-r from-[hsl(197,90%,50%)] to-[hsl(197,100%,40%)] text-white shadow-[0_0_12px_hsla(197,100%,53%,0.3)]" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
               ${collapsed ? "justify-center" : ""}
             `}
             title={collapsed ? "Système Central" : undefined}
@@ -114,8 +114,8 @@ export function AppSidebar() {
               <Link
                 to="/"
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all
-                  ${location.pathname === "/" ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all
+                  ${location.pathname === "/" ? "bg-white/12 text-white" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
                 `}
               >
                 Vue d'ensemble
@@ -125,8 +125,8 @@ export function AppSidebar() {
                   key={sub.path}
                   to={sub.path}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all
-                    ${isActive(sub.path) ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all
+                    ${isActive(sub.path) ? "bg-white/12 text-white" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
                   `}
                 >
                   <sub.icon className="h-3.5 w-3.5 shrink-0" />
@@ -142,8 +142,8 @@ export function AppSidebar() {
             <Link
               to={mod.path}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200
-                ${isActive(mod.path) ? "bg-sidebar-accent text-sidebar-primary-foreground border-l-2 border-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                ${isActive(mod.path) ? "bg-gradient-to-r from-[hsl(197,90%,50%)] to-[hsl(197,100%,40%)] text-white shadow-[0_0_12px_hsla(197,100%,53%,0.3)]" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
                 ${collapsed ? "justify-center" : ""}
               `}
               title={collapsed ? mod.title : undefined}
@@ -158,8 +158,8 @@ export function AppSidebar() {
                     key={sub.path}
                     to={sub.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-                      ${location.pathname === sub.path ? "bg-sidebar-accent text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                      ${location.pathname === sub.path ? "bg-white/12 text-white" : "text-sidebar-foreground hover:bg-white/8 hover:text-white"}
                     `}
                   >
                     <span className="truncate">{sub.title}</span>
@@ -223,11 +223,15 @@ export function AppSidebar() {
 
       <aside
         className={`
-          fixed lg:static z-50 top-0 left-0 h-screen bg-secondary text-secondary-foreground
+          fixed lg:static z-50 top-0 left-0 h-screen text-secondary-foreground
           transition-all duration-300 flex flex-col shrink-0
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "w-16" : "w-64"}
         `}
+        style={{
+          background: "linear-gradient(180deg, hsl(208, 60%, 18%) 0%, hsl(208, 48%, 24%) 100%)",
+          boxShadow: "inset -1px 0 0 0 hsla(197, 100%, 53%, 0.08), 2px 0 20px -4px rgba(0,0,0,0.2)",
+        }}
       >
         {sidebarContent}
       </aside>
