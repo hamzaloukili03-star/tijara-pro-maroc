@@ -101,6 +101,69 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_transactions: {
+        Row: {
+          bank_account_id: string
+          created_at: string
+          credit: number
+          debit: number
+          description: string
+          id: string
+          imported_at: string
+          is_reconciled: boolean
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciled_payment_id: string | null
+          reference: string | null
+          transaction_date: string
+        }
+        Insert: {
+          bank_account_id: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          description?: string
+          id?: string
+          imported_at?: string
+          is_reconciled?: boolean
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciled_payment_id?: string | null
+          reference?: string | null
+          transaction_date: string
+        }
+        Update: {
+          bank_account_id?: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          description?: string
+          id?: string
+          imported_at?: string
+          is_reconciled?: boolean
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciled_payment_id?: string | null
+          reference?: string | null
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_reconciled_payment_id_fkey"
+            columns: ["reconciled_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_settings: {
         Row: {
           address: string | null
@@ -588,6 +651,136 @@ export type Database = {
           },
         ]
       }
+      payment_allocations: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          payment_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          cheque_bank: string | null
+          cheque_date: string | null
+          cheque_number: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          is_override: boolean
+          lcn_due_date: string | null
+          notes: string | null
+          override_reason: string | null
+          payment_date: string
+          payment_method: string
+          payment_number: string
+          payment_type: string
+          reference: string | null
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          bank_account_id?: string | null
+          cheque_bank?: string | null
+          cheque_date?: string | null
+          cheque_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          is_override?: boolean
+          lcn_due_date?: string | null
+          notes?: string | null
+          override_reason?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number: string
+          payment_type: string
+          reference?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          cheque_bank?: string | null
+          cheque_date?: string | null
+          cheque_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          is_override?: boolean
+          lcn_due_date?: string | null
+          notes?: string | null
+          override_reason?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number?: string
+          payment_type?: string
+          reference?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           barcode: string | null
@@ -677,6 +870,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      reminder_logs: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          id: string
+          invoice_id: string
+          message: string | null
+          reminder_date: string
+          reminder_type: string
+          sent_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          invoice_id: string
+          message?: string | null
+          reminder_date?: string
+          reminder_type?: string
+          sent_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          invoice_id?: string
+          message?: string | null
+          reminder_date?: string
+          reminder_type?: string
+          sent_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminder_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {
