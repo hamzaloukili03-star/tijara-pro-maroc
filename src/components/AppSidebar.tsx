@@ -226,10 +226,14 @@ export function AppSidebar() {
         <div className="lg:hidden fixed inset-0 bg-foreground/40 z-40" onClick={() => setMobileOpen(false)} />
       )}
 
+      {/* Spacer div to push main content */}
+      <div className={`hidden lg:block shrink-0 transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`} />
+
       <aside
         className={`
-          fixed lg:static z-50 top-0 left-0 h-screen text-white
+          fixed z-50 top-0 left-0 h-screen text-white
           transition-all duration-300 flex flex-col shrink-0
+          overflow-y-auto overflow-x-hidden
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "w-16" : "w-64"}
         `}
@@ -239,6 +243,7 @@ export function AppSidebar() {
             linear-gradient(180deg, #0B2A45 0%, #0F2E4D 35%, #163E63 70%, #1A4B78 100%)
           `,
           boxShadow: "inset -1px 0 0 0 rgba(255,255,255,0.04), 3px 0 24px -6px rgba(0,0,0,0.3)",
+          height: "100vh",
           minHeight: "100vh",
         }}
       >

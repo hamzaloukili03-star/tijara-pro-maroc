@@ -13,7 +13,7 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
   return (
     <div className="flex min-h-screen w-full bg-muted/30">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-card shadow-topbar border-b border-border px-4 lg:px-6 py-3 flex items-center justify-between gap-4">
           <div className="pl-12 lg:pl-0 space-y-1">
