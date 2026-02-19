@@ -20,6 +20,7 @@ import SystemeParametres from "./pages/SystemeParametres";
 import SystemeLogs from "./pages/SystemeLogs";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
+import CashRegistersPage from "./pages/CashRegistersPage";
 
 import ProductsPage from "./pages/master/ProductsPage";
 import CustomersPage from "./pages/master/CustomersPage";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/facturation" element={<ProtectedRoute><Facturation /></ProtectedRoute>} />
             <Route path="/reglements" element={<ProtectedRoute><Reglements /></ProtectedRoute>} />
             <Route path="/reglements/comptes-bancaires" element={<ProtectedRoute><BankAccountsPage /></ProtectedRoute>} />
+            <Route path="/reglements/caisses" element={<ProtectedRoute><CashRegistersPage /></ProtectedRoute>} />
             <Route path="/tableaux-de-bord" element={<ProtectedRoute><TableauxDeBord /></ProtectedRoute>} />
             <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
             <Route path="/systeme/utilisateurs" element={<ProtectedRoute requiredRoles={["super_admin"]}><SystemeUtilisateurs /></ProtectedRoute>} />
