@@ -20,49 +20,144 @@ import {
   Database,
   Warehouse,
   UserCheck,
+  Landmark,
+  CreditCard,
+  FileCheck,
+  Truck,
+  Receipt,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Link2,
+  AlertTriangle,
+  ArrowRightLeft,
+  ClipboardCheck,
+  Activity,
+  ReceiptText,
+  BarChart2,
+  ScrollText,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_MODULE_ACCESS, ROLE_LABELS } from "@/types/auth";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/logo-tijarapro.jpg";
 
-const systemeSubItems = [
-  { title: "Utilisateurs & Rôles", icon: Users, path: "/systeme/utilisateurs" },
-  { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
-  { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },
-  { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
-];
+interface SubItem {
+  title: string;
+  icon: any;
+  path: string;
+}
 
-const referentielSubItems = [
-  { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
-  { title: "Fournisseurs", icon: ShoppingCart, path: "/referentiel/fournisseurs" },
-  { title: "Produits", icon: Package, path: "/referentiel/produits" },
-  { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
-];
+interface SidebarSection {
+  label: string;
+  icon: any;
+  basePath: string;
+  subItems: SubItem[];
+}
 
-const mainModules = [
-  { title: "Tableaux de Bord & Analyses", icon: BarChart3, path: "/tableaux-de-bord" },
-  { title: "Achats", icon: ShoppingCart, path: "/achats" },
-  { title: "Stock", icon: Package, path: "/stock" },
-  { title: "Ventes", icon: TrendingUp, path: "/ventes" },
-  { title: "Facturation", icon: FileText, path: "/facturation" },
-  { title: "Règlements & Trésorerie", icon: Wallet, path: "/reglements", subs: [
-    { title: "Comptes Bancaires", path: "/reglements/comptes-bancaires" },
-    { title: "Caisses", path: "/reglements/caisses" },
-  ]},
+const sections: SidebarSection[] = [
+  {
+    label: "Administration",
+    icon: Settings,
+    basePath: "/systeme",
+    subItems: [
+      { title: "Vue d'ensemble", icon: BarChart3, path: "/" },
+      { title: "Utilisateurs & Rôles", icon: Users, path: "/systeme/utilisateurs" },
+      { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
+      { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },
+      { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
+    ],
+  },
+  {
+    label: "Tableaux de Bord",
+    icon: BarChart3,
+    basePath: "/tableaux-de-bord",
+    subItems: [],
+  },
+  {
+    label: "Référentiel",
+    icon: Database,
+    basePath: "/referentiel",
+    subItems: [
+      { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
+      { title: "Fournisseurs", icon: Truck, path: "/referentiel/fournisseurs" },
+      { title: "Produits", icon: Package, path: "/referentiel/produits" },
+      { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
+      { title: "Comptes Bancaires", icon: Landmark, path: "/referentiel/comptes-bancaires" },
+      { title: "Caisses", icon: CreditCard, path: "/referentiel/caisses" },
+    ],
+  },
+  {
+    label: "Achats",
+    icon: ShoppingCart,
+    basePath: "/achats",
+    subItems: [
+      { title: "Demandes d'achat", icon: FileCheck, path: "/achats/demandes" },
+      { title: "Bons de commande", icon: ScrollText, path: "/achats/commandes" },
+      { title: "Réceptions", icon: Package, path: "/achats/receptions" },
+    ],
+  },
+  {
+    label: "Stock",
+    icon: Package,
+    basePath: "/stock",
+    subItems: [
+      { title: "Niveaux de stock", icon: Activity, path: "/stock/niveaux" },
+      { title: "Mouvements", icon: ArrowRightLeft, path: "/stock/mouvements" },
+      { title: "Transferts", icon: ArrowRightLeft, path: "/stock/transferts" },
+      { title: "Inventaires", icon: ClipboardCheck, path: "/stock/inventaires" },
+    ],
+  },
+  {
+    label: "Ventes",
+    icon: TrendingUp,
+    basePath: "/ventes",
+    subItems: [
+      { title: "Devis", icon: FileText, path: "/ventes/devis" },
+      { title: "Bons de commande", icon: ScrollText, path: "/ventes/commandes" },
+      { title: "Bons de livraison", icon: Truck, path: "/ventes/livraisons" },
+    ],
+  },
+  {
+    label: "Facturation",
+    icon: FileText,
+    basePath: "/facturation",
+    subItems: [
+      { title: "Factures Clients", icon: Receipt, path: "/facturation/clients" },
+      { title: "Factures Fournisseurs", icon: Receipt, path: "/facturation/fournisseurs" },
+      { title: "Avoirs", icon: ReceiptText, path: "/facturation/avoirs" },
+      { title: "Exports & Journaux", icon: BarChart2, path: "/facturation/exports" },
+    ],
+  },
+  {
+    label: "Règlements & Trésorerie",
+    icon: Wallet,
+    basePath: "/reglements",
+    subItems: [
+      { title: "Encaissements", icon: ArrowDownCircle, path: "/reglements/encaissements" },
+      { title: "Décaissements", icon: ArrowUpCircle, path: "/reglements/decaissements" },
+      { title: "Rapprochement", icon: Link2, path: "/reglements/rapprochement" },
+      { title: "Impayés & Relances", icon: AlertTriangle, path: "/reglements/impayes" },
+    ],
+  },
 ];
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [systemeOpen, setSystemeOpen] = useState(false);
-  const [referentielOpen, setReferentielOpen] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const { profile, roles, signOut } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  };
+
+  const isSectionActive = (section: SidebarSection) => {
+    if (section.basePath === "/systeme") {
+      return location.pathname === "/" || location.pathname.startsWith("/systeme");
+    }
+    return location.pathname.startsWith(section.basePath);
   };
 
   const hasAccess = (path: string) => {
@@ -72,75 +167,19 @@ export function AppSidebar() {
     return allowed.some((r) => roles.includes(r));
   };
 
-  const isSystemeActive = location.pathname === "/" || location.pathname.startsWith("/systeme");
-  const isReferentielActive = location.pathname.startsWith("/referentiel");
+  const toggleSection = (label: string) => {
+    if (collapsed) return;
+    setOpenSections(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
-  const visibleSystemeSubs = systemeSubItems.filter((s) => hasAccess(s.path));
-  const visibleModules = mainModules.filter((m) => hasAccess(m.path));
+  // Auto-open active section
+  const getAutoOpen = (section: SidebarSection) => {
+    if (openSections[section.label] !== undefined) return openSections[section.label];
+    return isSectionActive(section);
+  };
 
   const activeItemClass = "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]";
   const inactiveItemClass = "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent";
-
-  const renderCollapsibleSection = (
-    label: string,
-    icon: React.ElementType,
-    isOpen: boolean,
-    setOpen: (v: boolean) => void,
-    isActiveSection: boolean,
-    subItems: typeof systemeSubItems,
-    extraTopItem?: { label: string; path: string },
-  ) => {
-    const Icon = icon;
-    return (
-      <div>
-        <button
-          onClick={() => { if (!collapsed) setOpen(!isOpen); }}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
-            ${isActiveSection ? activeItemClass : inactiveItemClass}
-            ${collapsed ? "justify-center" : ""}
-          `}
-          title={collapsed ? label : undefined}
-        >
-          <Icon className="h-5 w-5 shrink-0" />
-          {!collapsed && (
-            <>
-              <span className="truncate flex-1 text-left">{label}</span>
-              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-            </>
-          )}
-        </button>
-
-        {!collapsed && isOpen && (
-          <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
-            {extraTopItem && (
-              <Link
-                to={extraTopItem.path}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
-                  ${location.pathname === extraTopItem.path ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
-                `}
-              >
-                {extraTopItem.label}
-              </Link>
-            )}
-            {subItems.map((sub) => (
-              <Link
-                key={sub.path}
-                to={sub.path}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
-                  ${isActive(sub.path) ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
-                `}
-              >
-                <sub.icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{sub.title}</span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden">
@@ -158,51 +197,79 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 space-y-1.5 px-2 overflow-y-auto scrollbar-thin">
-        {/* Administration */}
-        {renderCollapsibleSection(
-          "Administration", Settings, systemeOpen, setSystemeOpen, isSystemeActive,
-          visibleSystemeSubs, { label: "Vue d'ensemble", path: "/" }
-        )}
+      <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto scrollbar-thin">
+        {sections.map((section) => {
+          if (!hasAccess(section.basePath)) return null;
 
-        {/* Référentiel */}
-        {renderCollapsibleSection(
-          "Référentiel", Database, referentielOpen, setReferentielOpen, isReferentielActive,
-          referentielSubItems
-        )}
+          const isOpen = getAutoOpen(section);
+          const sectionActive = isSectionActive(section);
+          const Icon = section.icon;
 
-        {visibleModules.map((mod) => (
-          <div key={mod.path}>
-            <Link
-              to={mod.path}
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                ${isActive(mod.path) ? activeItemClass : inactiveItemClass}
-                ${collapsed ? "justify-center" : ""}
-              `}
-              title={collapsed ? mod.title : undefined}
-            >
-              <mod.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span className="truncate">{mod.title}</span>}
-            </Link>
-            {!collapsed && (mod as any).subs && isActive(mod.path) && (
-              <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
-                {((mod as any).subs as { title: string; path: string }[]).map((sub) => (
-                  <Link
-                    key={sub.path}
-                    to={sub.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200
-                      ${location.pathname === sub.path ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
-                    `}
-                  >
-                    <span className="truncate">{sub.title}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          // Simple link (no sub-items) like Tableaux de Bord
+          if (section.subItems.length === 0) {
+            return (
+              <Link
+                key={section.label}
+                to={section.basePath}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                  ${sectionActive ? activeItemClass : inactiveItemClass}
+                  ${collapsed ? "justify-center" : ""}
+                `}
+                title={collapsed ? section.label : undefined}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!collapsed && <span className="truncate">{section.label}</span>}
+              </Link>
+            );
+          }
+
+          // Collapsible section
+          return (
+            <div key={section.label}>
+              <button
+                onClick={() => toggleSection(section.label)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
+                  ${sectionActive ? activeItemClass : inactiveItemClass}
+                  ${collapsed ? "justify-center" : ""}
+                `}
+                title={collapsed ? section.label : undefined}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1 text-left">{section.label}</span>
+                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                  </>
+                )}
+              </button>
+
+              {!collapsed && isOpen && (
+                <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3 animate-fade-in">
+                  {section.subItems
+                    .filter(sub => hasAccess(sub.path))
+                    .map(sub => {
+                      const SubIcon = sub.icon;
+                      const subActive = sub.path === "/" ? location.pathname === "/" : isActive(sub.path);
+                      return (
+                        <Link
+                          key={sub.path}
+                          to={sub.path}
+                          onClick={() => setMobileOpen(false)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+                            ${subActive ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
+                          `}
+                        >
+                          <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{sub.title}</span>
+                        </Link>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       {/* User info + logout */}
