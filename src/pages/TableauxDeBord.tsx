@@ -14,6 +14,11 @@ import {
   Calendar, FileText, ChevronRight, ArrowRight, ShieldAlert,
   CreditCard, BarChart3,
 } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const MONTH_LABELS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
 /* ─── types ─── */
 interface KPI {
@@ -95,11 +100,13 @@ const TableauxDeBord = () => {
   const [topClients, setTopClients] = useState<{ name: string; value: number }[]>([]);
   const [recentTx, setRecentTx] = useState<RecentTx[]>([]);
   const [stockAlerts, setStockAlerts] = useState<{ name: string; qty: number }[]>([]);
-  const [dateFrom, setDateFrom] = useState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() - 12);
-    return d.toISOString().split("T")[0];
-  });
-  const [dateTo, setDateTo] = useState(new Date().toISOString().split("T")[0]);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  
+  const dateFrom = customFrom || `${selectedYear}-01-01`;
+  const dateTo = customTo || `${selectedYear}-12-31`;
   const [loading, setLoading] = useState(true);
 
   const animRevenue = useAnimatedNumber(kpi.revenue);
@@ -146,21 +153,29 @@ const TableauxDeBord = () => {
     const grossMargin = revenue - totalPurchases;
     setKpi({ revenue, supplierDebt, customerUnpaid, cashPosition, paidInvoices, pendingInvoices, grossMargin });
 
-    // Monthly breakdown
+    // Monthly breakdown — always show all 12 months of selected year
     const monthMap = new Map<string, { ventes: number; achats: number }>();
+    // Pre-fill all 12 months
+    for (let m = 1; m <= 12; m++) {
+      const key = `${selectedYear}-${String(m).padStart(2, "0")}`;
+      monthMap.set(key, { ventes: 0, achats: 0 });
+    }
     (clientInv || []).forEach((inv: any) => {
       const m = inv.invoice_date.substring(0, 7);
-      const ex = monthMap.get(m) || { ventes: 0, achats: 0 };
-      ex.ventes += Number(inv.total_ttc);
-      monthMap.set(m, ex);
+      if (monthMap.has(m)) {
+        monthMap.get(m)!.ventes += Number(inv.total_ttc);
+      }
     });
     (suppInv || []).forEach((inv: any) => {
       const m = inv.invoice_date.substring(0, 7);
-      const ex = monthMap.get(m) || { ventes: 0, achats: 0 };
-      ex.achats += Number(inv.total_ttc);
-      monthMap.set(m, ex);
+      if (monthMap.has(m)) {
+        monthMap.get(m)!.achats += Number(inv.total_ttc);
+      }
     });
-    setMonthlyData(Array.from(monthMap.entries()).sort().map(([month, v]) => ({ month, ...v })));
+    setMonthlyData(Array.from(monthMap.entries()).sort().map(([month, v]) => {
+      const mIdx = parseInt(month.split("-")[1], 10) - 1;
+      return { month: MONTH_LABELS[mIdx], ...v };
+    }));
 
     // Top clients
     const cm = new Map<string, number>();
@@ -200,7 +215,7 @@ const TableauxDeBord = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [dateFrom, dateTo]);
+  useEffect(() => { fetchData(); }, [selectedYear, customFrom, customTo]);
 
   const exportCSV = () => {
     const header = "Mois,Ventes,Achats\n";
@@ -219,22 +234,41 @@ const TableauxDeBord = () => {
 
         {/* ── Filter bar ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2 bg-card rounded-xl border border-border px-3 py-2 shadow-card">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="border-0 bg-transparent p-0 h-auto text-sm w-[130px] focus-visible:ring-0" />
-            <span className="text-muted-foreground text-sm">→</span>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="border-0 bg-transparent p-0 h-auto text-sm w-[130px] focus-visible:ring-0" />
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Year selector */}
+            <div className="flex items-center gap-2 bg-card rounded-xl border border-border px-3 py-2 shadow-card">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Select value={String(selectedYear)} onValueChange={(v) => { setSelectedYear(Number(v)); setCustomFrom(""); setCustomTo(""); }}>
+                <SelectTrigger className="border-0 bg-transparent p-0 h-auto text-sm w-[80px] focus:ring-0 shadow-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Custom date range */}
+            <div className="flex items-center gap-2 bg-card rounded-xl border border-border px-3 py-2 shadow-card">
+              <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
+                placeholder="Début"
+                className="border-0 bg-transparent p-0 h-auto text-sm w-[130px] focus-visible:ring-0" />
+              <span className="text-muted-foreground text-sm">→</span>
+              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
+                placeholder="Fin"
+                className="border-0 bg-transparent p-0 h-auto text-sm w-[130px] focus-visible:ring-0" />
+              {(customFrom || customTo) && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => { setCustomFrom(""); setCustomTo(""); }}>
+                  ✕
+                </Button>
+              )}
+            </div>
           </div>
           <Button variant="outline" onClick={exportCSV} className="gap-2 rounded-xl">
             <Download className="h-4 w-4" /> Exporter
           </Button>
         </div>
-
-        {/* ═══════════════════════════════════════════
-            ROW 1 — Hero KPIs + Circular widget
-            ═══════════════════════════════════════════ */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* KPI 1 — Revenue (hero) */}
           <HeroKPI
@@ -278,7 +312,7 @@ const TableauxDeBord = () => {
           <Card className="lg:col-span-7 border border-border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">Évolution mensuelle</CardTitle>
+                <CardTitle className="text-base font-semibold">Évolution mensuelle — {customFrom ? "Période personnalisée" : selectedYear}</CardTitle>
                 <div className="flex items-center gap-4 text-xs">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> Ventes</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-secondary" /> Achats</span>
