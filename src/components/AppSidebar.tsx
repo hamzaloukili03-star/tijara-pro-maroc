@@ -295,39 +295,18 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* User info + logout */}
-      <div className="px-2 py-3 border-t border-white/[0.08] space-y-2">
-        {!collapsed && profile && (
-          <div className="px-3 py-2">
-            <p className="text-xs font-medium text-white truncate">{profile.full_name || profile.email}</p>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {roles.map((r) => (
-                <Badge key={r} variant="outline" className="text-[9px] border-white/[0.15] text-[hsl(210,20%,72%)]">
-                  {ROLE_LABELS[r]}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
+      {/* Footer */}
+      <div className="px-2 py-3 border-t border-white/[0.08]">
         <button
           onClick={signOut}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[hsl(210,20%,72%)] hover:bg-white/[0.06] hover:text-white text-sm transition-all duration-200"
+          className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-[hsl(0,60%,70%)] hover:bg-[rgba(220,60,60,0.12)] hover:text-[hsl(0,70%,75%)] text-sm font-medium transition-all duration-200
+            ${collapsed ? "justify-center" : ""}
+          `}
           title="Déconnexion"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Déconnexion</span>}
         </button>
-
-        <div className="hidden lg:block">
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[hsl(210,20%,72%)] hover:bg-white/[0.06] hover:text-white text-sm transition-all duration-200"
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            {!collapsed && <span>Réduire</span>}
-          </button>
-        </div>
       </div>
     </div>
   );
