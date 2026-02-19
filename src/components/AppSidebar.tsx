@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Settings,
@@ -144,9 +144,27 @@ const sections: SidebarSection[] = [
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [openSection, setOpenSection] = useState<string | null>(() => {
+    // Initialize with the active section
+    const active = sections.find(s => s.subItems.length > 0 && (
+      s.basePath === "/systeme"
+        ? (location.pathname === "/" || location.pathname.startsWith("/systeme"))
+        : location.pathname.startsWith(s.basePath)
+    ));
+    return active?.label ?? null;
+  });
   const location = useLocation();
   const { profile, roles, signOut } = useAuth();
+
+  // Sync open section when route changes via sub-link click
+  useEffect(() => {
+    const active = sections.find(s => s.subItems.length > 0 && (
+      s.basePath === "/systeme"
+        ? (location.pathname === "/" || location.pathname.startsWith("/systeme"))
+        : location.pathname.startsWith(s.basePath)
+    ));
+    if (active) setOpenSection(active.label);
+  }, [location.pathname]);
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -169,14 +187,10 @@ export function AppSidebar() {
 
   const toggleSection = (label: string) => {
     if (collapsed) return;
-    setOpenSections(prev => ({ ...prev, [label]: !prev[label] }));
+    setOpenSection(prev => prev === label ? null : label);
   };
 
-  // Auto-open active section
-  const getAutoOpen = (section: SidebarSection) => {
-    if (openSections[section.label] !== undefined) return openSections[section.label];
-    return isSectionActive(section);
-  };
+  const isOpen = (section: SidebarSection) => openSection === section.label;
 
   const activeItemClass = "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]";
   const inactiveItemClass = "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent";
@@ -201,7 +215,7 @@ export function AppSidebar() {
         {sections.map((section) => {
           if (!hasAccess(section.basePath)) return null;
 
-          const isOpen = getAutoOpen(section);
+          const sectionIsOpen = isOpen(section);
           const sectionActive = isSectionActive(section);
           const Icon = section.icon;
 
@@ -239,13 +253,21 @@ export function AppSidebar() {
                 {!collapsed && (
                   <>
                     <span className="truncate flex-1 text-left">{section.label}</span>
-                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-in-out ${sectionIsOpen ? "rotate-180" : ""}`} />
                   </>
                 )}
               </button>
 
-              {!collapsed && isOpen && (
-                <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3 animate-fade-in">
+              {!collapsed && (
+                <div
+                  className="ml-4 border-l border-white/[0.08] pl-3 overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxHeight: sectionIsOpen ? `${section.subItems.length * 40 + 8}px` : "0px",
+                    opacity: sectionIsOpen ? 1 : 0,
+                    marginTop: sectionIsOpen ? "4px" : "0px",
+                  }}
+                >
+                  <div className="space-y-0.5">
                   {section.subItems
                     .filter(sub => hasAccess(sub.path))
                     .map(sub => {
@@ -265,6 +287,7 @@ export function AppSidebar() {
                         </Link>
                       );
                     })}
+                  </div>
                 </div>
               )}
             </div>
