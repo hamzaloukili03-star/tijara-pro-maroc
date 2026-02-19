@@ -39,7 +39,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_MODULE_ACCESS, ROLE_LABELS } from "@/types/auth";
 import { Badge } from "@/components/ui/badge";
-import logo from "@/assets/logo-tijarapro.jpg";
+import logo from "@/assets/logo-tijarapro-white.png";
 
 interface SubItem {
   title: string;
@@ -200,7 +200,7 @@ export function AppSidebar() {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-white/[0.08]">
         {!collapsed && (
-          <img src={logo} alt="TijaraPro" className="h-8 object-contain brightness-0 invert drop-shadow-[0_0_8px_rgba(38,182,231,0.3)]" />
+          <img src={logo} alt="TijaraPro" className="h-8 object-contain drop-shadow-[0_0_8px_rgba(38,182,231,0.3)]" />
         )}
         {collapsed && (
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(38,182,231,0.25)]"
