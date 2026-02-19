@@ -316,23 +316,29 @@ const TableauxDeBord = () => {
           {/* Financial highlight panel — 3/10 */}
           <div className="lg:col-span-3 flex flex-col gap-5">
             {/* Trésorerie hero */}
-            <div className="relative rounded-xl overflow-hidden gradient-primary p-6 text-primary-foreground shadow-elevated flex-1 flex flex-col justify-between">
+            <div
+              className="relative rounded-xl overflow-hidden p-6 text-white shadow-elevated flex-1 flex flex-col justify-between"
+              style={{
+                background: "linear-gradient(135deg, hsl(197, 100%, 53%) 0%, hsl(208, 60%, 18%) 100%)",
+              }}
+            >
               <div>
                 <div className="flex items-center gap-2 mb-4 opacity-90">
                   <Wallet className="h-5 w-5" />
                   <span className="text-sm font-medium">Trésorerie</span>
                 </div>
                 <p className="text-3xl font-extrabold tracking-tight">{fmt(animCash)}</p>
-                <p className="text-sm opacity-80 mt-1">MAD disponible</p>
+                <p className="text-sm opacity-75 mt-1">MAD disponible</p>
               </div>
               <div className="mt-6">
-                <Button size="sm" variant="secondary" className="bg-white/15 hover:bg-white/25 text-white border-0 gap-2 rounded-lg backdrop-blur-sm">
+                <Button size="sm" className="bg-white/15 hover:bg-white/25 text-white border-0 gap-2 rounded-xl backdrop-blur-sm shadow-lg">
                   Voir détails <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              {/* decorative circles */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/5" />
-              <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-white/5" />
+              {/* decorative shapes */}
+              <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-white/[0.06]" />
+              <div className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-white/[0.04]" />
+              <div className="absolute top-1/2 -left-6 w-20 h-20 rounded-full bg-white/[0.03]" />
             </div>
 
             {/* Supplier debt mini-card */}
@@ -471,36 +477,44 @@ function HeroKPI({ label, value, suffix, icon: Icon, color, trend, trendValue }:
   label: string; value: string; suffix: string; icon: React.ElementType;
   color: string; trend?: "up" | "down"; trendValue?: string;
 }) {
-  const colorClass: Record<string, { bg: string; text: string; glow: string }> = {
-    primary: { bg: "bg-primary/10", text: "text-primary", glow: "group-hover:shadow-[0_0_20px_hsl(197,100%,53%,0.15)]" },
-    success: { bg: "bg-success/10", text: "text-success", glow: "group-hover:shadow-[0_0_20px_hsl(152,60%,45%,0.15)]" },
-    destructive: { bg: "bg-destructive/10", text: "text-destructive", glow: "group-hover:shadow-[0_0_20px_hsl(0,84%,60%,0.15)]" },
-    warning: { bg: "bg-warning/10", text: "text-warning", glow: "group-hover:shadow-[0_0_20px_hsl(38,92%,50%,0.15)]" },
+  const gradients: Record<string, string> = {
+    primary: "linear-gradient(135deg, hsl(197, 100%, 53%), hsl(197, 85%, 42%))",
+    success: "linear-gradient(135deg, hsl(142, 72%, 50%), hsl(142, 64%, 38%))",
+    destructive: "linear-gradient(135deg, hsl(0, 84%, 60%), hsl(0, 72%, 52%))",
+    warning: "linear-gradient(135deg, hsl(38, 92%, 50%), hsl(25, 90%, 48%))",
+    indigo: "linear-gradient(135deg, hsl(239, 84%, 67%), hsl(239, 70%, 56%))",
   };
-  const c = colorClass[color] || colorClass.primary;
 
   return (
-    <div className={`group relative bg-card rounded-xl border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover ${c.glow}`}>
-      {/* accent bar */}
-      <div className={`h-1 w-full ${c.bg}`} style={{ opacity: 1 }}>
-        <div className={`h-full ${c.text.replace("text-", "bg-")}`} />
-      </div>
-      <div className="p-5">
+    <div
+      className="group relative rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated cursor-default"
+      style={{
+        background: gradients[color] || gradients.primary,
+        boxShadow: "0 4px 20px -4px rgba(0,0,0,0.2)",
+      }}
+    >
+      {/* glass overlay */}
+      <div className="absolute inset-0 bg-white/[0.06] backdrop-blur-[1px]" />
+      {/* decorative shapes */}
+      <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/[0.07]" />
+      <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/[0.05]" />
+
+      <div className="relative p-5">
         <div className="flex items-start justify-between mb-3">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${c.bg}`}>
-            <Icon className={`h-5 w-5 ${c.text}`} />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-white/15 backdrop-blur-sm">
+            <Icon className="h-5 w-5 text-white" />
           </div>
           {trend && trendValue && (
-            <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${trend === "up" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+            <div className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-white/15 text-white backdrop-blur-sm">
               {trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {trendValue}
             </div>
           )}
         </div>
-        <p className="text-2xl font-extrabold text-foreground tracking-tight leading-none">
-          {value} <span className="text-sm font-normal text-muted-foreground">{suffix}</span>
+        <p className="text-2xl font-extrabold text-white tracking-tight leading-none">
+          {value} <span className="text-sm font-normal text-white/70">{suffix}</span>
         </p>
-        <p className="text-sm text-muted-foreground mt-1.5">{label}</p>
+        <p className="text-sm text-white/80 mt-1.5 font-medium">{label}</p>
       </div>
     </div>
   );
@@ -513,13 +527,20 @@ function CircularWidget({ paid, pending }: { paid: number; pending: number }) {
   const offset = circumference - (pct / 100) * circumference;
 
   return (
-    <div className="group bg-card rounded-xl border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover p-5 flex flex-col items-center justify-center">
+    <div
+      className="group rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated p-5 flex flex-col items-center justify-center cursor-default"
+      style={{
+        background: "linear-gradient(135deg, hsl(239, 84%, 67%), hsl(239, 70%, 56%))",
+        boxShadow: "0 4px 20px -4px rgba(0,0,0,0.2)",
+      }}
+    >
+      <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/[0.06]" />
       <div className="relative w-24 h-24 mb-3">
         <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
-          <circle cx="48" cy="48" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+          <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="6" />
           <circle
             cx="48" cy="48" r="40" fill="none"
-            stroke="hsl(var(--primary))" strokeWidth="6"
+            stroke="white" strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
@@ -527,11 +548,11 @@ function CircularWidget({ paid, pending }: { paid: number; pending: number }) {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-extrabold text-foreground">{pct}%</span>
+          <span className="text-xl font-extrabold text-white">{pct}%</span>
         </div>
       </div>
-      <p className="text-sm font-semibold text-foreground">Factures payées</p>
-      <p className="text-xs text-muted-foreground mt-0.5">{paid} / {total} factures</p>
+      <p className="text-sm font-semibold text-white">Factures payées</p>
+      <p className="text-xs text-white/70 mt-0.5">{paid} / {total} factures</p>
     </div>
   );
 }
