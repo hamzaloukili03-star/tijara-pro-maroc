@@ -2,8 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
 
 const routeLabels: Record<string, string> = {
-  "": "Système Central",
-  systeme: "Système Central",
+  "": "Administration",
+  systeme: "Administration",
   utilisateurs: "Utilisateurs & Rôles",
   societe: "Paramètres Société",
   parametres: "Paramètres Système",
@@ -20,6 +20,8 @@ const routeLabels: Record<string, string> = {
   "comptes-bancaires": "Comptes Bancaires",
   "tableaux-de-bord": "Tableaux de Bord & Analyses",
   documents: "Documents",
+  referentiel: "Référentiel",
+  caisses: "Caisses",
 };
 
 export function Breadcrumbs() {

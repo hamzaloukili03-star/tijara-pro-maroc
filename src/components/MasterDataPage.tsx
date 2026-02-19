@@ -115,7 +115,7 @@ export function MasterDataPage<T extends { id: string }>({
   function renderDialog() {
     return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[90vw] md:max-w-[70vw] lg:max-w-[65vw] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Modifier" : "Nouveau"} {title}</DialogTitle>
           </DialogHeader>

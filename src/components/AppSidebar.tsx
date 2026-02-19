@@ -17,7 +17,9 @@ import {
   Cog,
   ClipboardList,
   LogOut,
-  User,
+  Database,
+  Warehouse,
+  UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_MODULE_ACCESS, ROLE_LABELS } from "@/types/auth";
@@ -31,18 +33,18 @@ const systemeSubItems = [
   { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
 ];
 
+const referentielSubItems = [
+  { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
+  { title: "Fournisseurs", icon: ShoppingCart, path: "/referentiel/fournisseurs" },
+  { title: "Produits", icon: Package, path: "/referentiel/produits" },
+  { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
+];
+
 const mainModules = [
   { title: "Tableaux de Bord & Analyses", icon: BarChart3, path: "/tableaux-de-bord" },
-  { title: "Achats", icon: ShoppingCart, path: "/achats", subs: [
-    { title: "Fournisseurs", path: "/achats/fournisseurs" },
-  ]},
-  { title: "Stock", icon: Package, path: "/stock", subs: [
-    { title: "Produits", path: "/stock/produits" },
-    { title: "Dépôts", path: "/stock/depots" },
-  ]},
-  { title: "Ventes", icon: TrendingUp, path: "/ventes", subs: [
-    { title: "Clients", path: "/ventes/clients" },
-  ]},
+  { title: "Achats", icon: ShoppingCart, path: "/achats" },
+  { title: "Stock", icon: Package, path: "/stock" },
+  { title: "Ventes", icon: TrendingUp, path: "/ventes" },
   { title: "Facturation", icon: FileText, path: "/facturation" },
   { title: "Règlements & Trésorerie", icon: Wallet, path: "/reglements", subs: [
     { title: "Comptes Bancaires", path: "/reglements/comptes-bancaires" },
@@ -54,6 +56,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [systemeOpen, setSystemeOpen] = useState(false);
+  const [referentielOpen, setReferentielOpen] = useState(false);
   const location = useLocation();
   const { profile, roles, signOut } = useAuth();
 
@@ -63,16 +66,81 @@ export function AppSidebar() {
   };
 
   const hasAccess = (path: string) => {
-    if (roles.length === 0) return true; // First user before role assignment
+    if (roles.length === 0) return true;
     const allowed = ROLE_MODULE_ACCESS[path];
     if (!allowed) return true;
     return allowed.some((r) => roles.includes(r));
   };
 
   const isSystemeActive = location.pathname === "/" || location.pathname.startsWith("/systeme");
+  const isReferentielActive = location.pathname.startsWith("/referentiel");
 
   const visibleSystemeSubs = systemeSubItems.filter((s) => hasAccess(s.path));
   const visibleModules = mainModules.filter((m) => hasAccess(m.path));
+
+  const activeItemClass = "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]";
+  const inactiveItemClass = "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent";
+
+  const renderCollapsibleSection = (
+    label: string,
+    icon: React.ElementType,
+    isOpen: boolean,
+    setOpen: (v: boolean) => void,
+    isActiveSection: boolean,
+    subItems: typeof systemeSubItems,
+    extraTopItem?: { label: string; path: string },
+  ) => {
+    const Icon = icon;
+    return (
+      <div>
+        <button
+          onClick={() => { if (!collapsed) setOpen(!isOpen); }}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
+            ${isActiveSection ? activeItemClass : inactiveItemClass}
+            ${collapsed ? "justify-center" : ""}
+          `}
+          title={collapsed ? label : undefined}
+        >
+          <Icon className="h-5 w-5 shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="truncate flex-1 text-left">{label}</span>
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </>
+          )}
+        </button>
+
+        {!collapsed && isOpen && (
+          <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
+            {extraTopItem && (
+              <Link
+                to={extraTopItem.path}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+                  ${location.pathname === extraTopItem.path ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
+                `}
+              >
+                {extraTopItem.label}
+              </Link>
+            )}
+            {subItems.map((sub) => (
+              <Link
+                key={sub.path}
+                to={sub.path}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+                  ${isActive(sub.path) ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
+                `}
+              >
+                <sub.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{sub.title}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden">
@@ -91,54 +159,17 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 space-y-1.5 px-2 overflow-y-auto scrollbar-thin">
-        {/* Système Central */}
-        <div>
-          <button
-            onClick={() => { if (!collapsed) setSystemeOpen(!systemeOpen); }}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full
-              ${isSystemeActive
-                ? "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]"
-                : "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent"}
-              ${collapsed ? "justify-center" : ""}
-            `}
-            title={collapsed ? "Système Central" : undefined}
-          >
-            <Settings className="h-5 w-5 shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="truncate flex-1 text-left">Système Central</span>
-                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${systemeOpen ? "rotate-180" : ""}`} />
-              </>
-            )}
-          </button>
+        {/* Administration */}
+        {renderCollapsibleSection(
+          "Administration", Settings, systemeOpen, setSystemeOpen, isSystemeActive,
+          visibleSystemeSubs, { label: "Vue d'ensemble", path: "/" }
+        )}
 
-          {!collapsed && systemeOpen && (
-          <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
-              <Link
-                to="/"
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
-                  ${location.pathname === "/" ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
-                `}
-              >
-                Vue d'ensemble
-              </Link>
-              {visibleSystemeSubs.map((sub) => (
-                <Link
-                  key={sub.path}
-                  to={sub.path}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
-                    ${isActive(sub.path) ? "bg-white/[0.1] text-white" : "text-[hsl(210,20%,65%)] hover:bg-white/[0.06] hover:text-white"}
-                  `}
-                >
-                  <sub.icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{sub.title}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Référentiel */}
+        {renderCollapsibleSection(
+          "Référentiel", Database, referentielOpen, setReferentielOpen, isReferentielActive,
+          referentielSubItems
+        )}
 
         {visibleModules.map((mod) => (
           <div key={mod.path}>
@@ -146,9 +177,7 @@ export function AppSidebar() {
               to={mod.path}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                ${isActive(mod.path)
-                  ? "bg-gradient-to-r from-[rgba(38,182,231,0.2)] to-[rgba(38,182,231,0.08)] text-white border-l-[3px] border-[hsl(197,100%,53%)] shadow-[0_0_10px_rgba(38,182,231,0.12)]"
-                  : "text-[hsl(210,20%,72%)] hover:bg-gradient-to-r hover:from-[rgba(38,182,231,0.12)] hover:to-[rgba(38,182,231,0.03)] hover:text-white border-l-[3px] border-transparent"}
+                ${isActive(mod.path) ? activeItemClass : inactiveItemClass}
                 ${collapsed ? "justify-center" : ""}
               `}
               title={collapsed ? mod.title : undefined}
@@ -226,7 +255,6 @@ export function AppSidebar() {
         <div className="lg:hidden fixed inset-0 bg-foreground/40 z-40" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Spacer div to push main content */}
       <div className={`hidden lg:block shrink-0 transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`} />
 
       <aside
