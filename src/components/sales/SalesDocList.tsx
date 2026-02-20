@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, X, ArrowRight, Loader2, Paperclip, Eye, Printer, Send } from "lucide-react";
+import { Plus, Check, X, ArrowRight, Loader2, Paperclip, Eye, Send } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
 import { useCompany } from "@/hooks/useCompany";
-import { generateDocumentPdf } from "@/lib/pdf-generator";
+import { printSalesDocPdf } from "@/lib/pdf";
+import { PrintButton } from "@/components/PrintButton";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import {
   QUOTATION_STATUS_LABELS, QUOTATION_STATUS_COLORS,
@@ -45,34 +46,13 @@ export function SalesDocList({
     });
   }, []);
 
-  const handlePrint = async (item: any) => {
-    if (!companySettings) return;
+  const handlePrint = async (item: any, download = false) => {
     const { data: lines } = await (supabase as any)
       .from(docType === "quotation" ? "quotation_lines" : "sales_order_lines")
-      .select("*")
+      .select("*, product:products(code,name,unit,tva_rate)")
       .eq(docType === "quotation" ? "quotation_id" : "sales_order_id", item.id)
       .order("sort_order");
-
-    await generateDocumentPdf({
-      type: docType === "quotation" ? "devis" : "bon_commande",
-      number: item.number,
-      date: item.date,
-      clientName: item.customer?.name || "—",
-      lines: (lines || []).map((l: any) => ({
-        description: l.description,
-        quantity: Number(l.quantity),
-        unit_price: Number(l.unit_price),
-        discount_percent: Number(l.discount_percent || 0),
-        tva_rate: Number(l.tva_rate),
-        total_ht: Number(l.total_ht),
-        total_ttc: Number(l.total_ttc),
-      })),
-      subtotalHt: Number(item.subtotal_ht || 0),
-      totalTva: Number(item.total_tva || 0),
-      totalTtc: Number(item.total_ttc || 0),
-      notes: item.notes,
-      paymentTerms: item.payment_terms,
-    }, companySettings);
+    await printSalesDocPdf(item, lines || [], docType === "quotation" ? "devis" : "commande_client", activeCompany?.id, download);
   };
 
   const statusLabels = docType === "quotation" ? QUOTATION_STATUS_LABELS : ORDER_STATUS_LABELS;
@@ -130,9 +110,7 @@ export function SalesDocList({
                       )}
 
                       {/* Print */}
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Imprimer" onClick={() => handlePrint(item)}>
-                        <Printer className="h-3.5 w-3.5" />
-                      </Button>
+                      <PrintButton iconOnly onPrint={() => handlePrint(item)} onDownload={() => handlePrint(item, true)} />
 
                       {/* Attachments */}
                       <Button

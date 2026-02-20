@@ -12,8 +12,9 @@ import { InvoiceFormDialog } from "./InvoiceFormDialog";
 import { InvoiceDetailDialog } from "./InvoiceDetailDialog";
 import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Loader2, Eye, Pencil, Trash2, Printer } from "lucide-react";
-import { generateDocumentPdf } from "@/lib/pdf-generator";
+import { Plus, Search, Loader2, Eye, Pencil, Trash2 } from "lucide-react";
+import { printInvoicePdf } from "@/lib/pdf";
+import { PrintButton } from "@/components/PrintButton";
 import { INVOICE_STATUS, getStatus } from "@/lib/status-config";
 
 interface InvoiceListProps {
@@ -64,31 +65,9 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
     setFormOpen(true);
   };
 
-  const handlePrint = async (inv: Invoice, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!companySettings) return;
+  const handlePrint = async (inv: Invoice, download = false) => {
     const lines = await fetchLines(inv.id);
-    await generateDocumentPdf({
-      type: "facture",
-      number: inv.invoice_number,
-      date: inv.invoice_date,
-      dueDate: inv.due_date || undefined,
-      clientName: inv.customer?.name || inv.supplier?.name || "—",
-      lines: lines.map((l: any) => ({
-        description: l.description,
-        quantity: Number(l.quantity),
-        unit_price: Number(l.unit_price),
-        discount_percent: Number(l.discount_percent || 0),
-        tva_rate: Number(l.tva_rate),
-        total_ht: Number(l.total_ht),
-        total_ttc: Number(l.total_ttc),
-      })),
-      subtotalHt: Number(inv.subtotal_ht),
-      totalTva: Number(inv.total_tva),
-      totalTtc: Number(inv.total_ttc),
-      notes: inv.notes || undefined,
-      paymentTerms: inv.payment_terms || undefined,
-    }, companySettings);
+    await printInvoicePdf(inv.id, inv, lines, activeCompany?.id, download);
   };
 
   const handleSubmit = async (invoice: Partial<Invoice>, lines: Partial<InvoiceLine>[]) => {
@@ -157,7 +136,11 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir" onClick={() => openDetail(inv)}><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Imprimer" onClick={(e) => handlePrint(inv, e)}><Printer className="h-4 w-4" /></Button>
+                      <PrintButton
+                        iconOnly
+                        onPrint={() => handlePrint(inv, false)}
+                        onDownload={() => handlePrint(inv, true)}
+                      />
                       {inv.status === "draft" && canManage && (
                         <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier" onClick={() => openEdit(inv)}><Pencil className="h-4 w-4" /></Button>
                       )}
