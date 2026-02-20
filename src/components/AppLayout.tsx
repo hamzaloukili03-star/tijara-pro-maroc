@@ -49,9 +49,24 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors max-w-[180px] sm:max-w-xs"
+                title={profile?.full_name || profile?.email || "Profil"}
               >
-                <User className="h-4 w-4 text-primary" />
+                {/* Avatar circle */}
+                <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <User className="h-4 w-4 text-primary" />
+                </span>
+                {/* Name + role — hidden on very small screens */}
+                <span className="hidden sm:flex flex-col items-start min-w-0">
+                  <span className="text-sm font-medium text-foreground leading-tight truncate max-w-[120px]">
+                    {profile?.full_name || profile?.email || "Utilisateur"}
+                  </span>
+                  {roles.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground leading-tight truncate max-w-[120px]">
+                      {ROLE_LABELS[roles[0]]}
+                    </span>
+                  )}
+                </span>
               </button>
               {profileOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-lg py-2 z-50 animate-fade-in">
