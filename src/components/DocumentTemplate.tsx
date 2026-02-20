@@ -5,21 +5,22 @@ export type DocumentType = "devis" | "bon-commande" | "bon-livraison" | "facture
 
 export interface CompanyInfo {
   raison_sociale: string;
-  forme_juridique: string;
-  ice: string;
-  if_number: string;
-  rc: string;
-  address: string;
-  city: string;
-  postal_code: string;
-  phone: string;
-  fax: string;
-  email: string;
-  website: string;
-  logo_url: string | null;
-  bank_name: string;
-  bank_rib: string;
-  capital: number;
+  forme_juridique?: string;
+  ice?: string;
+  if_number?: string;
+  rc?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  phone?: string;
+  fax?: string;
+  email?: string;
+  website?: string;
+  logo_url?: string | null;
+  capital?: number;
+  // Bank info comes from a separate bank_accounts record — not company
+  bankName?: string;
+  bankRib?: string;
 }
 
 interface DocumentLine {
@@ -70,8 +71,8 @@ export function DocumentTemplate({ type, docNumber, date, client, lines, notes, 
   const companyPhone = c?.phone || "+212 5 22 00 00 00";
   const companyEmail = c?.email || "contact@exemple.ma";
   const companyWebsite = c?.website || "www.exemple.ma";
-  const companyBankName = c?.bank_name || "Banque Exemple";
-  const companyBankRib = c?.bank_rib || "000 000 0000000000000000 00";
+  const companyBankName = c?.bankName || "Banque Exemple";
+  const companyBankRib = c?.bankRib || "000 000 0000000000000000 00";
   const companyCapital = c?.capital || 100000;
   const companyForme = c?.forme_juridique || "SARL";
 
