@@ -15,9 +15,10 @@ interface Props {
   deliveries: any;
   stock: any;
   onView?: (id: string) => void;
+  onNew?: () => void;
 }
 
-export function DeliveryListPage({ deliveries, stock, onView }: Props) {
+export function DeliveryListPage({ deliveries, stock, onView, onNew }: Props) {
   const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
   const { activeCompany } = useCompany();
   const { settings: companySettings } = useCompanySettings();
