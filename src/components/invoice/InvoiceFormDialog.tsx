@@ -20,6 +20,21 @@ interface InvoiceFormDialogProps {
   editLines?: Partial<InvoiceLine>[];
 }
 
+const PAYMENT_TERMS_DAYS: Record<string, number> = { "30j": 30, "60j": 60, "90j": 90 };
+const PAYMENT_TERMS_OPTIONS = [
+  { value: "30j", label: "30 jours" },
+  { value: "60j", label: "60 jours" },
+  { value: "90j", label: "90 jours" },
+];
+
+function calcDueDate(invoiceDate: string, terms: string): string {
+  const days = PAYMENT_TERMS_DAYS[terms];
+  if (!days || !invoiceDate) return "";
+  const d = new Date(invoiceDate);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
 export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editInvoice, editLines }: InvoiceFormDialogProps) {
   const [partners, setPartners] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -34,7 +49,7 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
   useEffect(() => {
     if (!open) return;
     const table = invoiceType === "client" ? "customers" : "suppliers";
-    (supabase as any).from(table).select("id, code, name").eq("is_active", true).order("name").then(({ data }: any) => {
+    (supabase as any).from(table).select("id, code, name, payment_terms").eq("is_active", true).order("name").then(({ data }: any) => {
       setPartners(data || []);
     });
     supabase.from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }) => {
@@ -52,13 +67,36 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
       setLines(editLines || []);
     } else {
       setPartnerId("");
-      setInvoiceDate(new Date().toISOString().split("T")[0]);
-      setDueDate("");
+      const today = new Date().toISOString().split("T")[0];
+      setInvoiceDate(today);
       setPaymentTerms("30j");
+      setDueDate(calcDueDate(today, "30j"));
       setNotes("");
       setLines([]);
     }
   }, [editInvoice, editLines, open]);
+
+  // Auto-fill payment terms + due date when partner changes (new invoices only)
+  const handlePartnerChange = (id: string) => {
+    setPartnerId(id);
+    if (!editInvoice) {
+      const partner = partners.find((p: any) => p.id === id);
+      const terms = partner?.payment_terms || "30j";
+      setPaymentTerms(terms);
+      setDueDate(calcDueDate(invoiceDate, terms));
+    }
+  };
+
+  // Recalculate due date when invoice date or payment terms change
+  const handleInvoiceDateChange = (date: string) => {
+    setInvoiceDate(date);
+    setDueDate(calcDueDate(date, paymentTerms));
+  };
+
+  const handlePaymentTermsChange = (terms: string) => {
+    setPaymentTerms(terms);
+    setDueDate(calcDueDate(invoiceDate, terms));
+  };
 
   const partnerOptions = partners.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }));
 
@@ -103,29 +141,26 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
             <SearchableSelect
               options={partnerOptions}
               value={partnerId}
-              onValueChange={setPartnerId}
+              onValueChange={handlePartnerChange}
               placeholder={invoiceType === "client" ? "Rechercher un client..." : "Rechercher un fournisseur..."}
             />
           </div>
           <div className="space-y-2">
             <Label>Date de facture</Label>
-            <Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Date d'échéance</Label>
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <Input type="date" value={invoiceDate} onChange={(e) => handleInvoiceDateChange(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Conditions de paiement</Label>
-            <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+            <Select value={paymentTerms} onValueChange={handlePaymentTermsChange}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="comptant">Comptant</SelectItem>
-                <SelectItem value="30j">30 jours</SelectItem>
-                <SelectItem value="60j">60 jours</SelectItem>
-                <SelectItem value="90j">90 jours</SelectItem>
+                {PAYMENT_TERMS_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Date d'échéance <span className="text-xs text-muted-foreground">(auto-calculée)</span></Label>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
         </div>
 

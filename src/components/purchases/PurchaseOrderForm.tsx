@@ -17,6 +17,12 @@ const emptyLine = (): Partial<PurchaseLine> => ({
   total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: 0,
 });
 
+const PAYMENT_TERMS_OPTIONS = [
+  { value: "30j", label: "30 jours" },
+  { value: "60j", label: "60 jours" },
+  { value: "90j", label: "90 jours" },
+];
+
 export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -31,7 +37,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const [loading, setLoading] = useState(!!editItem);
 
   useEffect(() => {
-    (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
+    (supabase as any).from("suppliers").select("id, name, code, payment_terms").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
     (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (!editItem && data?.length) setWarehouseId(data[0].id); });
     (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
     if (editItem) {
@@ -41,6 +47,15 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
       });
     }
   }, []);
+
+  // Auto-fill payment terms from supplier when supplier changes (new orders only)
+  const handleSupplierChange = (id: string) => {
+    setSupplierId(id);
+    if (!editItem) {
+      const supplier = suppliers.find((s: any) => s.id === id);
+      if (supplier?.payment_terms) setPaymentTerms(supplier.payment_terms);
+    }
+  };
 
   const updateLine = (idx: number, field: string, value: any) => {
     const updated = [...lines];
@@ -76,7 +91,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Fournisseur <span className="text-destructive">*</span></Label>
-              <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={setSupplierId} placeholder="Sélectionner..." /></div>
+              <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={handleSupplierChange} placeholder="Sélectionner..." /></div>
             <div><Label>Dépôt <span className="text-destructive">*</span></Label>
               <Select value={warehouseId} onValueChange={setWarehouseId}><SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
@@ -84,7 +99,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Conditions de paiement</Label>
               <Select value={paymentTerms} onValueChange={setPaymentTerms}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["Comptant","7j","15j","30j","45j","60j","90j"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                <SelectContent>{PAYMENT_TERMS_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
             <div><Label>Date livraison prévue</Label><Input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} /></div>
           </div>
 
