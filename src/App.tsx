@@ -63,8 +63,10 @@ import Decaissements from "./pages/reglements/Decaissements";
 import Rapprochement from "./pages/reglements/Rapprochement";
 import Impayes from "./pages/reglements/Impayes";
 
-// Documents
+// Dépenses
+import Depenses from "./pages/Depenses";
 import Documents from "./pages/Documents";
+
 
 const queryClient = new QueryClient();
 
@@ -131,6 +133,9 @@ const App = () => (
             <Route path="/reglements/decaissements" element={<ProtectedRoute><Decaissements /></ProtectedRoute>} />
             <Route path="/reglements/rapprochement" element={<ProtectedRoute><Rapprochement /></ProtectedRoute>} />
             <Route path="/reglements/impayes" element={<ProtectedRoute><Impayes /></ProtectedRoute>} />
+
+            {/* Dépenses */}
+            <Route path="/depenses" element={<ProtectedRoute><Depenses /></ProtectedRoute>} />
 
             {/* Documents */}
             <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />

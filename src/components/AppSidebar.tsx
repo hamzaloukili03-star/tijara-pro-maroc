@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   Package,
   TrendingUp,
+  TrendingDown,
   FileText,
   Wallet,
   BarChart3,
@@ -82,6 +83,12 @@ const sections: SidebarSection[] = [
       { title: "Bons de commande", icon: ScrollText, path: "/achats/commandes" },
       { title: "Réceptions", icon: Package, path: "/achats/receptions" },
     ],
+  },
+  {
+    label: "Dépenses",
+    icon: TrendingDown,
+    basePath: "/depenses",
+    subItems: [],
   },
   {
     label: "Stock",
