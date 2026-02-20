@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Truck, FileText, Paperclip } from "lucide-react";
+import { Loader2, Truck, FileText, Paperclip, Eye, Printer } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
+import { generateDocumentPdf } from "@/lib/pdf-generator";
 
 interface Props {
   salesOrders: any;
@@ -24,6 +26,7 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
   const [deliveryQtys, setDeliveryQtys] = useState<Record<string, number>>({});
   const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
   const { activeCompany } = useCompany();
+  const { settings: companySettings } = useCompanySettings();
   const companyId = activeCompany?.id ?? null;
 
   const fetchDeliveries = useCallback(async () => {
@@ -82,6 +85,33 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
     await fetchDeliveries();
   };
 
+  const handlePrint = async (d: any) => {
+    if (!companySettings) return;
+    const { data: lines } = await (supabase as any)
+      .from("delivery_lines")
+      .select("*")
+      .eq("delivery_id", d.id)
+      .order("sort_order");
+    await generateDocumentPdf({
+      type: "bon_livraison",
+      number: d.delivery_number,
+      date: d.delivery_date,
+      clientName: d.customer?.name || "—",
+      lines: (lines || []).map((l: any) => ({
+        description: l.description,
+        quantity: Number(l.quantity),
+        unit_price: Number(l.unit_price),
+        discount_percent: Number(l.discount_percent || 0),
+        tva_rate: Number(l.tva_rate),
+        total_ht: Number(l.total_ht),
+        total_ttc: Number(l.total_ttc),
+      })),
+      subtotalHt: 0,
+      totalTva: 0,
+      totalTtc: 0,
+    }, companySettings);
+  };
+
   // Show eligible orders for delivery or all deliveries
   const eligibleOrders = salesOrders.items.filter((o: any) => o.status === "validated" || o.status === "delivered");
 
@@ -134,6 +164,12 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Voir">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Imprimer" onClick={() => handlePrint(d)}>
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Pièces jointes"
                         onClick={() => setAttachDialog({ id: d.id, number: d.delivery_number })}>
                         <Paperclip className="h-3.5 w-3.5" />

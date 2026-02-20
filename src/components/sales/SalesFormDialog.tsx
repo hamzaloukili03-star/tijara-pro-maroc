@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { SalesDocLine, calcTotals } from "@/hooks/useSales";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Plus, Trash2 } from "lucide-react";
 
 interface Props {
@@ -30,6 +31,9 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
     (supabase as any).from("customers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setCustomers(data || []));
     (supabase as any).from("products").select("id, name, code, sale_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
   }, []);
+
+  const customerOptions = customers.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }));
+  const productOptions = products.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }));
 
   const updateLine = (idx: number, field: string, value: any) => {
     const updated = [...lines];
@@ -68,12 +72,12 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Client</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-                <SelectContent>
-                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={customerOptions}
+                value={customerId}
+                onValueChange={setCustomerId}
+                placeholder="Rechercher un client..."
+              />
             </div>
             <div>
               <Label>Conditions de paiement</Label>
@@ -94,12 +98,12 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
             {lines.map((line, idx) => (
               <div key={idx} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-3">
-                  <Select value={line.product_id || ""} onValueChange={(v) => updateLine(idx, "product_id", v)}>
-                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Produit" /></SelectTrigger>
-                    <SelectContent>
-                      {products.map(p => <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={productOptions}
+                    value={line.product_id || ""}
+                    onValueChange={(v) => updateLine(idx, "product_id", v)}
+                    placeholder="Produit..."
+                  />
                 </div>
                 <div className="col-span-3">
                   <Input className="h-9 text-xs" placeholder="Description" value={line.description} onChange={(e) => updateLine(idx, "description", e.target.value)} />

@@ -62,7 +62,7 @@ const sections: SidebarSection[] = [
     subItems: [],
   },
   {
-    label: "Référentiel",
+    label: "Référentiels",
     icon: Database,
     basePath: "/referentiel",
     subItems: [
@@ -301,8 +301,17 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-2 py-3 border-t border-white/[0.08]">
+      {/* Footer: company logo + logout */}
+      <div className="px-2 py-3 border-t border-white/[0.08] space-y-2">
+        {!collapsed && (
+          <div className="flex items-center justify-center px-2 py-2">
+            <img
+              src={logo}
+              alt="TijaraPro"
+              className="h-7 w-auto object-contain opacity-40"
+            />
+          </div>
+        )}
         <button
           onClick={signOut}
           className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-[hsl(0,60%,70%)] hover:bg-[rgba(220,60,60,0.12)] hover:text-[hsl(0,70%,75%)] text-sm font-medium transition-all duration-200
