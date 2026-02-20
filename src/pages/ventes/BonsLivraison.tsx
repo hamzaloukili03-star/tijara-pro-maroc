@@ -2,26 +2,39 @@ import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useDeliveries } from "@/hooks/useSales";
 import { useStockEngine } from "@/hooks/useStockEngine";
-import { DeliveryDetailPage } from "@/components/sales/DeliveryDetailPage";
 import { DeliveryListPage } from "@/components/sales/DeliveryListPage";
+import { DeliveryFormPage } from "@/components/sales/DeliveryFormPage";
 
 const BonsLivraison = () => {
   const deliveries = useDeliveries();
   const stock = useStockEngine();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
+  // View existing delivery
   if (selectedId) {
-    const item = deliveries.items.find(d => d.id === selectedId);
+    const item = deliveries.items.find((d: any) => d.id === selectedId);
     if (item) {
       return (
-        <DeliveryDetailPage
+        <DeliveryFormPage
           delivery={item}
-          hook={deliveries}
-          stock={stock}
-          onBack={() => setSelectedId(null)}
+          stockEngine={stock}
+          onBack={() => { setSelectedId(null); deliveries.fetch(); }}
+          onSaved={() => deliveries.fetch()}
         />
       );
     }
+  }
+
+  // Create new
+  if (creating) {
+    return (
+      <DeliveryFormPage
+        stockEngine={stock}
+        onBack={() => { setCreating(false); deliveries.fetch(); }}
+        onSaved={(id) => { setCreating(false); setSelectedId(id); deliveries.fetch(); }}
+      />
+    );
   }
 
   return (
@@ -29,7 +42,8 @@ const BonsLivraison = () => {
       <DeliveryListPage
         deliveries={deliveries}
         stock={stock}
-        onView={(id) => setSelectedId(id)}
+        onNew={() => setCreating(true)}
+        onView={(id: string) => setSelectedId(id)}
       />
     </AppLayout>
   );

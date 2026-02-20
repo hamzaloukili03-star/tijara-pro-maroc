@@ -10,9 +10,9 @@ import { usePurchaseOrders } from "@/hooks/usePurchases";
 import { useCompany } from "@/hooks/useCompany";
 import { RECEPTION_STATUS, getStatus } from "@/lib/status-config";
 
-interface Props { hook: any; }
+interface Props { hook: any; onNew?: () => void; onView?: (id: string) => void; }
 
-export function ReceptionListPage({ hook }: Props) {
+export function ReceptionListPage({ hook, onNew, onView }: Props) {
   const { roles } = useAuth();
   const { activeCompany } = useCompany();
   const poHook = usePurchaseOrders();
@@ -36,6 +36,11 @@ export function ReceptionListPage({ hook }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">Réceptions</h2>
+        {onNew && (
+          <Button size="sm" onClick={onNew} className="gap-1.5">
+            <span>+ Nouvelle réception</span>
+          </Button>
+        )}
       </div>
 
       {hook.loading ? (
