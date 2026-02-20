@@ -1,36 +1,31 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { usePurchaseOrders } from "@/hooks/usePurchases";
-import { PurchaseDocList } from "@/components/purchases/PurchaseDocList";
-import { PurchaseFormDialog } from "@/components/purchases/PurchaseFormDialog";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { PurchaseOrderList } from "@/components/purchases/PurchaseOrderList";
+import { PurchaseOrderForm } from "@/components/purchases/PurchaseOrderForm";
 
 const CommandesFournisseurs = () => {
-  const orders = usePurchaseOrders();
+  const hook = usePurchaseOrders();
   const [showForm, setShowForm] = useState(false);
-  const { settings } = useSystemSettings();
-  const requireDoubleValidation = settings?.require_double_validation ?? false;
+  const [editItem, setEditItem] = useState<any>(null);
 
   return (
     <AppLayout title="Bons de commande fournisseurs" subtitle="Gestion des commandes fournisseurs">
-      <PurchaseDocList
-        title="Bons de commande fournisseurs"
-        items={orders.items}
-        loading={orders.loading}
-        onCreate={() => setShowForm(true)}
-        onValidate={(id) => orders.validate(id, requireDoubleValidation)}
-        onAdminValidate={(id) => orders.adminValidate(id)}
-        onCancel={(id) => orders.cancel(id)}
-        docType="order"
+      <PurchaseOrderList
+        items={hook.items}
+        loading={hook.loading}
+        onNew={() => { setEditItem(null); setShowForm(true); }}
+        onEdit={(item) => { setEditItem(item); setShowForm(true); }}
+        onConfirm={hook.confirm}
+        onCancel={hook.cancel}
+        onCreateReception={() => {}} // handled inline in list
+        hook={hook}
       />
       {showForm && (
-        <PurchaseFormDialog
-          type="order"
+        <PurchaseOrderForm
+          editItem={editItem}
+          hook={hook}
           onClose={() => setShowForm(false)}
-          onSubmit={async (supplierId, warehouseId, lines, notes) => {
-            await orders.create(supplierId, warehouseId, lines, notes);
-            setShowForm(false);
-          }}
         />
       )}
     </AppLayout>

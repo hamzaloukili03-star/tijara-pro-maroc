@@ -1,0 +1,130 @@
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Trash2, Loader2 } from "lucide-react";
+import { calcPurchaseTotals, type PurchaseLine } from "@/hooks/usePurchases";
+
+interface Props { editItem: any | null; hook: any; onClose: () => void; }
+
+const emptyLine = (): Partial<PurchaseLine> => ({
+  product_id: null, description: "", quantity: 1, unit: "Unité", unit_price: 0, discount_percent: 0, tva_rate: 20,
+  total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: 0,
+});
+
+export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [supplierId, setSupplierId] = useState(editItem?.supplier_id || "");
+  const [warehouseId, setWarehouseId] = useState(editItem?.warehouse_id || "");
+  const [paymentTerms, setPaymentTerms] = useState(editItem?.payment_terms || "30j");
+  const [expectedDate, setExpectedDate] = useState(editItem?.expected_delivery_date || "");
+  const [notes, setNotes] = useState(editItem?.notes || "");
+  const [lines, setLines] = useState<Partial<PurchaseLine>[]>([emptyLine()]);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(!!editItem);
+
+  useEffect(() => {
+    (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
+    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (!editItem && data?.length) setWarehouseId(data[0].id); });
+    (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
+    if (editItem) {
+      hook.getLines(editItem.id).then((l: any[]) => {
+        setLines(l.length ? l.map((r: any) => ({ product_id: r.product_id, description: r.description, quantity: r.quantity, unit: r.unit || "Unité", unit_price: r.unit_price, discount_percent: r.discount_percent, tva_rate: r.tva_rate, total_ht: r.total_ht, total_tva: r.total_tva, total_ttc: r.total_ttc, sort_order: r.sort_order })) : [emptyLine()]);
+        setLoading(false);
+      });
+    }
+  }, []);
+
+  const updateLine = (idx: number, field: string, value: any) => {
+    const updated = [...lines];
+    (updated[idx] as any)[field] = value;
+    if (field === "product_id") {
+      const p = products.find((pr: any) => pr.id === value);
+      if (p) { updated[idx].description = p.name; updated[idx].unit_price = Number(p.purchase_price); updated[idx].tva_rate = Number(p.tva_rate); }
+    }
+    setLines(updated);
+  };
+
+  const { subtotal_ht, total_tva, total_ttc } = calcPurchaseTotals(lines as PurchaseLine[]);
+
+  const handleSave = async () => {
+    if (!supplierId || !warehouseId) return;
+    setSaving(true);
+    if (editItem) {
+      await hook.update(editItem.id, { supplier_id: supplierId, warehouse_id: warehouseId, payment_terms: paymentTerms, expected_delivery_date: expectedDate || null, notes }, lines);
+    } else {
+      await hook.create({ supplierId, warehouseId, lines, notes, paymentTerms, expectedDeliveryDate: expectedDate || undefined });
+    }
+    setSaving(false);
+    onClose();
+  };
+
+  const supplierOptions = suppliers.map(s => ({ value: s.id, label: `${s.code} — ${s.name}` }));
+  const productOptions = products.map(p => ({ value: p.id, label: `${p.code} — ${p.name}` }));
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{editItem ? `Modifier BC — ${editItem.number}` : "Nouveau bon de commande fournisseur"}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label>Fournisseur <span className="text-destructive">*</span></Label>
+              <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={setSupplierId} placeholder="Sélectionner..." /></div>
+            <div><Label>Dépôt <span className="text-destructive">*</span></Label>
+              <Select value={warehouseId} onValueChange={setWarehouseId}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label>Conditions de paiement</Label>
+              <Select value={paymentTerms} onValueChange={setPaymentTerms}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["Comptant","7j","15j","30j","45j","60j","90j"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Date livraison prévue</Label><Input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} /></div>
+          </div>
+
+          {loading ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
+            <div className="space-y-2">
+              <Label>Lignes de commande</Label>
+              <div className="space-y-1">
+                {lines.map((line, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-1 items-center bg-muted/30 p-2 rounded">
+                    <div className="col-span-3"><SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Produit..." /></div>
+                    <div className="col-span-3"><Input className="h-8 text-xs" placeholder="Description" value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} /></div>
+                    <div className="col-span-1"><Input className="h-8 text-xs" type="number" placeholder="Qté" min={0} value={line.quantity || ""} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} /></div>
+                    <div className="col-span-2"><Input className="h-8 text-xs" type="number" placeholder="Prix unit." min={0} value={line.unit_price || ""} onChange={e => updateLine(idx, "unit_price", Number(e.target.value))} /></div>
+                    <div className="col-span-1"><Input className="h-8 text-xs" type="number" placeholder="Remise%" min={0} max={100} value={line.discount_percent || ""} onChange={e => updateLine(idx, "discount_percent", Number(e.target.value))} /></div>
+                    <div className="col-span-1"><Input className="h-8 text-xs" type="number" placeholder="TVA%" min={0} value={line.tva_rate ?? ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} /></div>
+                    <div className="col-span-1 flex justify-end">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setLines([...lines, emptyLine()])}><Plus className="h-3 w-3 mr-1" /> Ajouter une ligne</Button>
+            </div>
+          )}
+
+          <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
+
+          <div className="flex gap-6 pt-2 text-sm border-t">
+            <span>Total HT : <strong>{subtotal_ht.toLocaleString("fr-MA")} MAD</strong></span>
+            <span>TVA : <strong>{total_tva.toLocaleString("fr-MA")} MAD</strong></span>
+            <span className="text-base font-bold">TTC : {total_ttc.toLocaleString("fr-MA")} MAD</span>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button onClick={handleSave} disabled={saving || !supplierId || !warehouseId}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Enregistrer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
