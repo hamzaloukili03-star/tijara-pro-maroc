@@ -1252,10 +1252,47 @@ export type Database = {
           },
         ]
       }
+      invoice_reception_links: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_id: string
+          reception_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_id: string
+          reception_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          reception_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reception_links_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_reception_links_reception_id_fkey"
+            columns: ["reception_id"]
+            isOneToOne: false
+            referencedRelation: "receptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           admin_validated_at: string | null
           admin_validated_by: string | null
+          cancel_reason: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -1267,6 +1304,8 @@ export type Database = {
           invoice_type: string
           notes: string | null
           payment_terms: string | null
+          purchase_order_id: string | null
+          reception_id: string | null
           remaining_balance: number
           status: string
           subtotal_ht: number
@@ -1278,6 +1317,7 @@ export type Database = {
         Insert: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1289,6 +1329,8 @@ export type Database = {
           invoice_type: string
           notes?: string | null
           payment_terms?: string | null
+          purchase_order_id?: string | null
+          reception_id?: string | null
           remaining_balance?: number
           status?: string
           subtotal_ht?: number
@@ -1300,6 +1342,7 @@ export type Database = {
         Update: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1311,6 +1354,8 @@ export type Database = {
           invoice_type?: string
           notes?: string | null
           payment_terms?: string | null
+          purchase_order_id?: string | null
+          reception_id?: string | null
           remaining_balance?: number
           status?: string
           subtotal_ht?: number
@@ -1332,6 +1377,20 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_reception_id_fkey"
+            columns: ["reception_id"]
+            isOneToOne: false
+            referencedRelation: "receptions"
             referencedColumns: ["id"]
           },
           {
@@ -2021,14 +2080,19 @@ export type Database = {
         Row: {
           admin_validated_at: string | null
           admin_validated_by: string | null
+          cancel_reason: string | null
           company_id: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           created_by: string | null
+          expected_delivery_date: string | null
           id: string
           notes: string | null
           order_date: string
           order_number: string
           payment_terms: string | null
+          purchase_request_id: string | null
           request_id: string | null
           status: string
           subtotal_ht: number
@@ -2041,14 +2105,19 @@ export type Database = {
         Insert: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
           company_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
+          expected_delivery_date?: string | null
           id?: string
           notes?: string | null
           order_date?: string
           order_number: string
           payment_terms?: string | null
+          purchase_request_id?: string | null
           request_id?: string | null
           status?: string
           subtotal_ht?: number
@@ -2061,14 +2130,19 @@ export type Database = {
         Update: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
           company_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
+          expected_delivery_date?: string | null
           id?: string
           notes?: string | null
           order_date?: string
           order_number?: string
           payment_terms?: string | null
+          purchase_request_id?: string | null
           request_id?: string | null
           status?: string
           subtotal_ht?: number
@@ -2084,6 +2158,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_purchase_request_id_fkey"
+            columns: ["purchase_request_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
             referencedColumns: ["id"]
           },
           {
@@ -2113,29 +2194,38 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          estimated_cost: number | null
           id: string
           product_id: string | null
           quantity: number
           request_id: string
           sort_order: number
+          tva_rate: number | null
+          unit: string | null
         }
         Insert: {
           created_at?: string
           description?: string
+          estimated_cost?: number | null
           id?: string
           product_id?: string | null
           quantity?: number
           request_id: string
           sort_order?: number
+          tva_rate?: number | null
+          unit?: string | null
         }
         Update: {
           created_at?: string
           description?: string
+          estimated_cost?: number | null
           id?: string
           product_id?: string | null
           quantity?: number
           request_id?: string
           sort_order?: number
+          tva_rate?: number | null
+          unit?: string | null
         }
         Relationships: [
           {
@@ -2159,34 +2249,43 @@ export type Database = {
           company_id: string | null
           created_at: string
           id: string
+          needed_date: string | null
           notes: string | null
           request_date: string
           request_number: string
           requested_by: string | null
           status: string
+          supplier_id: string | null
           updated_at: string
+          warehouse_id: string | null
         }
         Insert: {
           company_id?: string | null
           created_at?: string
           id?: string
+          needed_date?: string | null
           notes?: string | null
           request_date?: string
           request_number: string
           requested_by?: string | null
           status?: string
+          supplier_id?: string | null
           updated_at?: string
+          warehouse_id?: string | null
         }
         Update: {
           company_id?: string | null
           created_at?: string
           id?: string
+          needed_date?: string | null
           notes?: string | null
           request_date?: string
           request_number?: string
           requested_by?: string | null
           status?: string
+          supplier_id?: string | null
           updated_at?: string
+          warehouse_id?: string | null
         }
         Relationships: [
           {
@@ -2194,6 +2293,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -2431,6 +2544,7 @@ export type Database = {
       }
       receptions: {
         Row: {
+          cancel_reason: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -2446,6 +2560,7 @@ export type Database = {
           warehouse_id: string | null
         }
         Insert: {
+          cancel_reason?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2461,6 +2576,7 @@ export type Database = {
           warehouse_id?: string | null
         }
         Update: {
+          cancel_reason?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3439,6 +3555,7 @@ export type Database = {
         | "accountant"
         | "sales"
         | "stock_manager"
+        | "purchase"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3572,6 +3689,7 @@ export const Constants = {
         "accountant",
         "sales",
         "stock_manager",
+        "purchase",
       ],
     },
   },

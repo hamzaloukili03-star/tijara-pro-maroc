@@ -1,31 +1,32 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { usePurchaseRequests } from "@/hooks/usePurchases";
-import { PurchaseDocList } from "@/components/purchases/PurchaseDocList";
-import { PurchaseFormDialog } from "@/components/purchases/PurchaseFormDialog";
+import { PurchaseRequestList } from "@/components/purchases/PurchaseRequestList";
+import { PurchaseRequestForm } from "@/components/purchases/PurchaseRequestForm";
 
 const DemandesAchat = () => {
-  const requests = usePurchaseRequests();
+  const hook = usePurchaseRequests();
   const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
 
   return (
     <AppLayout title="Demandes d'achat" subtitle="Gestion des demandes d'achat internes">
-      <PurchaseDocList
-        title="Demandes d'achat"
-        items={requests.items}
-        loading={requests.loading}
-        onCreate={() => setShowForm(true)}
-        onValidate={(id) => requests.validate(id)}
-        docType="request"
+      <PurchaseRequestList
+        items={hook.items}
+        loading={hook.loading}
+        onNew={() => { setEditItem(null); setShowForm(true); }}
+        onEdit={(item) => { setEditItem(item); setShowForm(true); }}
+        onSubmit={hook.submit}
+        onApprove={hook.approve}
+        onRefuse={hook.refuse}
+        onCancel={hook.cancel}
+        onCreatePO={hook.createPOFromRequest}
       />
       {showForm && (
-        <PurchaseFormDialog
-          type="request"
+        <PurchaseRequestForm
+          editItem={editItem}
+          hook={hook}
           onClose={() => setShowForm(false)}
-          onSubmit={async (_supplierId, _warehouseId, lines, notes) => {
-            await requests.create(lines.map(l => ({ product_id: l.product_id || "", description: l.description, quantity: l.quantity })), notes);
-            setShowForm(false);
-          }}
         />
       )}
     </AppLayout>

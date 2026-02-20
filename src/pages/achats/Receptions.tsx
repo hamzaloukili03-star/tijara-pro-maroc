@@ -1,15 +1,13 @@
 import { AppLayout } from "@/components/AppLayout";
-import { usePurchaseOrders } from "@/hooks/usePurchases";
-import { useStockEngine } from "@/hooks/useStockEngine";
-import { ReceptionPanel } from "@/components/purchases/ReceptionPanel";
+import { useReceptions } from "@/hooks/usePurchases";
+import { ReceptionListPage } from "@/components/purchases/ReceptionListPage";
 
 const Receptions = () => {
-  const orders = usePurchaseOrders();
-  const stock = useStockEngine();
+  const hook = useReceptions();
 
   return (
-    <AppLayout title="Réceptions" subtitle="Réception des marchandises fournisseurs">
-      <ReceptionPanel orders={orders} stock={stock} />
+    <AppLayout title="Réceptions" subtitle="Suivi des réceptions fournisseurs">
+      <ReceptionListPage hook={hook} />
     </AppLayout>
   );
 };
