@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  draft:     { label: "Brouillon",  className: "bg-muted text-muted-foreground" },
-  submitted: { label: "Soumise",    className: "bg-yellow-100 text-yellow-800" },
-  approved:  { label: "Approuvée",  className: "bg-primary/15 text-primary" },
-  validated: { label: "Approuvée",  className: "bg-primary/15 text-primary" },
-  refused:   { label: "Refusée",    className: "bg-destructive/15 text-destructive" },
-  cancelled: { label: "Annulée",    className: "bg-muted text-muted-foreground" },
-};
+import { PURCHASE_REQUEST_STATUS, getStatus } from "@/lib/status-config";
 
 interface Props {
   item: any;
@@ -29,7 +21,7 @@ export function PurchaseRequestDetail({ item, onClose }: Props) {
       .then(({ data }: any) => { setLines(data || []); setLoading(false); });
   }, [item.id]);
 
-  const cfg = statusConfig[item.status] || statusConfig.draft;
+  const cfg = getStatus(PURCHASE_REQUEST_STATUS, item.status);
 
   return (
     <Dialog open onOpenChange={onClose}>

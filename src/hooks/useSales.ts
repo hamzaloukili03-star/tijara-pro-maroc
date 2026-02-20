@@ -102,12 +102,12 @@ export const QUOTATION_STATUS_LABELS: Record<string, string> = {
 
 export const QUOTATION_STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground border-border",
-  sent: "bg-blue-100 text-blue-700 border-blue-200",
-  confirmed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  sent: "bg-secondary/20 text-secondary-foreground border-secondary/30",
+  confirmed: "bg-success/15 text-success border-success/30",
   converted: "bg-primary/15 text-primary border-primary/20",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
-  expired: "bg-orange-100 text-orange-700 border-orange-200",
-  pending_admin: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  expired: "bg-warning/15 text-warning-foreground border-warning/30",
+  pending_admin: "bg-warning/15 text-warning-foreground border-warning/30",
 };
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -121,10 +121,10 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground border-border",
-  confirmed: "bg-blue-100 text-blue-700 border-blue-200",
-  partially_delivered: "bg-orange-100 text-orange-700 border-orange-200",
-  delivered: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  invoiced: "bg-primary/15 text-primary border-primary/20",
+  confirmed: "bg-primary/15 text-primary border-primary/20",
+  partially_delivered: "bg-warning/15 text-warning-foreground border-warning/30",
+  delivered: "bg-success/15 text-success border-success/30",
+  invoiced: "bg-accent text-accent-foreground border-border",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
@@ -136,7 +136,7 @@ export const DELIVERY_STATUS_LABELS: Record<string, string> = {
 
 export const DELIVERY_STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground border-border",
-  validated: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  validated: "bg-success/15 text-success border-success/30",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 };
 

@@ -208,7 +208,7 @@ export function QuotationDetailPage({ quotation, hook, onBack, onConvertedToOrde
 
             {/* Confirm */}
             {(quotation.status === "draft" || quotation.status === "sent") && (
-              <Button size="sm" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white border-0" onClick={handleConfirm}>
+              <Button size="sm" className="h-9" onClick={handleConfirm}>
                 <Check className="h-4 w-4 mr-1" /> Confirmer Devis
               </Button>
             )}

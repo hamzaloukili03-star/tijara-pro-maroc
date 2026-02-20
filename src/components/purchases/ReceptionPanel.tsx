@@ -117,7 +117,7 @@ export function ReceptionPanel({ orders, stock }: Props) {
                   <TableCell>{r.supplier?.name}</TableCell>
                   <TableCell>{r.reception_date}</TableCell>
                   <TableCell>
-                    <Badge className={r.status === "validated" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}>
+                    <Badge className={r.status === "validated" ? "bg-success/15 text-success border-0" : "bg-muted text-muted-foreground border-0"}>
                       {r.status === "validated" ? "Validé" : r.status}
                     </Badge>
                   </TableCell>

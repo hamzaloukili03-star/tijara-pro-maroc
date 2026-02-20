@@ -151,14 +151,14 @@ export function SalesDocList({
 
                       {/* Quotation: confirm */}
                       {docType === "quotation" && item.status === "sent" && onValidate && (
-                        <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-300 text-emerald-700" onClick={() => onValidate(item.id)}>
+                        <Button size="sm" variant="outline" className="h-8 text-xs border-success/50 text-success" onClick={() => onValidate(item.id)}>
                           <Check className="h-3 w-3 mr-1" /> Confirmer
                         </Button>
                       )}
 
                       {/* Pending admin validation */}
                       {item.status === "pending_admin" && onAdminValidate && (
-                        <Button size="sm" variant="outline" className="h-8 text-xs border-yellow-300 text-yellow-700" onClick={() => onAdminValidate(item.id)}>
+                        <Button size="sm" variant="outline" className="h-8 text-xs border-warning/50 text-warning-foreground" onClick={() => onAdminValidate(item.id)}>
                           <Check className="h-3 w-3 mr-1" /> Approuver
                         </Button>
                       )}

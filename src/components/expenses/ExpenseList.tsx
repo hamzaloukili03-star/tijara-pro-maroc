@@ -19,12 +19,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
-  pending:   { label: "En attente",  variant: "secondary",    icon: CreditCard },
-  paid:      { label: "Payé",        variant: "default",      icon: CheckCircle2 },
-  cancelled: { label: "Annulé",      variant: "destructive",  icon: XCircle },
-};
+import { EXPENSE_STATUS, getStatus } from "@/lib/status-config";
 
 const METHOD_LABELS: Record<string, string> = {
   transfer: "Virement",
@@ -169,8 +164,7 @@ export function ExpenseList() {
               </TableRow>
             ) : (
               filtered.map(exp => {
-                const sc = STATUS_CONFIG[exp.payment_status] || STATUS_CONFIG.pending;
-                const StatusIcon = sc.icon;
+                const sc = getStatus(EXPENSE_STATUS, exp.payment_status);
                 return (
                   <TableRow key={exp.id} className="hover:bg-muted/40">
                     <TableCell className="font-mono text-xs text-muted-foreground">{exp.expense_number}</TableCell>
@@ -199,8 +193,7 @@ export function ExpenseList() {
                       {exp.payment_method ? METHOD_LABELS[exp.payment_method] : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={sc.variant} className="flex items-center gap-1 w-fit text-[11px]">
-                        <StatusIcon className="h-3 w-3" />
+                      <Badge className={`${sc.className} border-0 text-[11px]`}>
                         {sc.label}
                       </Badge>
                     </TableCell>
@@ -253,7 +246,7 @@ export function ExpenseList() {
             <AlertDialogDescription>
               {deleteTarget?.description} — {fmt(deleteTarget?.amount_ttc || 0)} MAD
               {deleteTarget?.payment_status === "paid" && (
-                <span className="block mt-2 text-amber-600 font-medium">
+                <span className="block mt-2 text-warning-foreground font-medium">
                   ⚠️ Cette dépense est marquée comme payée. La suppression inversera l'impact sur la trésorerie.
                 </span>
               )}

@@ -204,7 +204,7 @@ const Stock = () => {
                         <TableCell>{t.from_warehouse?.name}</TableCell>
                         <TableCell>{t.to_warehouse?.name}</TableCell>
                         <TableCell>
-                          <Badge className={t.status === "validated" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}>
+                          <Badge className={t.status === "validated" ? "bg-success/15 text-success border-0" : "bg-muted text-muted-foreground border-0"}>
                             {t.status === "draft" ? "Brouillon" : t.status === "validated" ? "Validé" : t.status}
                           </Badge>
                         </TableCell>
@@ -248,7 +248,7 @@ const Stock = () => {
                         <TableCell className="font-mono text-sm">{a.adjustment_number}</TableCell>
                         <TableCell>{a.warehouse?.name}</TableCell>
                         <TableCell>
-                          <Badge className={a.status === "validated" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}>
+                          <Badge className={a.status === "validated" ? "bg-success/15 text-success border-0" : "bg-muted text-muted-foreground border-0"}>
                             {a.status === "draft" ? "Brouillon" : "Validé"}
                           </Badge>
                         </TableCell>
@@ -351,7 +351,7 @@ const Stock = () => {
                         <span className="text-sm flex-1">{p?.code} — {p?.name}</span>
                         <span className="text-xs text-muted-foreground">Système: {line.system_qty}</span>
                         <Input type="number" className="w-24 h-8" value={line.counted_qty} onChange={(e) => { const u = [...aLines]; u[idx].counted_qty = Number(e.target.value); setALines(u); }} />
-                        {diff !== 0 && <Badge className={diff > 0 ? "bg-green-100 text-green-700" : "bg-destructive/10 text-destructive"}>{diff > 0 ? `+${diff}` : diff}</Badge>}
+                        {diff !== 0 && <Badge className={diff > 0 ? "bg-success/15 text-success border-0" : "bg-destructive/10 text-destructive border-0"}>{diff > 0 ? `+${diff}` : diff}</Badge>}
                       </div>
                     );
                   })}
