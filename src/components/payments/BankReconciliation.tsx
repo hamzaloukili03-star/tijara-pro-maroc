@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useBankTransactions, type BankTransaction } from "@/hooks/useBankTransactions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Upload, Link2, CheckCircle2 } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export function BankReconciliation() {
   const [bankAccountId, setBankAccountId] = useState<string | null>(null);
@@ -66,14 +67,14 @@ export function BankReconciliation() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className="w-64">
+        <div className="w-72">
           <Label>Compte bancaire</Label>
-          <Select value={bankAccountId || ""} onValueChange={setBankAccountId}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner un compte" /></SelectTrigger>
-            <SelectContent>
-              {bankAccounts.map((b) => <SelectItem key={b.id} value={b.id}>{b.account_name} - {b.bank_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            options={bankAccounts.map(b => ({ value: b.id, label: b.account_name, sub: b.bank_name }))}
+            value={bankAccountId || ""}
+            onValueChange={setBankAccountId}
+            placeholder="Sélectionner un compte..."
+          />
         </div>
         {bankAccountId && (
           <div className="pt-5">
@@ -124,19 +125,13 @@ export function BankReconciliation() {
                     <TableCell>
                       {!tx.is_reconciled && (
                         <div className="flex items-center gap-1">
-                          <Select
+                           <SearchableSelect
+                            options={payments.map(p => ({ value: p.id, label: `${p.payment_number} (${Number(p.amount).toFixed(2)})` }))}
                             value={matchingPaymentId[tx.id] || suggested || ""}
                             onValueChange={(v) => setMatchingPaymentId({ ...matchingPaymentId, [tx.id]: v })}
-                          >
-                            <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Paiement" /></SelectTrigger>
-                            <SelectContent>
-                              {payments.map((p) => (
-                                <SelectItem key={p.id} value={p.id} className="text-xs">
-                                  {p.payment_number} ({Number(p.amount).toFixed(2)})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            placeholder="Paiement..."
+                            className="w-52"
+                          />
                           <Button
                             size="sm"
                             variant="outline"
