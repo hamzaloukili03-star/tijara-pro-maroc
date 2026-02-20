@@ -117,10 +117,11 @@ export function useCompanySettings() {
 
   const uploadLogo = async (file: File) => {
     const ext = file.name.split(".").pop();
-    const path = `logo-${companyId || "default"}.${ext}`;
+    // Add a timestamp to bust browser cache on same-named files
+    const path = `logo-${companyId || "default"}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from("company-assets")
-      .upload(path, file, { upsert: true });
+      .upload(path, file, { upsert: true, cacheControl: "0" });
     if (error) {
       toast({ title: "Erreur upload", description: error.message, variant: "destructive" });
       return null;
