@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, X, ArrowRight, Loader2, Paperclip, Eye, Printer } from "lucide-react";
+import { Plus, Check, X, ArrowRight, Loader2, Paperclip, Eye, Printer, Send } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +10,17 @@ import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
 import { useCompany } from "@/hooks/useCompany";
 import { generateDocumentPdf } from "@/lib/pdf-generator";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import {
+  QUOTATION_STATUS_LABELS, QUOTATION_STATUS_COLORS,
+  ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
+} from "@/hooks/useSales";
 
 interface Props {
   title: string;
   items: any[];
   loading: boolean;
   onCreate?: () => void;
+  onView?: (id: string) => void;
   onValidate?: (id: string) => void;
   onCancel?: (id: string) => void;
   onConvert?: (id: string, warehouseId: string) => void;
@@ -23,24 +28,10 @@ interface Props {
   docType: "quotation" | "order";
 }
 
-const statusColors: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  pending_admin: "bg-yellow-100 text-yellow-700",
-  validated: "bg-primary/15 text-primary",
-  converted: "bg-accent text-accent-foreground",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-destructive/10 text-destructive",
-};
-const statusLabels: Record<string, string> = {
-  draft: "Brouillon",
-  pending_admin: "En attente admin",
-  validated: "Validé",
-  converted: "Converti",
-  delivered: "Livré",
-  cancelled: "Annulé",
-};
-
-export function SalesDocList({ title, items, loading, onCreate, onValidate, onCancel, onConvert, onAdminValidate, docType }: Props) {
+export function SalesDocList({
+  title, items, loading, onCreate, onView,
+  onValidate, onCancel, onConvert, onAdminValidate, docType,
+}: Props) {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [selectedWh, setSelectedWh] = useState<string>("");
   const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
@@ -56,7 +47,6 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
 
   const handlePrint = async (item: any) => {
     if (!companySettings) return;
-    // Fetch lines
     const { data: lines } = await (supabase as any)
       .from(docType === "quotation" ? "quotation_lines" : "sales_order_lines")
       .select("*")
@@ -85,11 +75,18 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
     }, companySettings);
   };
 
+  const statusLabels = docType === "quotation" ? QUOTATION_STATUS_LABELS : ORDER_STATUS_LABELS;
+  const statusColors = docType === "quotation" ? QUOTATION_STATUS_COLORS : ORDER_STATUS_COLORS;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        {onCreate && <Button onClick={onCreate} size="sm"><Plus className="h-4 w-4 mr-1" /> Nouveau</Button>}
+        {onCreate && (
+          <Button onClick={onCreate} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Nouveau
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -111,66 +108,88 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-mono text-sm">{item.number}</TableCell>
+                <TableRow key={item.id} className="hover:bg-muted/30">
+                  <TableCell className="font-mono text-sm font-medium">{item.number}</TableCell>
                   <TableCell>{item.customer?.name || "—"}</TableCell>
                   <TableCell>{item.date}</TableCell>
-                  <TableCell className="text-right font-medium">{Number(item.total_ttc).toLocaleString("fr-MA")} MAD</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {Number(item.total_ttc).toLocaleString("fr-MA")} MAD
+                  </TableCell>
                   <TableCell>
-                    <Badge className={statusColors[item.status] || ""}>{statusLabels[item.status] || item.status}</Badge>
+                    <Badge className={`${statusColors[item.status] || "bg-muted text-muted-foreground"} border text-xs`}>
+                      {statusLabels[item.status] || item.status}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1 flex-wrap">
-                      {/* View */}
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Voir">
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
+                      {/* View / Open */}
+                      {onView && (
+                        <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" onClick={() => onView(item.id)}>
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Ouvrir
+                        </Button>
+                      )}
 
                       {/* Print */}
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Imprimer" onClick={() => handlePrint(item)}>
                         <Printer className="h-3.5 w-3.5" />
                       </Button>
 
-                      {/* Attachments button */}
+                      {/* Attachments */}
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0"
-                        title="Pièces jointes"
+                        size="sm" variant="ghost" className="h-8 w-8 p-0" title="Pièces jointes"
                         onClick={() => setAttachDialog({ id: item.id, number: item.number })}
                       >
                         <Paperclip className="h-3.5 w-3.5" />
                       </Button>
 
-                      {/* Draft actions */}
-                      {item.status === "draft" && onValidate && (
-                        <Button size="sm" variant="outline" onClick={() => onValidate(item.id)}><Check className="h-3 w-3 mr-1" /> Valider</Button>
+                      {/* Quotation: mark sent */}
+                      {docType === "quotation" && item.status === "draft" && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onValidate?.(item.id)}>
+                          <Send className="h-3 w-3 mr-1" /> Envoyer
+                        </Button>
                       )}
-                      {item.status === "draft" && onCancel && (
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Annuler" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
+
+                      {/* Quotation: confirm */}
+                      {docType === "quotation" && item.status === "sent" && onValidate && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs border-emerald-300 text-emerald-700" onClick={() => onValidate(item.id)}>
+                          <Check className="h-3 w-3 mr-1" /> Confirmer
+                        </Button>
                       )}
 
                       {/* Pending admin validation */}
                       {item.status === "pending_admin" && onAdminValidate && (
-                        <Button size="sm" variant="outline" className="border-warning/50 text-warning" onClick={() => onAdminValidate(item.id)}>
+                        <Button size="sm" variant="outline" className="h-8 text-xs border-yellow-300 text-yellow-700" onClick={() => onAdminValidate(item.id)}>
                           <Check className="h-3 w-3 mr-1" /> Approuver
                         </Button>
                       )}
 
+                      {/* Order: confirm */}
+                      {docType === "order" && item.status === "draft" && onValidate && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onValidate(item.id)}>
+                          <Check className="h-3 w-3 mr-1" /> Confirmer
+                        </Button>
+                      )}
+
                       {/* Convert quotation → order */}
-                      {item.status === "validated" && onConvert && docType === "quotation" && (
+                      {item.status === "confirmed" && onConvert && docType === "quotation" && (
                         <div className="inline-flex items-center gap-1">
                           <Select value={selectedWh} onValueChange={setSelectedWh}>
-                            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
-                          <Button size="sm" onClick={() => onConvert(item.id, selectedWh)}><ArrowRight className="h-3 w-3 mr-1" /> BC</Button>
+                          <Button size="sm" className="h-8 text-xs" onClick={() => onConvert(item.id, selectedWh)}>
+                            <ArrowRight className="h-3 w-3 mr-1" /> Créer BC
+                          </Button>
                         </div>
                       )}
-                      {item.status === "validated" && onCancel && (
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Annuler" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
+
+                      {/* Cancel */}
+                      {["draft", "sent", "confirmed"].includes(item.status) && onCancel && (
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" title="Annuler" onClick={() => onCancel(item.id)}>
+                          <X className="h-3 w-3" />
+                        </Button>
                       )}
                     </div>
                   </TableCell>
@@ -181,7 +200,6 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
         </div>
       )}
 
-      {/* Attachments dialog */}
       {attachDialog && (
         <DocAttachmentsDialog
           open={!!attachDialog}

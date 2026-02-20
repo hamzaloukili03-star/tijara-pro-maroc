@@ -3,22 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
 
-export interface SalesDoc {
-  id: string;
-  number: string;
-  customer_id: string;
-  date: string;
-  status: string;
-  subtotal_ht: number;
-  total_tva: number;
-  total_ttc: number;
-  notes: string | null;
-  payment_terms: string | null;
-  warehouse_id: string | null;
-  created_at: string;
-  customer?: { name: string; code: string };
-  lines?: SalesDocLine[];
-}
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface SalesDocLine {
   id?: string;
@@ -26,7 +11,7 @@ export interface SalesDocLine {
   description: string;
   quantity: number;
   delivered_qty?: number;
-  received_qty?: number;
+  invoiced_qty?: number;
   unit_price: number;
   discount_percent: number;
   tva_rate: number;
@@ -36,25 +21,126 @@ export interface SalesDocLine {
   sort_order: number;
 }
 
-function calcLine(l: Partial<SalesDocLine>): SalesDocLine {
+export interface SalesDoc {
+  id: string;
+  number: string;
+  customer_id: string;
+  date: string;
+  validity_date?: string | null;
+  order_date?: string | null;
+  status: string;
+  subtotal_ht: number;
+  total_tva: number;
+  total_ttc: number;
+  notes: string | null;
+  payment_terms: string | null;
+  warehouse_id: string | null;
+  cancel_reason?: string | null;
+  sales_order_id?: string | null;
+  quotation_id?: string | null;
+  created_at: string;
+  customer?: { name: string; code: string };
+  warehouse?: { name: string };
+  lines?: SalesDocLine[];
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+export function calcLine(l: Partial<SalesDocLine>): SalesDocLine {
   const qty = Number(l.quantity || 0);
   const price = Number(l.unit_price || 0);
   const disc = Number(l.discount_percent || 0);
-  const tva = Number(l.tva_rate || 20);
+  const tva = Number(l.tva_rate ?? 20);
   const ht = qty * price * (1 - disc / 100);
   const tvaAmt = ht * tva / 100;
-  return { ...l, quantity: qty, unit_price: price, discount_percent: disc, tva_rate: tva, total_ht: Math.round(ht * 100) / 100, total_tva: Math.round(tvaAmt * 100) / 100, total_ttc: Math.round((ht + tvaAmt) * 100) / 100, sort_order: l.sort_order || 0 } as SalesDocLine;
+  return {
+    ...l,
+    quantity: qty,
+    unit_price: price,
+    discount_percent: disc,
+    tva_rate: tva,
+    total_ht: Math.round(ht * 100) / 100,
+    total_tva: Math.round(tvaAmt * 100) / 100,
+    total_ttc: Math.round((ht + tvaAmt) * 100) / 100,
+    sort_order: l.sort_order || 0,
+  } as SalesDocLine;
 }
 
 export function calcTotals(lines: SalesDocLine[]) {
   const calculated = lines.map(calcLine);
   return {
     lines: calculated,
-    subtotal_ht: calculated.reduce((s, l) => s + l.total_ht, 0),
-    total_tva: calculated.reduce((s, l) => s + l.total_tva, 0),
-    total_ttc: calculated.reduce((s, l) => s + l.total_ttc, 0),
+    subtotal_ht: Math.round(calculated.reduce((s, l) => s + l.total_ht, 0) * 100) / 100,
+    total_tva: Math.round(calculated.reduce((s, l) => s + l.total_tva, 0) * 100) / 100,
+    total_ttc: Math.round(calculated.reduce((s, l) => s + l.total_ttc, 0) * 100) / 100,
   };
 }
+
+async function auditLog(action: string, tableName: string, recordId: string, details?: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  await (supabase as any).from("audit_logs").insert({
+    action, table_name: tableName, record_id: recordId, details, user_id: user?.id,
+  });
+}
+
+async function getUserId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id;
+}
+
+// ─── Status maps ─────────────────────────────────────────────────────────────
+
+export const QUOTATION_STATUS_LABELS: Record<string, string> = {
+  draft: "Brouillon",
+  sent: "Envoyé",
+  confirmed: "Confirmé",
+  converted: "Converti en BC",
+  cancelled: "Annulé",
+  expired: "Expiré",
+  pending_admin: "En attente validation",
+};
+
+export const QUOTATION_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground border-border",
+  sent: "bg-blue-100 text-blue-700 border-blue-200",
+  confirmed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  converted: "bg-primary/15 text-primary border-primary/20",
+  cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+  expired: "bg-orange-100 text-orange-700 border-orange-200",
+  pending_admin: "bg-yellow-100 text-yellow-700 border-yellow-200",
+};
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  draft: "Brouillon",
+  confirmed: "Confirmé",
+  partially_delivered: "Partiellement livré",
+  delivered: "Livré",
+  invoiced: "Facturé",
+  cancelled: "Annulé",
+};
+
+export const ORDER_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground border-border",
+  confirmed: "bg-blue-100 text-blue-700 border-blue-200",
+  partially_delivered: "bg-orange-100 text-orange-700 border-orange-200",
+  delivered: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  invoiced: "bg-primary/15 text-primary border-primary/20",
+  cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+};
+
+export const DELIVERY_STATUS_LABELS: Record<string, string> = {
+  draft: "Brouillon",
+  validated: "Validé",
+  cancelled: "Annulé",
+};
+
+export const DELIVERY_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground border-border",
+  validated: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+};
+
+// ─── useQuotations ────────────────────────────────────────────────────────────
 
 export function useQuotations() {
   const [items, setItems] = useState<SalesDoc[]>([]);
@@ -67,22 +153,44 @@ export function useQuotations() {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("quotations")
-      .select("*, customer:customers(name, code)")
+      .select("*, customer:customers(name, code), warehouse:warehouses(name)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
-    if (!error) setItems((data || []).map((d: any) => ({ ...d, number: d.quotation_number, date: d.quotation_date })));
+    if (!error) {
+      setItems((data || []).map((d: any) => ({
+        ...d,
+        number: d.quotation_number,
+        date: d.quotation_date,
+      })));
+    }
   }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const create = async (customerId: string, lines: SalesDocLine[], notes?: string, paymentTerms?: string) => {
+  const create = async (params: {
+    customerId: string;
+    warehouseId?: string;
+    lines: SalesDocLine[];
+    notes?: string;
+    paymentTerms?: string;
+    validityDate?: string;
+  }) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "DEV" });
-    const { lines: calcLines, subtotal_ht, total_tva, total_ttc } = calcTotals(lines);
-    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const { lines: calcLines, subtotal_ht, total_tva, total_ttc } = calcTotals(params.lines);
+    const userId = await getUserId();
 
     const { data, error } = await (supabase as any).from("quotations").insert({
-      quotation_number: num, customer_id: customerId, subtotal_ht, total_tva, total_ttc, notes, payment_terms: paymentTerms || "30j", created_by: userId, company_id: companyId,
+      quotation_number: num,
+      customer_id: params.customerId,
+      warehouse_id: params.warehouseId || null,
+      subtotal_ht, total_tva, total_ttc,
+      notes: params.notes || null,
+      payment_terms: params.paymentTerms || "30j",
+      validity_date: params.validityDate || null,
+      created_by: userId,
+      company_id: companyId,
+      status: "draft",
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
@@ -90,34 +198,102 @@ export function useQuotations() {
     for (let i = 0; i < calcLines.length; i++) {
       const l = calcLines[i];
       await (supabase as any).from("quotation_lines").insert({
-        quotation_id: data.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: i, company_id: companyId,
+        quotation_id: data.id,
+        product_id: l.product_id || null,
+        description: l.description,
+        quantity: l.quantity,
+        unit_price: l.unit_price,
+        discount_percent: l.discount_percent,
+        tva_rate: l.tva_rate,
+        total_ht: l.total_ht,
+        total_tva: l.total_tva,
+        total_ttc: l.total_ttc,
+        sort_order: i,
+        company_id: companyId,
       });
     }
+
+    await auditLog("create_quotation", "quotations", data.id, `DEV: ${num}`);
     toast({ title: "Devis créé", description: num as string });
     await fetch();
     return data;
   };
 
-  const validate = async (id: string, requireDoubleValidation = false) => {
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    const newStatus = requireDoubleValidation ? "pending_admin" : "validated";
-    await (supabase as any).from("quotations").update({ status: newStatus }).eq("id", id);
-    await auditLog("validate_quotation", "quotations", id);
-    toast({ title: requireDoubleValidation ? "Devis soumis pour approbation" : "Devis validé" });
+  const update = async (id: string, params: {
+    customerId?: string;
+    warehouseId?: string;
+    lines?: SalesDocLine[];
+    notes?: string;
+    paymentTerms?: string;
+    validityDate?: string;
+  }) => {
+    const updates: any = {};
+    if (params.customerId !== undefined) updates.customer_id = params.customerId;
+    if (params.warehouseId !== undefined) updates.warehouse_id = params.warehouseId;
+    if (params.notes !== undefined) updates.notes = params.notes;
+    if (params.paymentTerms !== undefined) updates.payment_terms = params.paymentTerms;
+    if (params.validityDate !== undefined) updates.validity_date = params.validityDate || null;
+
+    if (params.lines) {
+      const { lines: calcLines, subtotal_ht, total_tva, total_ttc } = calcTotals(params.lines);
+      updates.subtotal_ht = subtotal_ht;
+      updates.total_tva = total_tva;
+      updates.total_ttc = total_ttc;
+
+      await (supabase as any).from("quotation_lines").delete().eq("quotation_id", id);
+      for (let i = 0; i < calcLines.length; i++) {
+        const l = calcLines[i];
+        await (supabase as any).from("quotation_lines").insert({
+          quotation_id: id,
+          product_id: l.product_id || null,
+          description: l.description,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount_percent: l.discount_percent,
+          tva_rate: l.tva_rate,
+          total_ht: l.total_ht,
+          total_tva: l.total_tva,
+          total_ttc: l.total_ttc,
+          sort_order: i,
+          company_id: companyId,
+        });
+      }
+    }
+
+    const { error } = await (supabase as any).from("quotations").update(updates).eq("id", id);
+    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Devis sauvegardé" });
     await fetch();
   };
 
-  const adminValidate = async (id: string) => {
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    await (supabase as any).from("quotations").update({ status: "validated", admin_validated_at: new Date().toISOString(), admin_validated_by: userId }).eq("id", id);
-    await auditLog("admin_validate_quotation", "quotations", id);
-    toast({ title: "Devis approuvé par l'admin" });
+  const markSent = async (id: string) => {
+    await (supabase as any).from("quotations").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", id);
+    await auditLog("mark_sent_quotation", "quotations", id);
+    toast({ title: "Devis marqué comme envoyé" });
     await fetch();
   };
 
-  const cancel = async (id: string) => {
-    await (supabase as any).from("quotations").update({ status: "cancelled" }).eq("id", id);
-    await auditLog("cancel_quotation", "quotations", id);
+  const confirm = async (id: string) => {
+    const userId = await getUserId();
+    await (supabase as any).from("quotations").update({ status: "confirmed", confirmed_at: new Date().toISOString() }).eq("id", id);
+    await auditLog("confirm_quotation", "quotations", id, `Confirmé par ${userId}`);
+    toast({ title: "Devis confirmé" });
+    await fetch();
+  };
+
+  // Legacy alias for old code
+  const validate = confirm;
+  const adminValidate = confirm;
+
+  const cancel = async (id: string, reason?: string) => {
+    const userId = await getUserId();
+    await (supabase as any).from("quotations").update({
+      status: "cancelled",
+      cancel_reason: reason || null,
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: userId,
+    }).eq("id", id);
+    await auditLog("cancel_quotation", "quotations", id, reason ? `Motif: ${reason}` : undefined);
     toast({ title: "Devis annulé" });
     await fetch();
   };
@@ -128,34 +304,74 @@ export function useQuotations() {
     if (!q || !qLines) return null;
 
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "BC" });
-    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const userId = await getUserId();
 
     const { data: so, error } = await (supabase as any).from("sales_orders").insert({
-      order_number: num, quotation_id: quotationId, customer_id: q.customer_id, subtotal_ht: q.subtotal_ht, total_tva: q.total_tva, total_ttc: q.total_ttc, notes: q.notes, payment_terms: q.payment_terms, warehouse_id: warehouseId, created_by: userId, company_id: companyId,
+      order_number: num,
+      quotation_id: quotationId,
+      customer_id: q.customer_id,
+      warehouse_id: warehouseId || q.warehouse_id,
+      subtotal_ht: q.subtotal_ht,
+      total_tva: q.total_tva,
+      total_ttc: q.total_ttc,
+      notes: q.notes,
+      payment_terms: q.payment_terms,
+      created_by: userId,
+      company_id: companyId,
+      status: "draft",
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
     for (const l of qLines) {
       await (supabase as any).from("sales_order_lines").insert({
-        sales_order_id: so.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: l.sort_order, company_id: companyId,
+        sales_order_id: so.id,
+        product_id: l.product_id || null,
+        description: l.description,
+        quantity: l.quantity,
+        unit_price: l.unit_price,
+        discount_percent: l.discount_percent,
+        tva_rate: l.tva_rate,
+        total_ht: l.total_ht,
+        total_tva: l.total_tva,
+        total_ttc: l.total_ttc,
+        sort_order: l.sort_order,
+        company_id: companyId,
       });
     }
 
-    await (supabase as any).from("quotations").update({ status: "converted" }).eq("id", quotationId);
+    await (supabase as any).from("quotations").update({ status: "converted", sales_order_id: so.id }).eq("id", quotationId);
     await auditLog("convert_quotation_to_order", "quotations", quotationId, `BC: ${num}`);
     toast({ title: "Bon de commande créé", description: num as string });
     await fetch();
     return so;
   };
 
-  const getLines = async (quotationId: string) => {
-    const { data } = await (supabase as any).from("quotation_lines").select("*, product:products(name, code)").eq("quotation_id", quotationId).order("sort_order");
-    return data || [];
+  const getLines = async (quotationId: string): Promise<SalesDocLine[]> => {
+    const { data } = await (supabase as any)
+      .from("quotation_lines")
+      .select("*, product:products(name, code)")
+      .eq("quotation_id", quotationId)
+      .order("sort_order");
+    return (data || []).map((l: any) => ({
+      id: l.id,
+      product_id: l.product_id,
+      description: l.description,
+      quantity: Number(l.quantity),
+      unit_price: Number(l.unit_price),
+      discount_percent: Number(l.discount_percent),
+      tva_rate: Number(l.tva_rate),
+      total_ht: Number(l.total_ht),
+      total_tva: Number(l.total_tva),
+      total_ttc: Number(l.total_ttc),
+      sort_order: l.sort_order,
+    }));
   };
 
-  return { items, loading, fetch, create, validate, adminValidate, cancel, convertToOrder, getLines };
+  return { items, loading, fetch, create, update, markSent, confirm, validate, adminValidate, cancel, convertToOrder, getLines };
 }
+
+// ─── useSalesOrders ───────────────────────────────────────────────────────────
 
 export function useSalesOrders() {
   const [items, setItems] = useState<SalesDoc[]>([]);
@@ -168,16 +384,25 @@ export function useSalesOrders() {
     setLoading(true);
     const { data } = await (supabase as any)
       .from("sales_orders")
-      .select("*, customer:customers(name, code)")
+      .select("*, customer:customers(name, code), warehouse:warehouses(name)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
-    setItems((data || []).map((d: any) => ({ ...d, number: d.order_number, date: d.order_date })));
+    setItems((data || []).map((d: any) => ({
+      ...d,
+      number: d.order_number,
+      date: d.order_date || d.created_at?.slice(0, 10),
+    })));
   }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const validate = async (id: string, reserveStockFn: (productId: string, warehouseId: string, qty: number) => Promise<boolean>) => {
+  const confirm = async (
+    id: string,
+    reserveStockFn: (productId: string, warehouseId: string, qty: number) => Promise<boolean>,
+    adminOverride?: boolean,
+    overrideReason?: string,
+  ) => {
     const { data: so } = await (supabase as any).from("sales_orders").select("warehouse_id").eq("id", id).single();
     const { data: lines } = await (supabase as any).from("sales_order_lines").select("product_id, quantity").eq("sales_order_id", id);
 
@@ -186,48 +411,135 @@ export function useSalesOrders() {
     for (const line of (lines || [])) {
       if (line.product_id) {
         const ok = await reserveStockFn(line.product_id, so.warehouse_id, Number(line.quantity));
-        if (!ok) {
-          toast({ title: "Stock insuffisant", description: `Produit non réservable`, variant: "destructive" });
+        if (!ok && !adminOverride) {
+          toast({ title: "Stock insuffisant", description: "Réservation impossible. Dérogation admin requise.", variant: "destructive" });
           return false;
         }
       }
     }
 
-    await (supabase as any).from("sales_orders").update({ status: "validated" }).eq("id", id);
-    await auditLog("validate_sales_order", "sales_orders", id);
-    toast({ title: "BC validé — stock réservé" });
+    const userId = await getUserId();
+    await (supabase as any).from("sales_orders").update({
+      status: "confirmed",
+      confirmed_at: new Date().toISOString(),
+      confirmed_by: userId,
+    }).eq("id", id);
+
+    if (adminOverride && overrideReason) {
+      await auditLog("confirm_sales_order_override", "sales_orders", id, `Dérogation stock: ${overrideReason}`);
+    } else {
+      await auditLog("confirm_sales_order", "sales_orders", id, "Stock réservé");
+    }
+    toast({ title: "BC confirmé — stock réservé" });
     await fetch();
     return true;
   };
 
-  const cancel = async (id: string, releaseReservationFn: (productId: string, warehouseId: string, qty: number) => Promise<void>) => {
+  // Legacy alias
+  const validate = (id: string, reserveStockFn: any) => confirm(id, reserveStockFn);
+
+  const cancel = async (
+    id: string,
+    releaseReservationFn: (productId: string, warehouseId: string, qty: number) => Promise<void>,
+    reason?: string,
+  ) => {
     const { data: so } = await (supabase as any).from("sales_orders").select("warehouse_id, status").eq("id", id).single();
-    if (so?.status === "validated" && so?.warehouse_id) {
+    if ((so?.status === "confirmed" || so?.status === "partially_delivered") && so?.warehouse_id) {
       const { data: lines } = await (supabase as any).from("sales_order_lines").select("product_id, quantity").eq("sales_order_id", id);
       for (const l of (lines || [])) {
         if (l.product_id) await releaseReservationFn(l.product_id, so.warehouse_id, Number(l.quantity));
       }
     }
-    await (supabase as any).from("sales_orders").update({ status: "cancelled" }).eq("id", id);
-    await auditLog("cancel_sales_order", "sales_orders", id);
+    const userId = await getUserId();
+    await (supabase as any).from("sales_orders").update({
+      status: "cancelled",
+      cancel_reason: reason || null,
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: userId,
+    }).eq("id", id);
+    await auditLog("cancel_sales_order", "sales_orders", id, reason ? `Motif: ${reason}` : undefined);
     toast({ title: "BC annulé" });
     await fetch();
   };
 
+  const createDeliveryDraft = async (orderId: string): Promise<any | null> => {
+    const { data: so } = await (supabase as any).from("sales_orders").select("customer_id, warehouse_id").eq("id", orderId).single();
+    if (!so) return null;
+
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL" });
+    const userId = await getUserId();
+
+    const { data: del, error } = await (supabase as any).from("deliveries").insert({
+      delivery_number: num,
+      sales_order_id: orderId,
+      customer_id: so.customer_id,
+      warehouse_id: so.warehouse_id,
+      created_by: userId,
+      company_id: companyId,
+      status: "draft",
+    }).select().single();
+
+    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
+
+    // Copy order lines to delivery draft with 0 qty (user fills in actual qty)
+    const { data: orderLines } = await (supabase as any)
+      .from("sales_order_lines")
+      .select("*")
+      .eq("sales_order_id", orderId)
+      .order("sort_order");
+
+    for (const l of (orderLines || [])) {
+      const remaining = Number(l.quantity) - Number(l.delivered_qty || 0);
+      if (remaining <= 0) continue;
+      await (supabase as any).from("delivery_lines").insert({
+        delivery_id: del.id,
+        sales_order_line_id: l.id,
+        product_id: l.product_id || null,
+        description: l.description,
+        quantity: remaining,
+        unit_price: Number(l.unit_price),
+        discount_percent: Number(l.discount_percent),
+        tva_rate: Number(l.tva_rate),
+        total_ht: Number(l.total_ht),
+        total_tva: Number(l.total_tva),
+        total_ttc: Number(l.total_ttc),
+        sort_order: l.sort_order,
+        company_id: companyId,
+      });
+    }
+
+    await auditLog("create_delivery_draft", "deliveries", del.id, `BL brouillon: ${num} depuis BC: ${orderId}`);
+    toast({ title: "Bon de livraison brouillon créé", description: num as string });
+    await fetch();
+    return del;
+  };
+
+  // Legacy: direct delivery with stock deduction (used from DeliveryPanel)
   const createDelivery = async (
     orderId: string,
-    deliveryLines: { sales_order_line_id: string; product_id: string; description: string; quantity: number; unit_price: number; discount_percent: number; tva_rate: number }[],
+    deliveryLines: {
+      sales_order_line_id: string; product_id: string; description: string;
+      quantity: number; unit_price: number; discount_percent: number; tva_rate: number;
+    }[],
     deductStockFn: (productId: string, warehouseId: string, qty: number, refType: string, refId?: string) => Promise<boolean>,
-    releaseReservationFn: (productId: string, warehouseId: string, qty: number) => Promise<void>
+    releaseReservationFn: (productId: string, warehouseId: string, qty: number) => Promise<void>,
   ) => {
     const { data: so } = await (supabase as any).from("sales_orders").select("customer_id, warehouse_id").eq("id", orderId).single();
     if (!so) return null;
 
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL" });
-    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const userId = await getUserId();
 
     const { data: del, error } = await (supabase as any).from("deliveries").insert({
-      delivery_number: num, sales_order_id: orderId, customer_id: so.customer_id, warehouse_id: so.warehouse_id, created_by: userId, company_id: companyId,
+      delivery_number: num,
+      sales_order_id: orderId,
+      customer_id: so.customer_id,
+      warehouse_id: so.warehouse_id,
+      created_by: userId,
+      company_id: companyId,
+      status: "validated",
+      validated_at: new Date().toISOString(),
+      validated_by: userId,
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
@@ -235,9 +547,20 @@ export function useSalesOrders() {
     for (let i = 0; i < deliveryLines.length; i++) {
       const dl = deliveryLines[i];
       const calc = calcLine({ ...dl, sort_order: i });
-
       await (supabase as any).from("delivery_lines").insert({
-        delivery_id: del.id, sales_order_line_id: dl.sales_order_line_id, product_id: dl.product_id, description: dl.description, quantity: dl.quantity, unit_price: dl.unit_price, discount_percent: dl.discount_percent, tva_rate: dl.tva_rate, total_ht: calc.total_ht, total_tva: calc.total_tva, total_ttc: calc.total_ttc, sort_order: i, company_id: companyId,
+        delivery_id: del.id,
+        sales_order_line_id: dl.sales_order_line_id,
+        product_id: dl.product_id || null,
+        description: dl.description,
+        quantity: dl.quantity,
+        unit_price: dl.unit_price,
+        discount_percent: dl.discount_percent,
+        tva_rate: dl.tva_rate,
+        total_ht: calc.total_ht,
+        total_tva: calc.total_tva,
+        total_ttc: calc.total_ttc,
+        sort_order: i,
+        company_id: companyId,
       });
 
       const { data: solData } = await (supabase as any).from("sales_order_lines").select("delivered_qty").eq("id", dl.sales_order_line_id).single();
@@ -251,13 +574,11 @@ export function useSalesOrders() {
       }
     }
 
-    await (supabase as any).from("deliveries").update({ status: "validated" }).eq("id", del.id);
-
     const { data: allLines } = await (supabase as any).from("sales_order_lines").select("quantity, delivered_qty").eq("sales_order_id", orderId);
     const fullyDelivered = (allLines || []).every((l: any) => Number(l.delivered_qty) >= Number(l.quantity));
-    if (fullyDelivered) {
-      await (supabase as any).from("sales_orders").update({ status: "delivered" }).eq("id", orderId);
-    }
+    const partiallyDelivered = (allLines || []).some((l: any) => Number(l.delivered_qty) > 0);
+    const newStatus = fullyDelivered ? "delivered" : partiallyDelivered ? "partially_delivered" : "confirmed";
+    await (supabase as any).from("sales_orders").update({ status: newStatus }).eq("id", orderId);
 
     await auditLog("create_delivery", "deliveries", del.id, `BL: ${num}`);
     toast({ title: "Bon de livraison créé", description: num as string });
@@ -265,47 +586,252 @@ export function useSalesOrders() {
     return del;
   };
 
-  const createInvoiceFromDelivery = async (deliveryId: string) => {
-    const { data: del } = await (supabase as any).from("deliveries").select("*, delivery_lines:delivery_lines(*)").eq("id", deliveryId).single();
-    if (!del) return null;
+  const createInvoiceFromOrder = async (orderId: string): Promise<any | null> => {
+    // Get delivered but not yet invoiced lines from all validated deliveries
+    const { data: deliveries } = await (supabase as any)
+      .from("deliveries")
+      .select("id, customer_id, delivery_lines:delivery_lines(*)")
+      .eq("sales_order_id", orderId)
+      .eq("status", "validated");
 
-    if (del.invoice_id) { toast({ title: "Déjà facturé", variant: "destructive" }); return null; }
+    if (!deliveries || deliveries.length === 0) {
+      toast({ title: "Aucune livraison validée", description: "Validez d'abord un bon de livraison.", variant: "destructive" });
+      return null;
+    }
 
+    // Check if already invoiced
+    const { data: existing } = await (supabase as any)
+      .from("invoices")
+      .select("id")
+      .eq("sales_order_id", orderId)
+      .not("status", "eq", "cancelled");
+
+    // Collect all non-yet-invoiced delivery lines
+    const allLines: any[] = [];
+    for (const d of deliveries) {
+      // Skip if delivery already linked to an invoice
+      const { data: del } = await (supabase as any).from("deliveries").select("invoice_id").eq("id", d.id).single();
+      if (del?.invoice_id) continue;
+      allLines.push(...(d.delivery_lines || []));
+    }
+
+    if (allLines.length === 0) {
+      toast({ title: "Déjà facturé", description: "Toutes les livraisons sont déjà facturées.", variant: "destructive" });
+      return null;
+    }
+
+    const { data: so } = await (supabase as any).from("sales_orders").select("customer_id, payment_terms").eq("id", orderId).single();
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "FAC" });
-    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const userId = await getUserId();
 
-    const lines = del.delivery_lines || [];
-    const subtotal_ht = lines.reduce((s: number, l: any) => s + Number(l.total_ht), 0);
-    const total_tva = lines.reduce((s: number, l: any) => s + Number(l.total_tva), 0);
-    const total_ttc = lines.reduce((s: number, l: any) => s + Number(l.total_ttc), 0);
+    const subtotal_ht = allLines.reduce((s: number, l: any) => s + Number(l.total_ht), 0);
+    const total_tva = allLines.reduce((s: number, l: any) => s + Number(l.total_tva), 0);
+    const total_ttc = allLines.reduce((s: number, l: any) => s + Number(l.total_ttc), 0);
 
     const { data: inv, error } = await (supabase as any).from("invoices").insert({
-      invoice_number: num, invoice_type: "client", customer_id: del.customer_id, subtotal_ht, total_tva, total_ttc, remaining_balance: total_ttc, status: "draft", created_by: userId, company_id: companyId,
+      invoice_number: num,
+      invoice_type: "client",
+      customer_id: so?.customer_id,
+      sales_order_id: orderId,
+      subtotal_ht,
+      total_tva,
+      total_ttc,
+      remaining_balance: total_ttc,
+      payment_terms: so?.payment_terms || "30j",
+      status: "draft",
+      created_by: userId,
+      company_id: companyId,
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
-    for (const l of lines) {
+    for (const l of allLines) {
       await (supabase as any).from("invoice_lines").insert({
-        invoice_id: inv.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: l.sort_order, company_id: companyId,
+        invoice_id: inv.id,
+        product_id: l.product_id || null,
+        description: l.description,
+        quantity: l.quantity,
+        unit_price: l.unit_price,
+        discount_percent: l.discount_percent,
+        tva_rate: l.tva_rate,
+        total_ht: l.total_ht,
+        total_tva: l.total_tva,
+        total_ttc: l.total_ttc,
+        sort_order: l.sort_order,
+        company_id: companyId,
       });
     }
 
-    await (supabase as any).from("deliveries").update({ invoice_id: inv.id }).eq("id", deliveryId);
-    await auditLog("create_invoice_from_delivery", "invoices", inv.id, `FAC: ${num} depuis BL: ${del.delivery_number}`);
-    toast({ title: "Facture créée", description: num as string });
+    // Link all un-invoiced deliveries to this invoice
+    for (const d of deliveries) {
+      const { data: del } = await (supabase as any).from("deliveries").select("invoice_id").eq("id", d.id).single();
+      if (!del?.invoice_id) {
+        await (supabase as any).from("deliveries").update({ invoice_id: inv.id }).eq("id", d.id);
+      }
+    }
+
+    // Mark order as invoiced
+    await (supabase as any).from("sales_orders").update({ status: "invoiced", invoiced_at: new Date().toISOString() }).eq("id", orderId);
+    await auditLog("create_invoice_from_order", "invoices", inv.id, `FAC: ${num} depuis BC: ${orderId}`);
+    toast({ title: "Facture brouillon créée", description: num as string });
+    await fetch();
     return inv;
   };
 
-  const getLines = async (orderId: string) => {
-    const { data } = await (supabase as any).from("sales_order_lines").select("*, product:products(name, code)").eq("sales_order_id", orderId).order("sort_order");
+  // Legacy alias
+  const createInvoiceFromDelivery = async (deliveryId: string) => {
+    const { data: del } = await (supabase as any).from("deliveries").select("sales_order_id").eq("id", deliveryId).single();
+    if (!del?.sales_order_id) return null;
+    return createInvoiceFromOrder(del.sales_order_id);
+  };
+
+  const getLines = async (orderId: string): Promise<SalesDocLine[]> => {
+    const { data } = await (supabase as any)
+      .from("sales_order_lines")
+      .select("*, product:products(name, code)")
+      .eq("sales_order_id", orderId)
+      .order("sort_order");
+    return (data || []).map((l: any) => ({
+      id: l.id,
+      product_id: l.product_id,
+      description: l.description,
+      quantity: Number(l.quantity),
+      delivered_qty: Number(l.delivered_qty || 0),
+      invoiced_qty: Number(l.invoiced_qty || 0),
+      unit_price: Number(l.unit_price),
+      discount_percent: Number(l.discount_percent),
+      tva_rate: Number(l.tva_rate),
+      total_ht: Number(l.total_ht),
+      total_tva: Number(l.total_tva),
+      total_ttc: Number(l.total_ttc),
+      sort_order: l.sort_order,
+    }));
+  };
+
+  return {
+    items, loading, fetch,
+    confirm, validate, cancel,
+    createDeliveryDraft, createDelivery,
+    createInvoiceFromOrder, createInvoiceFromDelivery,
+    getLines,
+  };
+}
+
+// ─── useDeliveries ────────────────────────────────────────────────────────────
+
+export function useDeliveries(salesOrderId?: string) {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
+
+  const fetch = useCallback(async () => {
+    if (!companyId) { setItems([]); setLoading(false); return; }
+    setLoading(true);
+    let q = (supabase as any)
+      .from("deliveries")
+      .select("*, customer:customers(name, code), warehouse:warehouses(name), delivery_lines:delivery_lines(*)")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false });
+    if (salesOrderId) q = q.eq("sales_order_id", salesOrderId);
+    const { data } = await q;
+    setItems(data || []);
+    setLoading(false);
+  }, [companyId, salesOrderId]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const validateDelivery = async (
+    deliveryId: string,
+    deductStockFn: (productId: string, warehouseId: string, qty: number, refType: string, refId?: string) => Promise<boolean>,
+    releaseReservationFn: (productId: string, warehouseId: string, qty: number) => Promise<void>,
+  ) => {
+    const { data: del } = await (supabase as any)
+      .from("deliveries")
+      .select("*, delivery_lines:delivery_lines(*)")
+      .eq("id", deliveryId)
+      .single();
+
+    if (!del) return false;
+
+    const userId = await getUserId();
+
+    // Process each line: deduct stock + release reservation
+    for (const l of (del.delivery_lines || [])) {
+      if (!l.product_id || !del.warehouse_id) continue;
+      await deductStockFn(l.product_id, del.warehouse_id, Number(l.quantity), "delivery", deliveryId);
+      await releaseReservationFn(l.product_id, del.warehouse_id, Number(l.quantity));
+
+      // Update SO line delivered qty
+      if (l.sales_order_line_id) {
+        const { data: sol } = await (supabase as any).from("sales_order_lines").select("delivered_qty").eq("id", l.sales_order_line_id).single();
+        if (sol) {
+          await (supabase as any).from("sales_order_lines").update({
+            delivered_qty: Number(sol.delivered_qty || 0) + Number(l.quantity),
+          }).eq("id", l.sales_order_line_id);
+        }
+      }
+    }
+
+    // Mark delivery as validated
+    await (supabase as any).from("deliveries").update({
+      status: "validated",
+      validated_at: new Date().toISOString(),
+      validated_by: userId,
+    }).eq("id", deliveryId);
+
+    // Update sales order status
+    if (del.sales_order_id) {
+      const { data: allLines } = await (supabase as any)
+        .from("sales_order_lines")
+        .select("quantity, delivered_qty")
+        .eq("sales_order_id", del.sales_order_id);
+
+      const fullyDelivered = (allLines || []).every((l: any) => Number(l.delivered_qty) >= Number(l.quantity));
+      const partiallyDelivered = (allLines || []).some((l: any) => Number(l.delivered_qty) > 0);
+      const newStatus = fullyDelivered ? "delivered" : partiallyDelivered ? "partially_delivered" : "confirmed";
+      await (supabase as any).from("sales_orders").update({ status: newStatus }).eq("id", del.sales_order_id);
+    }
+
+    await auditLog("validate_delivery", "deliveries", deliveryId, `BL ${del.delivery_number} validé`);
+    toast({ title: "Livraison validée — stock mis à jour" });
+    await fetch();
+    return true;
+  };
+
+  const cancelDelivery = async (deliveryId: string, reason?: string) => {
+    const userId = await getUserId();
+    await (supabase as any).from("deliveries").update({
+      status: "cancelled",
+      cancel_reason: reason || null,
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: userId,
+    }).eq("id", deliveryId);
+    await auditLog("cancel_delivery", "deliveries", deliveryId, reason ? `Motif: ${reason}` : undefined);
+    toast({ title: "Bon de livraison annulé" });
+    await fetch();
+  };
+
+  const getDeliveryLines = async (deliveryId: string) => {
+    const { data } = await (supabase as any)
+      .from("delivery_lines")
+      .select("*, product:products(name, code)")
+      .eq("delivery_id", deliveryId)
+      .order("sort_order");
     return data || [];
   };
 
-  return { items, loading, fetch, validate, cancel, createDelivery, createInvoiceFromDelivery, getLines };
-}
+  const updateDeliveryLine = async (lineId: string, qty: number) => {
+    const { data: l } = await (supabase as any).from("delivery_lines").select("unit_price, discount_percent, tva_rate").eq("id", lineId).single();
+    if (!l) return;
+    const calc = calcLine({ quantity: qty, unit_price: l.unit_price, discount_percent: l.discount_percent, tva_rate: l.tva_rate });
+    await (supabase as any).from("delivery_lines").update({
+      quantity: qty,
+      total_ht: calc.total_ht,
+      total_tva: calc.total_tva,
+      total_ttc: calc.total_ttc,
+    }).eq("id", lineId);
+  };
 
-async function auditLog(action: string, tableName: string, recordId: string, details?: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id;
-  await (supabase as any).from("audit_logs").insert({ action, table_name: tableName, record_id: recordId, details, user_id: userId });
+  return { items, loading, fetch, validateDelivery, cancelDelivery, getDeliveryLines, updateDeliveryLine };
 }

@@ -662,6 +662,9 @@ export type Database = {
       }
       deliveries: {
         Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -674,9 +677,14 @@ export type Database = {
           sales_order_id: string | null
           status: string
           updated_at: string
+          validated_at: string | null
+          validated_by: string | null
           warehouse_id: string | null
         }
         Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -689,9 +697,14 @@ export type Database = {
           sales_order_id?: string | null
           status?: string
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
           warehouse_id?: string | null
         }
         Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -704,6 +717,8 @@ export type Database = {
           sales_order_id?: string | null
           status?: string
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
           warehouse_id?: string | null
         }
         Relationships: [
@@ -1307,6 +1322,7 @@ export type Database = {
           purchase_order_id: string | null
           reception_id: string | null
           remaining_balance: number
+          sales_order_id: string | null
           status: string
           subtotal_ht: number
           supplier_id: string | null
@@ -1332,6 +1348,7 @@ export type Database = {
           purchase_order_id?: string | null
           reception_id?: string | null
           remaining_balance?: number
+          sales_order_id?: string | null
           status?: string
           subtotal_ht?: number
           supplier_id?: string | null
@@ -1357,6 +1374,7 @@ export type Database = {
           purchase_order_id?: string | null
           reception_id?: string | null
           remaining_balance?: number
+          sales_order_id?: string | null
           status?: string
           subtotal_ht?: number
           supplier_id?: string | null
@@ -1391,6 +1409,13 @@ export type Database = {
             columns: ["reception_id"]
             isOneToOne: false
             referencedRelation: "receptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
           {
@@ -2388,7 +2413,11 @@ export type Database = {
         Row: {
           admin_validated_at: string | null
           admin_validated_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           company_id: string | null
+          confirmed_at: string | null
           created_at: string
           created_by: string | null
           customer_id: string
@@ -2397,17 +2426,24 @@ export type Database = {
           payment_terms: string | null
           quotation_date: string
           quotation_number: string
+          sales_order_id: string | null
+          sent_at: string | null
           status: string
           subtotal_ht: number
           total_ttc: number
           total_tva: number
           updated_at: string
           validity_date: string | null
+          warehouse_id: string | null
         }
         Insert: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           company_id?: string | null
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
@@ -2416,17 +2452,24 @@ export type Database = {
           payment_terms?: string | null
           quotation_date?: string
           quotation_number: string
+          sales_order_id?: string | null
+          sent_at?: string | null
           status?: string
           subtotal_ht?: number
           total_ttc?: number
           total_tva?: number
           updated_at?: string
           validity_date?: string | null
+          warehouse_id?: string | null
         }
         Update: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           company_id?: string | null
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
@@ -2435,12 +2478,15 @@ export type Database = {
           payment_terms?: string | null
           quotation_date?: string
           quotation_number?: string
+          sales_order_id?: string | null
+          sent_at?: string | null
           status?: string
           subtotal_ht?: number
           total_ttc?: number
           total_tva?: number
           updated_at?: string
           validity_date?: string | null
+          warehouse_id?: string | null
         }
         Relationships: [
           {
@@ -2455,6 +2501,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -2798,6 +2851,7 @@ export type Database = {
           description: string
           discount_percent: number
           id: string
+          invoiced_qty: number
           product_id: string | null
           quantity: number
           sales_order_id: string
@@ -2815,6 +2869,7 @@ export type Database = {
           description?: string
           discount_percent?: number
           id?: string
+          invoiced_qty?: number
           product_id?: string | null
           quantity?: number
           sales_order_id: string
@@ -2832,6 +2887,7 @@ export type Database = {
           description?: string
           discount_percent?: number
           id?: string
+          invoiced_qty?: number
           product_id?: string | null
           quantity?: number
           sales_order_id?: string
@@ -2870,11 +2926,17 @@ export type Database = {
         Row: {
           admin_validated_at: string | null
           admin_validated_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           company_id: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           created_by: string | null
           customer_id: string
           id: string
+          invoiced_at: string | null
           notes: string | null
           order_date: string
           order_number: string
@@ -2885,16 +2947,23 @@ export type Database = {
           total_ttc: number
           total_tva: number
           updated_at: string
+          validity_date: string | null
           warehouse_id: string | null
         }
         Insert: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           company_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
           id?: string
+          invoiced_at?: string | null
           notes?: string | null
           order_date?: string
           order_number: string
@@ -2905,16 +2974,23 @@ export type Database = {
           total_ttc?: number
           total_tva?: number
           updated_at?: string
+          validity_date?: string | null
           warehouse_id?: string | null
         }
         Update: {
           admin_validated_at?: string | null
           admin_validated_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           company_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
           id?: string
+          invoiced_at?: string | null
           notes?: string | null
           order_date?: string
           order_number?: string
@@ -2925,6 +3001,7 @@ export type Database = {
           total_ttc?: number
           total_tva?: number
           updated_at?: string
+          validity_date?: string | null
           warehouse_id?: string | null
         }
         Relationships: [
