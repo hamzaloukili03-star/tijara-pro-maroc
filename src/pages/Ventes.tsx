@@ -13,7 +13,7 @@ const Ventes = () => {
   const quotations = useQuotations();
   const salesOrders = useSalesOrders();
   const stock = useStockEngine();
-  const [showForm, setShowForm] = useState<"quotation" | "order" | null>(null);
+  const [showForm, setShowForm] = useState<"quotation" | null>(null);
   const [tab, setTab] = useState("devis");
 
   return (
@@ -32,9 +32,13 @@ const Ventes = () => {
             items={quotations.items}
             loading={quotations.loading}
             onCreate={() => setShowForm("quotation")}
-            onValidate={(id) => quotations.validate(id)}
+            onValidate={(id) => quotations.confirm(id)}
             onCancel={(id) => quotations.cancel(id)}
-            onConvert={async (id, whId) => { await quotations.convertToOrder(id, whId); setTab("commandes"); salesOrders.fetch(); }}
+            onConvert={async (id, whId) => {
+              await quotations.convertToOrder(id, whId);
+              setTab("commandes");
+              salesOrders.fetch();
+            }}
             docType="quotation"
           />
         </TabsContent>
@@ -44,22 +48,15 @@ const Ventes = () => {
             title="Bons de commande"
             items={salesOrders.items}
             loading={salesOrders.loading}
-            onValidate={(id) => salesOrders.validate(id, stock.reserveStock)}
+            onValidate={(id) => salesOrders.confirm(id, stock.reserveStock)}
             onCancel={(id) => salesOrders.cancel(id, stock.releaseReservation)}
             docType="order"
           />
-          <DeliveryPanel
-            salesOrders={salesOrders}
-            stock={stock}
-          />
+          <DeliveryPanel salesOrders={salesOrders} stock={stock} />
         </TabsContent>
 
         <TabsContent value="livraisons">
-          <DeliveryPanel
-            salesOrders={salesOrders}
-            stock={stock}
-            showAll
-          />
+          <DeliveryPanel salesOrders={salesOrders} stock={stock} showAll />
         </TabsContent>
 
         <TabsContent value="master">
@@ -75,12 +72,10 @@ const Ventes = () => {
 
       {showForm && (
         <SalesFormDialog
-          type={showForm}
+          type="quotation"
           onClose={() => setShowForm(null)}
           onSubmit={async (customerId, lines, notes, terms) => {
-            if (showForm === "quotation") {
-              await quotations.create(customerId, lines, notes, terms);
-            }
+            await quotations.create({ customerId, lines, notes, paymentTerms: terms });
             setShowForm(null);
           }}
         />
