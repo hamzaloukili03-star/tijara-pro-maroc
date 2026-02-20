@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useCompanySettings, useCompanyBankAccounts, CompanyBankAccount } from "@/hooks/useCompanySettings";
+import { useCompany } from "@/hooks/useCompany";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,7 @@ const emptyBank: Partial<CompanyBankAccount> = {
 
 const SystemeSociete = () => {
   const { settings, loading, update, uploadLogo } = useCompanySettings();
+  const { refetch: refetchCompany } = useCompany();
   const {
     accounts,
     loading: bankLoading,
@@ -69,11 +71,18 @@ const SystemeSociete = () => {
   const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset input so same file can be re-selected
+    e.target.value = "";
     setUploading(true);
     const url = await uploadLogo(file);
     if (url) {
-      setForm((p) => ({ ...p, logo_url: url }));
-      await update({ ...form, logo_url: url });
+      // Update form state with new URL
+      const updatedForm = { ...form, logo_url: url };
+      setForm(updatedForm);
+      // Persist to DB with correct logo_url (not stale form)
+      await update(updatedForm);
+      // Refresh company context so sidebar logo updates immediately
+      await refetchCompany();
     }
     setUploading(false);
   };
