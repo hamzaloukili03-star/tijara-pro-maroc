@@ -38,7 +38,7 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
             <h1 className="text-lg font-semibold text-foreground">{title}</h1>
             {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <CompanySwitcher />
             <button className="p-2 rounded-md hover:bg-muted transition-colors relative">
               <Bell className="h-4 w-4 text-muted-foreground" />
@@ -75,16 +75,18 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
                     <UserCircle className="h-4 w-4" />
                     Mon profil
                   </button>
-                  <button
-                    onClick={() => { setProfileOpen(false); signOut(); }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Déconnexion
-                  </button>
                 </div>
               )}
             </div>
+
+            {/* Logout button — directly in header next to profile */}
+            <button
+              onClick={signOut}
+              title="Déconnexion"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
