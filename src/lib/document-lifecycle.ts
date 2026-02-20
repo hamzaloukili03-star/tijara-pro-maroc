@@ -14,9 +14,9 @@ export const STATUS_CONFIG: Record<DocumentStatus, StatusConfig> = {
   brouillon: { label: "Brouillon", color: "bg-muted", textColor: "text-muted-foreground", icon: "pencil", description: "Document modifiable" },
   valide: { label: "Validé", color: "bg-primary/15", textColor: "text-primary", icon: "check", description: "Lecture seule — en attente de livraison" },
   livre: { label: "Livré", color: "bg-accent", textColor: "text-accent-foreground", icon: "truck", description: "Stock décrémenté — en attente de facturation" },
-  facture: { label: "Facturé", color: "bg-orange-100", textColor: "text-orange-700", icon: "file-text", description: "Échéancier généré — données financières verrouillées" },
-  paye: { label: "Payé", color: "bg-green-100", textColor: "text-green-700", icon: "wallet", description: "Solde réglé intégralement" },
-  clos: { label: "Clos", color: "bg-secondary/10", textColor: "text-secondary", icon: "lock", description: "Document verrouillé définitivement" },
+  facture: { label: "Facturé", color: "bg-warning/15", textColor: "text-warning-foreground", icon: "file-text", description: "Échéancier généré — données financières verrouillées" },
+  paye: { label: "Payé", color: "bg-success/15", textColor: "text-success", icon: "wallet", description: "Solde réglé intégralement" },
+  clos: { label: "Clos", color: "bg-muted", textColor: "text-muted-foreground", icon: "lock", description: "Document verrouillé définitivement" },
   annule: { label: "Annulé", color: "bg-destructive/10", textColor: "text-destructive", icon: "x", description: "Document annulé" },
 };
 

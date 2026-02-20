@@ -158,7 +158,7 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
                   <TableCell>{d.customer?.name}</TableCell>
                   <TableCell>{d.delivery_date}</TableCell>
                   <TableCell>
-                    <Badge className={d.status === "validated" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}>
+                    <Badge className={d.status === "validated" ? "bg-success/15 text-success border-0" : "bg-muted text-muted-foreground border-0"}>
                       {d.status === "validated" ? "Validé" : d.status}
                     </Badge>
                   </TableCell>

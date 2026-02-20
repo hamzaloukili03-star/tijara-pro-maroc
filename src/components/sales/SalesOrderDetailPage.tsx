@@ -136,14 +136,14 @@ export function SalesOrderDetailPage({ order, hook, stock, onBack }: Props) {
 
             {/* Confirm BC */}
             {order.status === "draft" && (
-              <Button size="sm" className="h-9 bg-blue-700 hover:bg-blue-800 text-white border-0" onClick={handleConfirm}>
+              <Button size="sm" className="h-9" onClick={handleConfirm}>
                 <Check className="h-4 w-4 mr-1" /> Confirmer BC
               </Button>
             )}
 
             {/* Stock override */}
             {order.status === "draft" && (
-              <Button size="sm" variant="outline" className="h-9 border-orange-300 text-orange-700" onClick={() => setOverrideDialog(true)}>
+              <Button size="sm" variant="outline" className="h-9 border-warning/50 text-warning-foreground" onClick={() => setOverrideDialog(true)}>
                 <AlertTriangle className="h-4 w-4 mr-1" /> Dérogation stock
               </Button>
             )}
@@ -255,7 +255,7 @@ export function SalesOrderDetailPage({ order, hook, stock, onBack }: Props) {
                             <td className="py-2 pr-3">{l.description || "—"}</td>
                             <td className="py-2 text-right">{l.quantity}</td>
                             <td className="py-2 text-right">
-                              <span className={fullyDelivered ? "text-emerald-600 font-medium" : "text-orange-500"}>
+                              <span className={fullyDelivered ? "text-success font-medium" : "text-warning-foreground"}>
                                 {l.delivered_qty || 0}
                               </span>
                             </td>

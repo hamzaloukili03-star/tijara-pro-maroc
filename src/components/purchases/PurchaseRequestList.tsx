@@ -7,15 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { PurchaseRequestDetail } from "@/components/purchases/PurchaseRequestDetail";
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  draft:     { label: "Brouillon",  className: "bg-muted text-muted-foreground" },
-  submitted: { label: "Soumise",    className: "bg-yellow-100 text-yellow-800" },
-  approved:  { label: "Approuvée",  className: "bg-primary/15 text-primary" },
-  refused:   { label: "Refusée",    className: "bg-destructive/15 text-destructive" },
-  cancelled: { label: "Annulée",    className: "bg-muted text-muted-foreground line-through" },
-  validated: { label: "Approuvée",  className: "bg-primary/15 text-primary" },
-};
+import { PURCHASE_REQUEST_STATUS, getStatus } from "@/lib/status-config";
 
 interface Props {
   items: any[];
@@ -77,7 +69,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onSubmit, o
             </TableHeader>
             <TableBody>
               {items.map((item) => {
-                const cfg = statusConfig[item.status] || statusConfig.draft;
+                const cfg = getStatus(PURCHASE_REQUEST_STATUS, item.status);
                 const locked = ["approved", "refused", "cancelled", "validated"].includes(item.status);
                 return (
                   <TableRow key={item.id}>

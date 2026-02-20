@@ -8,17 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { ReceptionDialog } from "@/components/purchases/ReceptionDialog";
 import { useStockEngine } from "@/hooks/useStockEngine";
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  draft:              { label: "Brouillon",         className: "bg-muted text-muted-foreground" },
-  confirmed:          { label: "Confirmée",          className: "bg-primary/15 text-primary" },
-  partially_received: { label: "Partiellement reçue",className: "bg-yellow-100 text-yellow-800" },
-  received:           { label: "Reçue",              className: "bg-green-100 text-green-700" },
-  invoiced:           { label: "Facturée",           className: "bg-blue-100 text-blue-700" },
-  cancelled:          { label: "Annulée",            className: "bg-destructive/10 text-destructive" },
-  // legacy
-  validated:          { label: "Confirmée",          className: "bg-primary/15 text-primary" },
-};
+import { PURCHASE_ORDER_STATUS, getStatus } from "@/lib/status-config";
 
 interface Props {
   items: any[];
@@ -75,7 +65,7 @@ export function PurchaseOrderList({ items, loading, onNew, onEdit, onConfirm, on
             </TableHeader>
             <TableBody>
               {items.map((item) => {
-                const cfg = statusConfig[item.status] || statusConfig.draft;
+                const cfg = getStatus(PURCHASE_ORDER_STATUS, item.status);
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-sm font-medium">{item.number}</TableCell>

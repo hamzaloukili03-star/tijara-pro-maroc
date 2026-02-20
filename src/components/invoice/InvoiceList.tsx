@@ -14,6 +14,7 @@ import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/i
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Loader2, Eye, Pencil, Trash2, Printer } from "lucide-react";
 import { generateDocumentPdf } from "@/lib/pdf-generator";
+import { INVOICE_STATUS, getStatus } from "@/lib/status-config";
 
 interface InvoiceListProps {
   invoiceType: "client" | "supplier";
@@ -100,12 +101,7 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
     }
   };
 
-  const statusVariant = (s: string) => {
-    if (s === "draft") return "secondary" as const;
-    if (s === "validated") return "default" as const;
-    if (s === "cancelled") return "destructive" as const;
-    return "default" as const;
-  };
+  const statusCfg = (s: string) => getStatus(INVOICE_STATUS, s);
 
   return (
     <div className="space-y-4">
@@ -155,7 +151,7 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>{inv.customer?.name || inv.supplier?.name || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{inv.invoice_date}</TableCell>
-                  <TableCell><Badge variant={statusVariant(inv.status)}>{INVOICE_STATUS_LABELS[inv.status]}</Badge></TableCell>
+                  <TableCell><Badge className={`${statusCfg(inv.status).className} border-0`}>{INVOICE_STATUS_LABELS[inv.status]}</Badge></TableCell>
                   <TableCell className="text-right font-medium">{inv.total_ttc.toFixed(2)}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{inv.remaining_balance.toFixed(2)}</TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>

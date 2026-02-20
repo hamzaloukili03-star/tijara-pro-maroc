@@ -123,7 +123,7 @@ export function DeliveryDetailPage({ delivery, hook, stock, onBack }: Props) {
             {delivery.status === "draft" && (
               <>
                 <Button
-                  size="sm" className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
+                  size="sm" className="h-9"
                   onClick={handleValidate} disabled={validating}
                 >
                   {validating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}

@@ -8,12 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { usePurchaseOrders } from "@/hooks/usePurchases";
 import { useCompany } from "@/hooks/useCompany";
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  draft:     { label: "Brouillon", className: "bg-muted text-muted-foreground" },
-  validated: { label: "Validée",   className: "bg-green-100 text-green-700" },
-  cancelled: { label: "Annulée",   className: "bg-destructive/10 text-destructive" },
-};
+import { RECEPTION_STATUS, getStatus } from "@/lib/status-config";
 
 interface Props { hook: any; }
 
@@ -65,7 +60,7 @@ export function ReceptionListPage({ hook }: Props) {
             </TableHeader>
             <TableBody>
               {hook.items.map((item: any) => {
-                const cfg = statusConfig[item.status] || statusConfig.draft;
+                const cfg = getStatus(RECEPTION_STATUS, item.status);
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-sm font-medium">{item.number}</TableCell>

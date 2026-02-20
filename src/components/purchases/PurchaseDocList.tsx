@@ -22,9 +22,9 @@ interface Props {
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
-  pending_admin: "bg-yellow-100 text-yellow-700",
+  pending_admin: "bg-warning/15 text-warning-foreground",
   validated: "bg-primary/15 text-primary",
-  received: "bg-green-100 text-green-700",
+  received: "bg-success/15 text-success",
   cancelled: "bg-destructive/10 text-destructive",
 };
 const statusLabels: Record<string, string> = {

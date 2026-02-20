@@ -64,7 +64,7 @@ const Transferts = () => {
                     <TableCell>{t.from_warehouse?.name}</TableCell>
                     <TableCell>{t.to_warehouse?.name}</TableCell>
                     <TableCell>
-                      <Badge className={t.status === "validated" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}>
+                      <Badge className={t.status === "validated" ? "bg-success/15 text-success border-0" : "bg-muted text-muted-foreground border-0"}>
                         {t.status === "draft" ? "Brouillon" : t.status === "validated" ? "Validé" : t.status}
                       </Badge>
                     </TableCell>
