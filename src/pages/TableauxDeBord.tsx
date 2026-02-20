@@ -18,6 +18,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useCompany } from "@/hooks/useCompany";
 
 const MONTH_LABELS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
@@ -107,6 +108,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
    MAIN COMPONENT
    ================================================================ */
 const TableauxDeBord = () => {
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [kpi, setKpi] = useState<KPI>({
     revenue: 0, supplierDebt: 0, customerUnpaid: 0,
     cashPosition: 0, paidInvoices: 0, pendingInvoices: 0,
@@ -148,38 +151,47 @@ const TableauxDeBord = () => {
   const fetchData = async () => {
     setLoading(true);
 
+    // Build base queries scoped to active company
+    const scopeInv = (q: any) => companyId ? q.eq("company_id", companyId) : q;
+    const scopeLines = (q: any) => companyId ? q.eq("company_id", companyId) : q;
+    const scopeBank = (q: any) => companyId ? q.eq("company_id", companyId) : q;
+    const scopePay = (q: any) => companyId ? q.eq("company_id", companyId) : q;
+    const scopeStock = (q: any) => companyId
+      ? q.in("product_id", (supabase as any).from("products").select("id").eq("company_id", companyId))
+      : q;
+
     const [clientInvRes, suppInvRes, banksRes, paymentsRes, lowStockRes, invoiceLinesRes, catRes] = await Promise.all([
-      (supabase as any)
+      scopeInv((supabase as any)
         .from("invoices")
         .select("total_ttc, remaining_balance, status, invoice_date, customer:customers(name)")
         .eq("invoice_type", "client")
         .in("status", ["validated", "paid"])
         .gte("invoice_date", dateFrom)
-        .lte("invoice_date", dateTo),
-      (supabase as any)
+        .lte("invoice_date", dateTo)),
+      scopeInv((supabase as any)
         .from("invoices")
         .select("remaining_balance, total_ttc, invoice_date")
         .eq("invoice_type", "supplier")
         .in("status", ["validated", "paid"])
         .gte("invoice_date", dateFrom)
-        .lte("invoice_date", dateTo),
-      (supabase as any).from("bank_accounts").select("current_balance").eq("is_active", true),
-      (supabase as any)
+        .lte("invoice_date", dateTo)),
+      scopeBank((supabase as any).from("bank_accounts").select("current_balance").eq("is_active", true)),
+      scopePay((supabase as any)
         .from("payments")
         .select("id, payment_number, amount, payment_date, payment_type")
         .order("payment_date", { ascending: false })
-        .limit(5),
+        .limit(5)),
       (supabase as any)
         .from("stock_levels")
         .select("stock_on_hand, product:products(name, min_stock)")
         .limit(20),
       // Invoice lines for top products + categories
-      (supabase as any)
+      scopeLines((supabase as any)
         .from("invoice_lines")
         .select("total_ttc, total_ht, unit_price, quantity, product:products(name, category_id, category:product_categories(name, parent_id, parent:product_categories!product_categories_parent_id_fkey(name)))")
         .gte("created_at", dateFrom + "T00:00:00")
-        .lte("created_at", dateTo + "T23:59:59"),
-      // Categories
+        .lte("created_at", dateTo + "T23:59:59")),
+      // Categories (global, not company-scoped)
       (supabase as any).from("product_categories").select("id, name, parent_id"),
     ]);
 
@@ -300,7 +312,7 @@ const TableauxDeBord = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [selectedYear, customFrom, customTo]);
+  useEffect(() => { fetchData(); }, [selectedYear, customFrom, customTo, companyId]);
 
   const exportCSV = () => {
     const header = "Mois,Ventes,Achats\n";
