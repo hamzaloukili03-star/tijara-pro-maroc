@@ -1451,6 +1451,50 @@ export type Database = {
         }
         Relationships: []
       }
+      product_categories: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          level: number
+          name: string
+          parent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_files: {
         Row: {
           created_at: string
@@ -1593,6 +1637,7 @@ export type Database = {
           can_be_purchased: boolean
           can_be_sold: boolean
           category: string | null
+          category_id: string | null
           code: string
           company_id: string | null
           created_at: string
@@ -1616,6 +1661,7 @@ export type Database = {
           can_be_purchased?: boolean
           can_be_sold?: boolean
           category?: string | null
+          category_id?: string | null
           code: string
           company_id?: string | null
           created_at?: string
@@ -1639,6 +1685,7 @@ export type Database = {
           can_be_purchased?: boolean
           can_be_sold?: boolean
           category?: string | null
+          category_id?: string | null
           code?: string
           company_id?: string | null
           created_at?: string
@@ -1658,6 +1705,13 @@ export type Database = {
           weight?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_company_id_fkey"
             columns: ["company_id"]
@@ -2927,6 +2981,39 @@ export type Database = {
           id?: string
           tva_rates?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      units_of_measure: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          sort_order: number
+          symbol: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          sort_order?: number
+          symbol: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          sort_order?: number
+          symbol?: string
         }
         Relationships: []
       }

@@ -1,11 +1,15 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Product } from "@/hooks/useProducts";
 import { ProductImageUpload } from "@/components/ProductImageUpload";
+import { CategoryPicker } from "@/components/products/CategoryPicker";
+import { useProductCategories } from "@/hooks/useProductCategories";
+import { useUnitsOfMeasure } from "@/hooks/useUnitsOfMeasure";
 
 interface GeneralTabProps {
-  form: Partial<Product>;
+  form: Partial<Product> & { category_id?: string | null };
   updateField: (key: string, value: any) => void;
 }
 
@@ -16,9 +20,12 @@ const productTypes = [
 ];
 
 export function GeneralTab({ form, updateField }: GeneralTabProps) {
+  const { tree, flatList } = useProductCategories();
+  const { activeUnits } = useUnitsOfMeasure();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left: Image */}
+      {/* Left: Image + flags */}
       <div className="lg:col-span-1">
         <ProductImageUpload
           imageUrl={form.image_url}
@@ -48,72 +55,171 @@ export function GeneralTab({ form, updateField }: GeneralTabProps) {
       <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
           <Label htmlFor="name">Nom du produit *</Label>
-          <Input id="name" value={form.name || ""} onChange={(e) => updateField("name", e.target.value)} placeholder="Nom du produit" />
+          <Input
+            id="name"
+            value={form.name || ""}
+            onChange={(e) => updateField("name", e.target.value)}
+            placeholder="Nom du produit"
+          />
         </div>
 
         <div>
           <Label htmlFor="code">Référence interne (SKU) *</Label>
-          <Input id="code" value={form.code || ""} onChange={(e) => updateField("code", e.target.value)} placeholder="ART-001" />
+          <Input
+            id="code"
+            value={form.code || ""}
+            onChange={(e) => updateField("code", e.target.value)}
+            placeholder="ART-001"
+          />
         </div>
 
         <div>
           <Label htmlFor="product_type">Type de produit</Label>
-          <select
-            id="product_type"
+          <Select
             value={form.product_type || "stockable"}
-            onChange={(e) => updateField("product_type", e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onValueChange={(v) => updateField("product_type", v)}
           >
-            {productTypes.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
+            <SelectTrigger id="product_type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {productTypes.map((t) => (
+                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div>
-          <Label htmlFor="category">Catégorie</Label>
-          <Input id="category" value={form.category || ""} onChange={(e) => updateField("category", e.target.value)} placeholder="Ex: Matières premières" />
+        {/* Category picker — 3-level tree */}
+        <div className="sm:col-span-2">
+          <Label>Catégorie</Label>
+          <CategoryPicker
+            value={form.category_id ?? null}
+            onChange={(id) => updateField("category_id", id)}
+            tree={tree}
+            flatList={flatList}
+            placeholder="Sélectionner une catégorie..."
+          />
         </div>
 
         <div>
           <Label htmlFor="barcode">Code-barres</Label>
-          <Input id="barcode" value={form.barcode || ""} onChange={(e) => updateField("barcode", e.target.value)} placeholder="EAN13" />
+          <Input
+            id="barcode"
+            value={form.barcode || ""}
+            onChange={(e) => updateField("barcode", e.target.value)}
+            placeholder="EAN13"
+          />
         </div>
 
+        {/* Unit of sale — from UoM list */}
         <div>
           <Label htmlFor="unit">Unité de vente</Label>
-          <Input id="unit" value={form.unit || "Unité"} onChange={(e) => updateField("unit", e.target.value)} placeholder="Unité, Kg, L..." />
+          {activeUnits.length > 0 ? (
+            <Select
+              value={form.unit || "Unité"}
+              onValueChange={(v) => updateField("unit", v)}
+            >
+              <SelectTrigger id="unit">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {activeUnits.map((u) => (
+                  <SelectItem key={u.id} value={u.name}>
+                    {u.name} ({u.symbol})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id="unit"
+              value={form.unit || "Unité"}
+              onChange={(e) => updateField("unit", e.target.value)}
+              placeholder="Unité, Kg, L..."
+            />
+          )}
         </div>
 
+        {/* Unit of purchase — from UoM list */}
         <div>
           <Label htmlFor="purchase_unit">Unité d'achat</Label>
-          <Input id="purchase_unit" value={form.purchase_unit || "Unité"} onChange={(e) => updateField("purchase_unit", e.target.value)} placeholder="Unité, Kg, L..." />
+          {activeUnits.length > 0 ? (
+            <Select
+              value={form.purchase_unit || "Unité"}
+              onValueChange={(v) => updateField("purchase_unit", v)}
+            >
+              <SelectTrigger id="purchase_unit">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {activeUnits.map((u) => (
+                  <SelectItem key={u.id} value={u.name}>
+                    {u.name} ({u.symbol})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id="purchase_unit"
+              value={form.purchase_unit || "Unité"}
+              onChange={(e) => updateField("purchase_unit", e.target.value)}
+              placeholder="Unité, Kg, L..."
+            />
+          )}
         </div>
 
         <div>
           <Label htmlFor="sale_price">Prix de vente (MAD)</Label>
-          <Input id="sale_price" type="number" value={form.sale_price ?? 0} onChange={(e) => updateField("sale_price", Number(e.target.value))} />
+          <Input
+            id="sale_price"
+            type="number"
+            value={form.sale_price ?? 0}
+            onChange={(e) => updateField("sale_price", Number(e.target.value))}
+          />
         </div>
 
         <div>
           <Label htmlFor="purchase_price">Coût d'achat (MAD)</Label>
-          <Input id="purchase_price" type="number" value={form.purchase_price ?? 0} onChange={(e) => updateField("purchase_price", Number(e.target.value))} />
+          <Input
+            id="purchase_price"
+            type="number"
+            value={form.purchase_price ?? 0}
+            onChange={(e) => updateField("purchase_price", Number(e.target.value))}
+          />
         </div>
 
         <div>
           <Label htmlFor="tva_rate">TVA (%)</Label>
-          <Input id="tva_rate" type="number" value={form.tva_rate ?? 20} onChange={(e) => updateField("tva_rate", Number(e.target.value))} />
+          <Input
+            id="tva_rate"
+            type="number"
+            value={form.tva_rate ?? 20}
+            onChange={(e) => updateField("tva_rate", Number(e.target.value))}
+          />
         </div>
 
         <div>
           <Label htmlFor="weight">Poids (kg)</Label>
-          <Input id="weight" type="number" value={form.weight ?? 0} onChange={(e) => updateField("weight", Number(e.target.value))} step="0.01" />
+          <Input
+            id="weight"
+            type="number"
+            value={form.weight ?? 0}
+            onChange={(e) => updateField("weight", Number(e.target.value))}
+            step="0.01"
+          />
         </div>
 
         {form.product_type !== "service" && (
           <div>
             <Label htmlFor="min_stock">Stock minimum</Label>
-            <Input id="min_stock" type="number" value={form.min_stock ?? 0} onChange={(e) => updateField("min_stock", Number(e.target.value))} />
+            <Input
+              id="min_stock"
+              type="number"
+              value={form.min_stock ?? 0}
+              onChange={(e) => updateField("min_stock", Number(e.target.value))}
+            />
           </div>
         )}
 
