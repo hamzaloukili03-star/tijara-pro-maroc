@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Product } from "@/hooks/useProducts";
 import { ProductImageUpload } from "@/components/ProductImageUpload";
-import { CategoryPicker } from "@/components/products/CategoryPicker";
+import { CategoryDropdowns } from "@/components/products/CategoryDropdowns";
 import { useProductCategories } from "@/hooks/useProductCategories";
 import { useUnitsOfMeasure } from "@/hooks/useUnitsOfMeasure";
 
@@ -20,7 +20,7 @@ const productTypes = [
 ];
 
 export function GeneralTab({ form, updateField }: GeneralTabProps) {
-  const { tree, flatList } = useProductCategories();
+  const { categories } = useProductCategories();
   const { activeUnits } = useUnitsOfMeasure();
 
   return (
@@ -90,15 +90,13 @@ export function GeneralTab({ form, updateField }: GeneralTabProps) {
           </Select>
         </div>
 
-        {/* Category picker — 3-level tree */}
+        {/* Category — 3-level cascading dropdowns */}
         <div className="sm:col-span-2">
           <Label>Catégorie</Label>
-          <CategoryPicker
+          <CategoryDropdowns
             value={form.category_id ?? null}
             onChange={(id) => updateField("category_id", id)}
-            tree={tree}
-            flatList={flatList}
-            placeholder="Sélectionner une catégorie..."
+            categories={categories}
           />
         </div>
 

@@ -29,6 +29,7 @@ import SystemeLogs from "./pages/SystemeLogs";
 
 // Référentiel
 import ProductsPage from "./pages/master/ProductsPage";
+import CategoriesPage from "./pages/master/CategoriesPage";
 import CustomersPage from "./pages/master/CustomersPage";
 import SuppliersPage from "./pages/master/SuppliersPage";
 import WarehousesPage from "./pages/master/WarehousesPage";
@@ -102,6 +103,7 @@ const App = () => (
             <Route path="/referentiel/clients" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
             <Route path="/referentiel/fournisseurs" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
             <Route path="/referentiel/produits" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+            <Route path="/referentiel/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
             <Route path="/referentiel/depots" element={<ProtectedRoute><WarehousesPage /></ProtectedRoute>} />
             <Route path="/referentiel/comptes-bancaires" element={<ProtectedRoute><BankAccountsPage /></ProtectedRoute>} />
             <Route path="/referentiel/caisses" element={<ProtectedRoute><CashRegistersPage /></ProtectedRoute>} />

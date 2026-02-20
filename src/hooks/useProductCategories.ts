@@ -120,15 +120,28 @@ export function useProductCategories() {
   };
 
   const deleteCategory = async (id: string) => {
-    // check if any products reference this
-    const { count } = await (supabase as any)
+    // Check if any products reference this category
+    const { count: productCount } = await (supabase as any)
       .from("products")
       .select("id", { count: "exact", head: true })
       .eq("category_id", id);
-    if ((count ?? 0) > 0) {
+    if ((productCount ?? 0) > 0) {
       toast({
         title: "Impossible de supprimer",
-        description: `${count} produit(s) utilisent cette catégorie.`,
+        description: `${productCount} produit(s) utilisent cette catégorie.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    // Check if it has child categories
+    const { count: childCount } = await (supabase as any)
+      .from("product_categories")
+      .select("id", { count: "exact", head: true })
+      .eq("parent_id", id);
+    if ((childCount ?? 0) > 0) {
+      toast({
+        title: "Impossible de supprimer",
+        description: `Cette catégorie contient ${childCount} sous-catégorie(s). Supprimez-les d'abord.`,
         variant: "destructive",
       });
       return false;

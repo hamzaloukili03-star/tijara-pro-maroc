@@ -35,6 +35,7 @@ import {
   BarChart2,
   ScrollText,
   ShieldCheck,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_MODULE_ACCESS } from "@/types/auth";
@@ -69,6 +70,7 @@ const sections: SidebarSection[] = [
       { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
       { title: "Fournisseurs", icon: Truck, path: "/referentiel/fournisseurs" },
       { title: "Produits", icon: Package, path: "/referentiel/produits" },
+      { title: "Catégories", icon: Tag, path: "/referentiel/categories" },
       { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
       { title: "Comptes Bancaires", icon: Landmark, path: "/referentiel/comptes-bancaires" },
       { title: "Caisses", icon: CreditCard, path: "/referentiel/caisses" },
