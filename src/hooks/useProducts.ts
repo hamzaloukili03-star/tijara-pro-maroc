@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 export interface Product {
   id: string;
@@ -21,6 +22,7 @@ export interface Product {
   can_be_sold: boolean;
   can_be_purchased: boolean;
   weight: number;
+  company_id?: string | null;
 }
 
 export interface ProductAttribute {
@@ -73,12 +75,16 @@ export interface ProductFile {
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetchProducts = useCallback(async () => {
+    if (!companyId) { setProducts([]); setLoading(false); return; }
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("products")
       .select("*")
+      .eq("company_id", companyId)
       .order("code", { ascending: true });
     setLoading(false);
     if (error) {
@@ -86,12 +92,12 @@ export function useProducts() {
       return;
     }
     setProducts(data || []);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   const createProduct = async (record: Partial<Product>) => {
-    const { data, error } = await (supabase as any).from("products").insert(record).select().single();
+    const { data, error } = await (supabase as any).from("products").insert({ ...record, company_id: companyId }).select().single();
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return null;
@@ -238,8 +244,6 @@ export function useProductVariants(productId: string | null) {
     attributeLines: { attribute_id: string; value_ids: string[] }[]
   ) => {
     if (attributeLines.length === 0) return;
-
-    // Generate cartesian product
     const combinations: { attribute_id: string; value_id: string }[][] = attributeLines.reduce(
       (acc: any[][], line) => {
         if (acc.length === 0) {

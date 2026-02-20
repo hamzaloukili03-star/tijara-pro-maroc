@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 export interface Payment {
   id: string;
@@ -40,13 +41,17 @@ export interface PaymentAllocation {
 export function usePayments(paymentType: "client" | "supplier") {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetchPayments = useCallback(async () => {
+    if (!companyId) { setPayments([]); setLoading(false); return; }
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("payments")
       .select("*, customer:customers(name), supplier:suppliers(name), bank_account:bank_accounts(account_name, bank_name)")
       .eq("payment_type", paymentType)
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
     if (error) {
@@ -54,7 +59,7 @@ export function usePayments(paymentType: "client" | "supplier") {
       return;
     }
     setPayments((data || []) as Payment[]);
-  }, [paymentType]);
+  }, [paymentType, companyId]);
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
@@ -88,6 +93,7 @@ export function usePayments(paymentType: "client" | "supplier") {
         ...payment,
         payment_number: number,
         payment_type: paymentType,
+        company_id: companyId,
         created_by: (await supabase.auth.getUser()).data.user?.id,
       })
       .select()
@@ -98,7 +104,6 @@ export function usePayments(paymentType: "client" | "supplier") {
       return null;
     }
 
-    // Create allocations and update invoice balances
     for (const alloc of allocations) {
       await (supabase as any).from("payment_allocations").insert({
         payment_id: pmt.id,
@@ -106,7 +111,6 @@ export function usePayments(paymentType: "client" | "supplier") {
         amount: alloc.amount,
       });
 
-      // Get current balance
       const { data: inv } = await (supabase as any)
         .from("invoices")
         .select("remaining_balance")
@@ -121,7 +125,6 @@ export function usePayments(paymentType: "client" | "supplier") {
       }
     }
 
-    // Audit log
     await (supabase as any).from("audit_logs").insert({
       action: "create_payment",
       table_name: "payments",
@@ -136,7 +139,6 @@ export function usePayments(paymentType: "client" | "supplier") {
   };
 
   const remove = async (id: string) => {
-    // Get allocations to reverse
     const { data: allocs } = await (supabase as any)
       .from("payment_allocations")
       .select("invoice_id, amount")

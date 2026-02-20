@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useAuth } from "@/hooks/useAuth";
+import { useCompany } from "@/hooks/useCompany";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ interface InvoiceListProps {
 export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProps) {
   const { invoices, loading, create, updateInvoice, updateLines, fetchLines, validateInvoice, cancelInvoice, markPaid, remove } = useInvoices(invoiceType);
   const { isAdmin, hasRole } = useAuth();
+  const { activeCompany } = useCompany();
   const canManage = isAdmin() || hasRole("accountant");
 
   const [search, setSearch] = useState("");
@@ -32,10 +34,11 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
   const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).then(({ data }) => {
+    if (!activeCompany?.id) { setProducts([]); return; }
+    supabase.from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).eq("company_id", activeCompany.id).then(({ data }) => {
       setProducts(data || []);
     });
-  }, []);
+  }, [activeCompany?.id]);
 
   const filtered = invoices.filter((inv) => {
     const matchSearch = !search || inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||

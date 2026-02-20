@@ -1,28 +1,32 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 import type { Invoice, InvoiceLine } from "@/types/invoice";
 
 export function useInvoices(invoiceType: "client" | "supplier") {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
+    if (!companyId) { setInvoices([]); setLoading(false); return; }
     setLoading(true);
-    const query = (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("invoices")
       .select("*, customer:customers(name, ice), supplier:suppliers(name, ice)")
       .eq("invoice_type", invoiceType)
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
 
-    const { data, error } = await query;
     setLoading(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return;
     }
     setInvoices((data || []) as Invoice[]);
-  }, [invoiceType]);
+  }, [invoiceType, companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -42,7 +46,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
 
     const { data: inv, error: invErr } = await (supabase as any)
       .from("invoices")
-      .insert({ ...invoice, invoice_number: number, invoice_type: invoiceType })
+      .insert({ ...invoice, invoice_number: number, invoice_type: invoiceType, company_id: companyId })
       .select()
       .single();
 
@@ -52,7 +56,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
     }
 
     if (lines.length > 0) {
-      const linesToInsert = lines.map((l, i) => ({ ...l, invoice_id: inv.id, sort_order: i }));
+      const linesToInsert = lines.map((l, i) => ({ ...l, invoice_id: inv.id, sort_order: i, company_id: companyId }));
       const { error: lErr } = await (supabase as any).from("invoice_lines").insert(linesToInsert);
       if (lErr) {
         toast({ title: "Erreur lignes", description: lErr.message, variant: "destructive" });
@@ -75,10 +79,9 @@ export function useInvoices(invoiceType: "client" | "supplier") {
   };
 
   const updateLines = async (invoiceId: string, lines: Partial<InvoiceLine>[]) => {
-    // Delete existing, re-insert
     await (supabase as any).from("invoice_lines").delete().eq("invoice_id", invoiceId);
     if (lines.length > 0) {
-      const linesToInsert = lines.map((l, i) => ({ ...l, invoice_id: invoiceId, sort_order: i }));
+      const linesToInsert = lines.map((l, i) => ({ ...l, invoice_id: invoiceId, sort_order: i, company_id: companyId }));
       const { error } = await (supabase as any).from("invoice_lines").insert(linesToInsert);
       if (error) {
         toast({ title: "Erreur lignes", description: error.message, variant: "destructive" });
@@ -104,7 +107,6 @@ export function useInvoices(invoiceType: "client" | "supplier") {
   const validateInvoice = async (id: string) => {
     const ok = await updateInvoice(id, { status: "validated" });
     if (ok) {
-      // Log to audit
       await (supabase as any).from("audit_logs").insert({
         action: "validate_invoice",
         table_name: "invoices",
