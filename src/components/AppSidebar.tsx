@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useCompany } from "@/hooks/useCompany";
 import {
   Settings,
   ShoppingCart,
@@ -14,7 +15,6 @@ import {
   Building2,
   Cog,
   ClipboardList,
-  LogOut,
   Database,
   Warehouse,
   UserCheck,
@@ -36,8 +36,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { ROLE_MODULE_ACCESS, ROLE_LABELS } from "@/types/auth";
-import { Badge } from "@/components/ui/badge";
+import { ROLE_MODULE_ACCESS } from "@/types/auth";
 import logo from "@/assets/logo-tijarapro-white.png";
 
 interface SubItem {
@@ -158,7 +157,8 @@ export function AppSidebar() {
     ));
     return active?.label ?? null;
   });
-  const { profile, roles, signOut } = useAuth();
+  const { roles } = useAuth();
+  const { activeCompany } = useCompany();
   const isSuperAdmin = roles.includes("super_admin");
 
   // Sync open section when route changes via sub-link click
@@ -202,7 +202,7 @@ export function AppSidebar() {
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Logo */}
+      {/* Logo TijaraPro */}
       <div className="flex items-center justify-center px-5 py-5 border-b border-white/[0.08]">
         {!collapsed && (
           <img src={logo} alt="TijaraPro" className="h-10 w-auto object-contain drop-shadow-[0_0_10px_rgba(38,182,231,0.35)]" />
@@ -301,27 +301,21 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Footer: company logo + logout */}
-      <div className="px-2 py-3 border-t border-white/[0.08] space-y-2">
-        {!collapsed && (
+      {/* Footer: active company logo (if exists) */}
+      <div className="px-3 py-3 border-t border-white/[0.08]">
+        {!collapsed && activeCompany?.logo_url && (
           <div className="flex items-center justify-center px-2 py-2">
             <img
-              src={logo}
-              alt="TijaraPro"
-              className="h-7 w-auto object-contain opacity-40"
+              src={activeCompany.logo_url}
+              alt={activeCompany.raison_sociale}
+              className="h-8 w-auto max-w-full object-contain opacity-70"
             />
           </div>
         )}
-        <button
-          onClick={signOut}
-          className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-[hsl(0,60%,70%)] hover:bg-[rgba(220,60,60,0.12)] hover:text-[hsl(0,70%,75%)] text-sm font-medium transition-all duration-200
-            ${collapsed ? "justify-center" : ""}
-          `}
-          title="Déconnexion"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Déconnexion</span>}
-        </button>
+        {/* Empty space placeholder when no logo, to maintain consistent footer height */}
+        {!collapsed && !activeCompany?.logo_url && (
+          <div className="h-12" />
+        )}
       </div>
     </div>
   );
