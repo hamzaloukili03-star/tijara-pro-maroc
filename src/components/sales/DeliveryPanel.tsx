@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +7,7 @@ import { Loader2, Truck, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 interface Props {
   salesOrders: any;
@@ -20,18 +21,22 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
   const [deliveryDialog, setDeliveryDialog] = useState<string | null>(null);
   const [orderLines, setOrderLines] = useState<any[]>([]);
   const [deliveryQtys, setDeliveryQtys] = useState<Record<string, number>>({});
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
-  const fetchDeliveries = async () => {
+  const fetchDeliveries = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
+    let query = (supabase as any)
       .from("deliveries")
       .select("*, customer:customers(name), delivery_lines:delivery_lines(quantity)")
       .order("created_at", { ascending: false });
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data } = await query;
     setDeliveries(data || []);
     setLoading(false);
-  };
+  }, [companyId]);
 
-  useEffect(() => { fetchDeliveries(); }, []);
+  useEffect(() => { fetchDeliveries(); }, [fetchDeliveries]);
 
   const openDeliveryDialog = async (orderId: string) => {
     const lines = await salesOrders.getLines(orderId);

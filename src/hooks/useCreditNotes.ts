@@ -2,24 +2,29 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { CreditNote, CreditNoteLine } from "@/types/invoice";
+import { useCompany } from "@/hooks/useCompany";
 
 export function useCreditNotes() {
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("credit_notes")
       .select("*, customer:customers(name), supplier:suppliers(name), invoice:invoices(invoice_number)")
       .order("created_at", { ascending: false });
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data, error } = await query;
     setLoading(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return;
     }
     setCreditNotes((data || []) as CreditNote[]);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
