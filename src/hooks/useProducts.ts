@@ -9,6 +9,7 @@ export interface Product {
   name: string;
   description: string | null;
   category: string | null;
+  category_id: string | null;   // FK to product_categories
   unit: string;
   purchase_unit: string;
   purchase_price: number;
