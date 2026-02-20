@@ -115,6 +115,7 @@ export type Database = {
       bank_transactions: {
         Row: {
           bank_account_id: string
+          company_id: string | null
           created_at: string
           credit: number
           debit: number
@@ -130,6 +131,7 @@ export type Database = {
         }
         Insert: {
           bank_account_id: string
+          company_id?: string | null
           created_at?: string
           credit?: number
           debit?: number
@@ -145,6 +147,7 @@ export type Database = {
         }
         Update: {
           bank_account_id?: string
+          company_id?: string | null
           created_at?: string
           credit?: number
           debit?: number
@@ -164,6 +167,13 @@ export type Database = {
             columns: ["bank_account_id"]
             isOneToOne: false
             referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -736,6 +746,7 @@ export type Database = {
       }
       delivery_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           delivery_id: string
           description: string
@@ -752,6 +763,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           delivery_id: string
           description?: string
@@ -768,6 +780,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           delivery_id?: string
           description?: string
@@ -784,6 +797,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "delivery_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "delivery_lines_delivery_id_fkey"
             columns: ["delivery_id"]
@@ -983,6 +1003,7 @@ export type Database = {
       }
       invoice_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string
           discount_percent: number
@@ -998,6 +1019,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -1013,6 +1035,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -1028,6 +1051,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoice_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_lines_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -1651,6 +1681,7 @@ export type Database = {
       }
       purchase_order_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string
           discount_percent: number
@@ -1667,6 +1698,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -1683,6 +1715,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -1699,6 +1732,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_order_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_order_lines_product_id_fkey"
             columns: ["product_id"]
@@ -1892,6 +1932,7 @@ export type Database = {
       }
       quotation_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string
           discount_percent: number
@@ -1907,6 +1948,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -1922,6 +1964,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -1937,6 +1980,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "quotation_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quotation_lines_product_id_fkey"
             columns: ["product_id"]
@@ -2024,6 +2074,7 @@ export type Database = {
       }
       reception_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string
           discount_percent: number
@@ -2040,6 +2091,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -2056,6 +2108,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string
           discount_percent?: number
@@ -2072,6 +2125,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "reception_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reception_lines_product_id_fkey"
             columns: ["product_id"]
@@ -2229,6 +2289,7 @@ export type Database = {
       }
       sales_order_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           delivered_qty: number
           description: string
@@ -2245,6 +2306,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           delivered_qty?: number
           description?: string
@@ -2261,6 +2323,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           delivered_qty?: number
           description?: string
@@ -2277,6 +2340,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_order_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_order_lines_product_id_fkey"
             columns: ["product_id"]
@@ -2295,6 +2365,7 @@ export type Database = {
       }
       sales_orders: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           customer_id: string
@@ -2312,6 +2383,7 @@ export type Database = {
           warehouse_id: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
@@ -2329,6 +2401,7 @@ export type Database = {
           warehouse_id?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
@@ -2346,6 +2419,13 @@ export type Database = {
           warehouse_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_orders_customer_id_fkey"
             columns: ["customer_id"]
