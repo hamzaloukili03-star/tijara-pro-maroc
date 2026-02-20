@@ -310,22 +310,19 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Footer: active company logo (if exists) */}
-      <div className="px-3 py-3 border-t border-white/[0.08]">
-        {!collapsed && activeCompany?.logo_url && (
-          <div className="flex items-center justify-center px-2 py-2">
+      {/* Footer: active company logo */}
+      {!collapsed && activeCompany?.logo_url && (
+        <div className="px-4 py-3 border-t border-white/[0.08] shrink-0">
+          <div className="w-full flex items-center justify-center rounded-xl bg-white/[0.05] px-3 py-2.5 overflow-hidden">
             <img
               src={activeCompany.logo_url}
               alt={activeCompany.raison_sociale}
-              className="h-8 w-auto max-w-full object-contain opacity-70"
+              className="w-full max-h-10 object-contain object-center opacity-80 hover:opacity-100 transition-opacity duration-200"
+              style={{ maxWidth: "100%", height: "auto" }}
             />
           </div>
-        )}
-        {/* Empty space placeholder when no logo, to maintain consistent footer height */}
-        {!collapsed && !activeCompany?.logo_url && (
-          <div className="h-12" />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 
