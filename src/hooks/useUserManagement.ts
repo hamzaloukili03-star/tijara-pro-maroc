@@ -46,8 +46,8 @@ export function useUserManagement() {
     }
 
     const { data: allRoles, error: rErr } = await supabase
-      .from("user_roles")
-      .select("*");
+      .from("user_roles" as any)
+      .select("user_id, role");
 
     if (rErr) {
       toast({ title: "Erreur", description: rErr.message, variant: "destructive" });
@@ -56,7 +56,8 @@ export function useUserManagement() {
     }
 
     const roleMap = new Map<string, AppRole[]>();
-    (allRoles || []).forEach((r: any) => {
+    ((allRoles || []) as any[]).forEach((r: any) => {
+      if (!r.role) return;
       const existing = roleMap.get(r.user_id) || [];
       existing.push(r.role as AppRole);
       roleMap.set(r.user_id, existing);
@@ -105,8 +106,9 @@ export function useUserManagement() {
     const user = users.find(u => u.user_id === userId);
     const oldRoles = user?.roles || [];
 
-    await (supabase as any).from("user_roles").delete().eq("user_id", userId);
-    const { error } = await (supabase as any).from("user_roles").insert({ user_id: userId, role });
+    // Delete existing user_roles for this user (legacy rows only - those with role text and no role_id)
+    await supabase.from("user_roles" as any).delete().eq("user_id", userId).is("role_id", null);
+    const { error } = await supabase.from("user_roles" as any).insert({ user_id: userId, role, is_primary: true });
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return false;

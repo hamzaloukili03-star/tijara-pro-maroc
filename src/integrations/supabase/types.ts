@@ -1299,6 +1299,30 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          action: string
+          id: string
+          name_ar: string
+          name_fr: string
+          resource: string
+        }
+        Insert: {
+          action: string
+          id?: string
+          name_ar?: string
+          name_fr: string
+          resource: string
+        }
+        Update: {
+          action?: string
+          id?: string
+          name_ar?: string
+          name_fr?: string
+          resource?: string
+        }
+        Relationships: []
+      }
       product_attribute_line_values: {
         Row: {
           id: string
@@ -2239,6 +2263,44 @@ export type Database = {
           },
         ]
       }
+      record_rules: {
+        Row: {
+          applies_to_role_id: string | null
+          domain_json: Json
+          id: string
+          is_active: boolean
+          name: string
+          priority: number
+          resource: string
+        }
+        Insert: {
+          applies_to_role_id?: string | null
+          domain_json?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: number
+          resource: string
+        }
+        Update: {
+          applies_to_role_id?: string | null
+          domain_json?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: number
+          resource?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_rules_applies_to_role_id_fkey"
+            columns: ["applies_to_role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reminder_logs: {
         Row: {
           created_at: string
@@ -2286,6 +2348,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      role_permissions: {
+        Row: {
+          approval_level: number | null
+          created_at: string
+          id: string
+          permission_id: string
+          requires_validation: boolean
+          role_id: string
+          scope: string
+        }
+        Insert: {
+          approval_level?: number | null
+          created_at?: string
+          id?: string
+          permission_id: string
+          requires_validation?: boolean
+          role_id: string
+          scope?: string
+        }
+        Update: {
+          approval_level?: number | null
+          created_at?: string
+          id?: string
+          permission_id?: string
+          requires_validation?: boolean
+          role_id?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          module: string
+          name_ar: string
+          name_fr: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          module?: string
+          name_ar?: string
+          name_fr: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          module?: string
+          name_ar?: string
+          name_fr?: string
+        }
+        Relationships: []
       }
       sales_order_lines: {
         Row: {
@@ -2827,22 +2964,67 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          company_id: string | null
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          is_primary: boolean
+          role: string | null
+          role_id: string | null
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          is_primary?: boolean
+          role?: string | null
+          role_id?: string | null
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          is_primary?: boolean
+          role?: string | null
+          role_id?: string | null
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles_legacy: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
         }
         Relationships: []
       }
