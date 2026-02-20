@@ -8,8 +8,6 @@ import {
   FileText,
   Wallet,
   BarChart3,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   Menu,
   Users,
@@ -35,6 +33,7 @@ import {
   ReceiptText,
   BarChart2,
   ScrollText,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_MODULE_ACCESS, ROLE_LABELS } from "@/types/auth";
@@ -136,7 +135,8 @@ const sections: SidebarSection[] = [
     adminOnly: true,
     subItems: [
       { title: "Vue d'ensemble", icon: BarChart3, path: "/" },
-      { title: "Utilisateurs & Rôles", icon: Users, path: "/systeme/utilisateurs" },
+      { title: "Utilisateurs", icon: Users, path: "/systeme/utilisateurs" },
+      { title: "Profils & Rôles", icon: ShieldCheck, path: "/systeme/profils" },
       { title: "Gestion des Sociétés", icon: Building2, path: "/systeme/societes" },
       { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
       { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },

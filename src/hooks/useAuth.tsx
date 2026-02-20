@@ -35,10 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchRoles = async (userId: string) => {
     const { data } = await supabase
-      .from("user_roles")
+      .from("user_roles" as any)
       .select("role")
-      .eq("user_id", userId);
-    if (data) setRoles(data.map((r: any) => r.role as AppRole));
+      .eq("user_id", userId)
+      .not("role", "is", null);
+    if (data) setRoles((data as any[]).map((r: any) => r.role as AppRole).filter(Boolean));
   };
 
   const refreshProfile = async () => {
