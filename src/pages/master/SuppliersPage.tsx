@@ -135,12 +135,15 @@ export default function SuppliersPage() {
       type: "select",
       defaultValue: "30j",
       options: [
-        { value: "comptant", label: "Comptant" },
         { value: "30j", label: "30 jours" },
         { value: "60j", label: "60 jours" },
         { value: "90j", label: "90 jours" },
       ],
-      showInTable: false,
+      showInTable: true,
+      render: (val: any) => {
+        const map: Record<string, string> = { "30j": "30 jours", "60j": "60 jours", "90j": "90 jours" };
+        return <span className="text-sm text-muted-foreground">{map[val] ?? val ?? "—"}</span>;
+      },
     },
     { key: "notes", label: "Notes", type: "textarea", showInTable: false },
   ];
