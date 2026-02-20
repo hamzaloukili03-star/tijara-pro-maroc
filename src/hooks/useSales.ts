@@ -98,10 +98,20 @@ export function useQuotations() {
     return data;
   };
 
-  const validate = async (id: string) => {
-    await (supabase as any).from("quotations").update({ status: "validated" }).eq("id", id);
+  const validate = async (id: string, requireDoubleValidation = false) => {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const newStatus = requireDoubleValidation ? "pending_admin" : "validated";
+    await (supabase as any).from("quotations").update({ status: newStatus }).eq("id", id);
     await auditLog("validate_quotation", "quotations", id);
-    toast({ title: "Devis validé" });
+    toast({ title: requireDoubleValidation ? "Devis soumis pour approbation" : "Devis validé" });
+    await fetch();
+  };
+
+  const adminValidate = async (id: string) => {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    await (supabase as any).from("quotations").update({ status: "validated", admin_validated_at: new Date().toISOString(), admin_validated_by: userId }).eq("id", id);
+    await auditLog("admin_validate_quotation", "quotations", id);
+    toast({ title: "Devis approuvé par l'admin" });
     await fetch();
   };
 
@@ -144,7 +154,7 @@ export function useQuotations() {
     return data || [];
   };
 
-  return { items, loading, fetch, create, validate, cancel, convertToOrder, getLines };
+  return { items, loading, fetch, create, validate, adminValidate, cancel, convertToOrder, getLines };
 }
 
 export function useSalesOrders() {

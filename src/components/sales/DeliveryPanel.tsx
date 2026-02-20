@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Truck, FileText } from "lucide-react";
+import { Loader2, Truck, FileText, Paperclip } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
+import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
 
 interface Props {
   salesOrders: any;
@@ -21,6 +22,7 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
   const [deliveryDialog, setDeliveryDialog] = useState<string | null>(null);
   const [orderLines, setOrderLines] = useState<any[]>([]);
   const [deliveryQtys, setDeliveryQtys] = useState<Record<string, number>>({});
+  const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
   const { activeCompany } = useCompany();
   const companyId = activeCompany?.id ?? null;
 
@@ -131,18 +133,35 @@ export function DeliveryPanel({ salesOrders, stock, showAll }: Props) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {d.status === "validated" && !d.invoice_id && (
-                      <Button size="sm" variant="outline" onClick={() => handleCreateInvoice(d.id)}>
-                        <FileText className="h-3 w-3 mr-1" /> Facturer
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Pièces jointes"
+                        onClick={() => setAttachDialog({ id: d.id, number: d.delivery_number })}>
+                        <Paperclip className="h-3.5 w-3.5" />
                       </Button>
-                    )}
-                    {d.invoice_id && <Badge variant="outline">Facturé</Badge>}
+                      {d.status === "validated" && !d.invoice_id && (
+                        <Button size="sm" variant="outline" onClick={() => handleCreateInvoice(d.id)}>
+                          <FileText className="h-3 w-3 mr-1" /> Facturer
+                        </Button>
+                      )}
+                      {d.invoice_id && <Badge variant="outline">Facturé</Badge>}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {attachDialog && (
+        <DocAttachmentsDialog
+          open={!!attachDialog}
+          onClose={() => setAttachDialog(null)}
+          docType="delivery"
+          docId={attachDialog.id}
+          docNumber={attachDialog.number}
+          companyId={companyId}
+        />
       )}
 
       {deliveryDialog && (

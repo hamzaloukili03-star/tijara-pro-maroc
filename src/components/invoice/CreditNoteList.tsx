@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { InvoiceLineEditor } from "./InvoiceLineEditor";
 import { InvoiceAttachmentsPanel } from "./InvoiceAttachmentsPanel";
+import { DocumentAttachmentsPanel } from "@/components/DocumentAttachmentsPanel";
 import { CREDIT_NOTE_STATUS_LABELS, calcLineTotals, type CreditNote, type CreditNoteLine, type Invoice } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Loader2, CheckCircle, XCircle } from "lucide-react";

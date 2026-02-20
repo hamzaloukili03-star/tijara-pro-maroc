@@ -93,11 +93,20 @@ export function usePurchaseOrders() {
     return data;
   };
 
-  const validate = async (id: string) => {
-    await (supabase as any).from("purchase_orders").update({ status: "validated" }).eq("id", id);
+  const validate = async (id: string, requireDoubleValidation = false) => {
+    const newStatus = requireDoubleValidation ? "pending_admin" : "validated";
+    await (supabase as any).from("purchase_orders").update({ status: newStatus }).eq("id", id);
     const userId = (await supabase.auth.getUser()).data.user?.id;
     await (supabase as any).from("audit_logs").insert({ action: "validate_purchase_order", table_name: "purchase_orders", record_id: id, user_id: userId });
-    toast({ title: "BC fournisseur validé" });
+    toast({ title: requireDoubleValidation ? "BC soumis pour approbation admin" : "BC fournisseur validé" });
+    await fetch();
+  };
+
+  const adminValidate = async (id: string) => {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    await (supabase as any).from("purchase_orders").update({ status: "validated", admin_validated_at: new Date().toISOString(), admin_validated_by: userId }).eq("id", id);
+    await (supabase as any).from("audit_logs").insert({ action: "admin_validate_purchase_order", table_name: "purchase_orders", record_id: id, user_id: userId });
+    toast({ title: "BC approuvé par l'admin" });
     await fetch();
   };
 

@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, X, Loader2 } from "lucide-react";
+import { Plus, Check, X, Loader2, Paperclip } from "lucide-react";
+import { useState } from "react";
+import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
+import { useCompany } from "@/hooks/useCompany";
 
 interface Props {
   title: string;
@@ -10,23 +13,29 @@ interface Props {
   onCreate?: () => void;
   onValidate?: (id: string) => void;
   onCancel?: (id: string) => void;
+  onAdminValidate?: (id: string) => void;
   docType: "request" | "order";
 }
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
+  pending_admin: "bg-yellow-100 text-yellow-700",
   validated: "bg-primary/15 text-primary",
   received: "bg-green-100 text-green-700",
   cancelled: "bg-destructive/10 text-destructive",
 };
 const statusLabels: Record<string, string> = {
   draft: "Brouillon",
+  pending_admin: "En attente admin",
   validated: "Validé",
   received: "Réceptionné",
   cancelled: "Annulé",
 };
 
-export function PurchaseDocList({ title, items, loading, onCreate, onValidate, onCancel, docType }: Props) {
+export function PurchaseDocList({ title, items, loading, onCreate, onValidate, onCancel, onAdminValidate, docType }: Props) {
+  const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
+  const { activeCompany } = useCompany();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -61,19 +70,50 @@ export function PurchaseDocList({ title, items, loading, onCreate, onValidate, o
                   <TableCell>
                     <Badge className={statusColors[item.status] || ""}>{statusLabels[item.status] || item.status}</Badge>
                   </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    {item.status === "draft" && onValidate && (
-                      <Button size="sm" variant="outline" onClick={() => onValidate(item.id)}><Check className="h-3 w-3 mr-1" /> Valider</Button>
-                    )}
-                    {item.status === "draft" && onCancel && (
-                      <Button size="sm" variant="ghost" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
-                    )}
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1 flex-wrap">
+                      {/* Attachments */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        title="Pièces jointes & notes vocales"
+                        onClick={() => setAttachDialog({ id: item.id, number: item.number })}
+                      >
+                        <Paperclip className="h-3.5 w-3.5" />
+                      </Button>
+
+                      {item.status === "draft" && onValidate && (
+                        <Button size="sm" variant="outline" onClick={() => onValidate(item.id)}><Check className="h-3 w-3 mr-1" /> Valider</Button>
+                      )}
+                      {item.status === "draft" && onCancel && (
+                        <Button size="sm" variant="ghost" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
+                      )}
+
+                      {/* Pending admin */}
+                      {item.status === "pending_admin" && onAdminValidate && (
+                        <Button size="sm" variant="outline" className="border-warning/50 text-warning" onClick={() => onAdminValidate(item.id)}>
+                          <Check className="h-3 w-3 mr-1" /> Approuver
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {attachDialog && (
+        <DocAttachmentsDialog
+          open={!!attachDialog}
+          onClose={() => setAttachDialog(null)}
+          docType={docType === "order" ? "purchase_order" : "purchase_request"}
+          docId={attachDialog.id}
+          docNumber={attachDialog.number}
+          companyId={activeCompany?.id}
+        />
       )}
     </div>
   );
