@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, X, ArrowRight, Loader2, Paperclip } from "lucide-react";
+import { Plus, Check, X, ArrowRight, Loader2, Paperclip, Eye, Printer } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
 import { useCompany } from "@/hooks/useCompany";
+import { generateDocumentPdf } from "@/lib/pdf-generator";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
 interface Props {
   title: string;
@@ -43,6 +45,7 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
   const [selectedWh, setSelectedWh] = useState<string>("");
   const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
   const { activeCompany } = useCompany();
+  const { settings: companySettings } = useCompanySettings();
 
   useEffect(() => {
     (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => {
@@ -50,6 +53,37 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
       if (data?.length) setSelectedWh(data[0].id);
     });
   }, []);
+
+  const handlePrint = async (item: any) => {
+    if (!companySettings) return;
+    // Fetch lines
+    const { data: lines } = await (supabase as any)
+      .from(docType === "quotation" ? "quotation_lines" : "sales_order_lines")
+      .select("*")
+      .eq(docType === "quotation" ? "quotation_id" : "sales_order_id", item.id)
+      .order("sort_order");
+
+    await generateDocumentPdf({
+      type: docType === "quotation" ? "devis" : "bon_commande",
+      number: item.number,
+      date: item.date,
+      clientName: item.customer?.name || "—",
+      lines: (lines || []).map((l: any) => ({
+        description: l.description,
+        quantity: Number(l.quantity),
+        unit_price: Number(l.unit_price),
+        discount_percent: Number(l.discount_percent || 0),
+        tva_rate: Number(l.tva_rate),
+        total_ht: Number(l.total_ht),
+        total_ttc: Number(l.total_ttc),
+      })),
+      subtotalHt: Number(item.subtotal_ht || 0),
+      totalTva: Number(item.total_tva || 0),
+      totalTtc: Number(item.total_ttc || 0),
+      notes: item.notes,
+      paymentTerms: item.payment_terms,
+    }, companySettings);
+  };
 
   return (
     <div className="space-y-4">
@@ -87,12 +121,22 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1 flex-wrap">
+                      {/* View */}
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Voir">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+
+                      {/* Print */}
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Imprimer" onClick={() => handlePrint(item)}>
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+
                       {/* Attachments button */}
                       <Button
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0"
-                        title="Pièces jointes & notes vocales"
+                        title="Pièces jointes"
                         onClick={() => setAttachDialog({ id: item.id, number: item.number })}
                       >
                         <Paperclip className="h-3.5 w-3.5" />
@@ -103,7 +147,7 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
                         <Button size="sm" variant="outline" onClick={() => onValidate(item.id)}><Check className="h-3 w-3 mr-1" /> Valider</Button>
                       )}
                       {item.status === "draft" && onCancel && (
-                        <Button size="sm" variant="ghost" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Annuler" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
                       )}
 
                       {/* Pending admin validation */}
@@ -126,7 +170,7 @@ export function SalesDocList({ title, items, loading, onCreate, onValidate, onCa
                         </div>
                       )}
                       {item.status === "validated" && onCancel && (
-                        <Button size="sm" variant="ghost" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Annuler" onClick={() => onCancel(item.id)}><X className="h-3 w-3" /></Button>
                       )}
                     </div>
                   </TableCell>

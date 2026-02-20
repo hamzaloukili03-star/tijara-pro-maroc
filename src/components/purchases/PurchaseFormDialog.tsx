@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { SalesDocLine, calcTotals } from "@/hooks/useSales";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Plus, Trash2 } from "lucide-react";
 
 interface Props {
@@ -32,6 +33,9 @@ export function PurchaseFormDialog({ type, onClose, onSubmit }: Props) {
     (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
     (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (data?.length) setWarehouseId(data[0].id); });
   }, []);
+
+  const supplierOptions = suppliers.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` }));
+  const productOptions = products.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }));
 
   const updateLine = (idx: number, field: string, value: any) => {
     const updated = [...lines];
@@ -71,12 +75,12 @@ export function PurchaseFormDialog({ type, onClose, onSubmit }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Fournisseur</Label>
-                <Select value={supplierId} onValueChange={setSupplierId}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={supplierOptions}
+                  value={supplierId}
+                  onValueChange={setSupplierId}
+                  placeholder="Rechercher un fournisseur..."
+                />
               </div>
               <div>
                 <Label>Dépôt de réception</Label>
@@ -95,12 +99,12 @@ export function PurchaseFormDialog({ type, onClose, onSubmit }: Props) {
             {lines.map((line, idx) => (
               <div key={idx} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-3">
-                  <Select value={line.product_id || ""} onValueChange={(v) => updateLine(idx, "product_id", v)}>
-                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Produit" /></SelectTrigger>
-                    <SelectContent>
-                      {products.map(p => <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={productOptions}
+                    value={line.product_id || ""}
+                    onValueChange={(v) => updateLine(idx, "product_id", v)}
+                    placeholder="Produit..."
+                  />
                 </div>
                 <div className="col-span-3">
                   <Input className="h-9 text-xs" placeholder="Description" value={line.description} onChange={(e) => updateLine(idx, "description", e.target.value)} />

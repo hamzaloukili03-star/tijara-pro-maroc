@@ -1,7 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { Breadcrumbs } from "./Breadcrumbs";
-import { Bell, Search, User, LogOut, UserCircle } from "lucide-react";
+import { Bell, User, LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_LABELS } from "@/types/auth";
 import { Badge } from "@/components/ui/badge";
@@ -40,9 +40,6 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
           </div>
           <div className="flex items-center gap-3">
             <CompanySwitcher />
-            <button className="p-2 rounded-md hover:bg-muted transition-colors">
-              <Search className="h-4 w-4 text-muted-foreground" />
-            </button>
             <button className="p-2 rounded-md hover:bg-muted transition-colors relative">
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />

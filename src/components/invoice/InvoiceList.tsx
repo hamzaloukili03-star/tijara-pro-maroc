@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,8 @@ import { InvoiceFormDialog } from "./InvoiceFormDialog";
 import { InvoiceDetailDialog } from "./InvoiceDetailDialog";
 import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Loader2, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Loader2, Eye, Pencil, Trash2, Printer } from "lucide-react";
+import { generateDocumentPdf } from "@/lib/pdf-generator";
 
 interface InvoiceListProps {
   invoiceType: "client" | "supplier";
@@ -22,6 +24,7 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
   const { invoices, loading, create, updateInvoice, updateLines, fetchLines, validateInvoice, cancelInvoice, markPaid, remove } = useInvoices(invoiceType);
   const { isAdmin, hasRole } = useAuth();
   const { activeCompany } = useCompany();
+  const { settings: companySettings } = useCompanySettings();
   const canManage = isAdmin() || hasRole("accountant");
 
   const [search, setSearch] = useState("");
@@ -58,6 +61,33 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
     setEditInvoice(inv);
     setEditLines(lines);
     setFormOpen(true);
+  };
+
+  const handlePrint = async (inv: Invoice, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!companySettings) return;
+    const lines = await fetchLines(inv.id);
+    await generateDocumentPdf({
+      type: "facture",
+      number: inv.invoice_number,
+      date: inv.invoice_date,
+      dueDate: inv.due_date || undefined,
+      clientName: inv.customer?.name || inv.supplier?.name || "—",
+      lines: lines.map((l: any) => ({
+        description: l.description,
+        quantity: Number(l.quantity),
+        unit_price: Number(l.unit_price),
+        discount_percent: Number(l.discount_percent || 0),
+        tva_rate: Number(l.tva_rate),
+        total_ht: Number(l.total_ht),
+        total_ttc: Number(l.total_ttc),
+      })),
+      subtotalHt: Number(inv.subtotal_ht),
+      totalTva: Number(inv.total_tva),
+      totalTtc: Number(inv.total_ttc),
+      notes: inv.notes || undefined,
+      paymentTerms: inv.payment_terms || undefined,
+    }, companySettings);
   };
 
   const handleSubmit = async (invoice: Partial<Invoice>, lines: Partial<InvoiceLine>[]) => {
@@ -130,12 +160,13 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
                   <TableCell className="text-right text-muted-foreground">{inv.remaining_balance.toFixed(2)}</TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDetail(inv)}><Eye className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir" onClick={() => openDetail(inv)}><Eye className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Imprimer" onClick={(e) => handlePrint(inv, e)}><Printer className="h-4 w-4" /></Button>
                       {inv.status === "draft" && canManage && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(inv)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier" onClick={() => openEdit(inv)}><Pencil className="h-4 w-4" /></Button>
                       )}
                       {inv.status === "draft" && isAdmin() && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(inv.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Supprimer" onClick={() => remove(inv.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
                     </div>
                   </TableCell>

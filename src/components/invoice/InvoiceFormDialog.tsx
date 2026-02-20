@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InvoiceLineEditor } from "./InvoiceLineEditor";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { calcLineTotals, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -32,12 +33,10 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
 
   useEffect(() => {
     if (!open) return;
-    // Load partners
     const table = invoiceType === "client" ? "customers" : "suppliers";
     (supabase as any).from(table).select("id, code, name").eq("is_active", true).order("name").then(({ data }: any) => {
       setPartners(data || []);
     });
-    // Load products
     supabase.from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }) => {
       setProducts(data || []);
     });
@@ -60,6 +59,8 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
       setLines([]);
     }
   }, [editInvoice, editLines, open]);
+
+  const partnerOptions = partners.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }));
 
   const subtotalHt = lines.reduce((s, l) => s + (l.total_ht || 0), 0);
   const totalTva = lines.reduce((s, l) => s + (l.total_tva || 0), 0);
@@ -99,14 +100,12 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>{invoiceType === "client" ? "Client" : "Fournisseur"}</Label>
-            <Select value={partnerId} onValueChange={setPartnerId}>
-              <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-              <SelectContent>
-                {partners.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.code} - {p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={partnerOptions}
+              value={partnerId}
+              onValueChange={setPartnerId}
+              placeholder={invoiceType === "client" ? "Rechercher un client..." : "Rechercher un fournisseur..."}
+            />
           </div>
           <div className="space-y-2">
             <Label>Date de facture</Label>
@@ -135,7 +134,6 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
           <InvoiceLineEditor lines={lines} onChange={setLines} products={products} invoiceType={invoiceType} />
         </div>
 
-        {/* Totals */}
         <div className="flex justify-end mt-4">
           <div className="w-64 space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Total HT</span><span className="font-medium">{subtotalHt.toFixed(2)} MAD</span></div>
