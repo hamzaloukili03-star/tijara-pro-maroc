@@ -2876,6 +2876,7 @@ export type Database = {
           company_id: string | null
           contact_name: string | null
           created_at: string
+          credit_limit: number
           email: string | null
           fax: string | null
           ice: string | null
@@ -2897,6 +2898,7 @@ export type Database = {
           company_id?: string | null
           contact_name?: string | null
           created_at?: string
+          credit_limit?: number
           email?: string | null
           fax?: string | null
           ice?: string | null
@@ -2918,6 +2920,7 @@ export type Database = {
           company_id?: string | null
           contact_name?: string | null
           created_at?: string
+          credit_limit?: number
           email?: string | null
           fax?: string | null
           ice?: string | null
