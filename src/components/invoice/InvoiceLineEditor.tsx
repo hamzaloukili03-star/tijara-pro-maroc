@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Trash2, Plus } from "lucide-react";
 import { calcLineTotals, type InvoiceLine } from "@/types/invoice";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 interface Product {
   id: string;
@@ -89,16 +89,13 @@ export function InvoiceLineEditor({ lines, onChange, products, invoiceType, read
                   {readOnly ? (
                     <span className="text-sm">{products.find((p) => p.id === line.product_id)?.code || "—"}</span>
                   ) : (
-                    <Select value={line.product_id || ""} onValueChange={(v) => updateLine(i, "product_id", v)}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Choisir..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.code} - {p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={products.map(p => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+                      value={line.product_id || ""}
+                      onValueChange={(v) => updateLine(i, "product_id", v)}
+                      placeholder="Produit..."
+                      className="min-w-[160px]"
+                    />
                   )}
                 </TableCell>
                 <TableCell>
