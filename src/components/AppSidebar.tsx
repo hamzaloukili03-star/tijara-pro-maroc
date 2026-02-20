@@ -51,22 +51,11 @@ interface SidebarSection {
   label: string;
   icon: any;
   basePath: string;
+  adminOnly?: boolean;
   subItems: SubItem[];
 }
 
 const sections: SidebarSection[] = [
-  {
-    label: "Administration",
-    icon: Settings,
-    basePath: "/systeme",
-    subItems: [
-      { title: "Vue d'ensemble", icon: BarChart3, path: "/" },
-      { title: "Utilisateurs & Rôles", icon: Users, path: "/systeme/utilisateurs" },
-      { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
-      { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },
-      { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
-    ],
-  },
   {
     label: "Tableaux de Bord",
     icon: BarChart3,
@@ -139,6 +128,21 @@ const sections: SidebarSection[] = [
       { title: "Impayés & Relances", icon: AlertTriangle, path: "/reglements/impayes" },
     ],
   },
+  // Administration — last, super_admin only
+  {
+    label: "Administration",
+    icon: Settings,
+    basePath: "/systeme",
+    adminOnly: true,
+    subItems: [
+      { title: "Vue d'ensemble", icon: BarChart3, path: "/" },
+      { title: "Utilisateurs & Rôles", icon: Users, path: "/systeme/utilisateurs" },
+      { title: "Gestion des Sociétés", icon: Building2, path: "/systeme/societes" },
+      { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
+      { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },
+      { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
+    ],
+  },
 ];
 
 export function AppSidebar() {
@@ -155,6 +159,7 @@ export function AppSidebar() {
     return active?.label ?? null;
   });
   const { profile, roles, signOut } = useAuth();
+  const isSuperAdmin = roles.includes("super_admin");
 
   // Sync open section when route changes via sub-link click
   useEffect(() => {
@@ -214,6 +219,7 @@ export function AppSidebar() {
       <nav className="flex-1 py-3 space-y-0.5 px-2 overflow-y-auto scrollbar-thin">
         {sections.map((section) => {
           if (!hasAccess(section.basePath)) return null;
+          if (section.adminOnly && !isSuperAdmin) return null;
 
           const sectionIsOpen = isOpen(section);
           const sectionActive = isSectionActive(section);

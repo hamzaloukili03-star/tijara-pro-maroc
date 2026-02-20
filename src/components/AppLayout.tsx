@@ -5,6 +5,7 @@ import { Bell, Search, User, LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_LABELS } from "@/types/auth";
 import { Badge } from "@/components/ui/badge";
+import { CompanySwitcher } from "@/components/CompanySwitcher";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -38,6 +39,7 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
             {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-3">
+            <CompanySwitcher />
             <button className="p-2 rounded-md hover:bg-muted transition-colors">
               <Search className="h-4 w-4 text-muted-foreground" />
             </button>

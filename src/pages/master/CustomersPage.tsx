@@ -40,7 +40,7 @@ const fields: FieldConfig[] = [
 ];
 
 export default function CustomersPage() {
-  const { data, loading, create, update, remove } = useCrud<Customer>({ table: "customers", orderBy: "code", ascending: true });
+  const { data, loading, create, update, remove } = useCrud<Customer>({ table: "customers", orderBy: "code", ascending: true, companyScoped: true });
 
   return (
     <AppLayout title="Clients" subtitle="Gestion du portefeuille clients">
