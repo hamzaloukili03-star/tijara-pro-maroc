@@ -827,6 +827,48 @@ export type Database = {
           },
         ]
       }
+      document_attachments: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          doc_id: string
+          doc_type: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          is_audio: boolean
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          doc_id: string
+          doc_type: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          is_audio?: boolean
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          doc_id?: string
+          doc_type?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          is_audio?: boolean
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       document_counters: {
         Row: {
           doc_type: string
@@ -1076,6 +1118,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          admin_validated_at: string | null
+          admin_validated_by: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -1096,6 +1140,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1116,6 +1162,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1835,6 +1883,8 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          admin_validated_at: string | null
+          admin_validated_by: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -1853,6 +1903,8 @@ export type Database = {
           warehouse_id: string | null
         }
         Insert: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1871,6 +1923,8 @@ export type Database = {
           warehouse_id?: string | null
         }
         Update: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2083,6 +2137,8 @@ export type Database = {
       }
       quotations: {
         Row: {
+          admin_validated_at: string | null
+          admin_validated_by: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -2100,6 +2156,8 @@ export type Database = {
           validity_date: string | null
         }
         Insert: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2117,6 +2175,8 @@ export type Database = {
           validity_date?: string | null
         }
         Update: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2556,6 +2616,8 @@ export type Database = {
       }
       sales_orders: {
         Row: {
+          admin_validated_at: string | null
+          admin_validated_by: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -2574,6 +2636,8 @@ export type Database = {
           warehouse_id: string | null
         }
         Insert: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2592,6 +2656,8 @@ export type Database = {
           warehouse_id?: string | null
         }
         Update: {
+          admin_validated_at?: string | null
+          admin_validated_by?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2956,6 +3022,7 @@ export type Database = {
           doc_numbering_format: string
           enable_attachments: boolean
           id: string
+          require_double_validation: boolean
           tva_rates: Json
           updated_at: string
         }
@@ -2969,6 +3036,7 @@ export type Database = {
           doc_numbering_format?: string
           enable_attachments?: boolean
           id?: string
+          require_double_validation?: boolean
           tva_rates?: Json
           updated_at?: string
         }
@@ -2982,6 +3050,7 @@ export type Database = {
           doc_numbering_format?: string
           enable_attachments?: boolean
           id?: string
+          require_double_validation?: boolean
           tva_rates?: Json
           updated_at?: string
         }

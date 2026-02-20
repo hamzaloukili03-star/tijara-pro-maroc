@@ -128,6 +128,7 @@ const SystemeParametres = () => {
   const [allowNegativeStock, setAllowNegativeStock] = useState(false);
   const [allowAdminOverrides, setAllowAdminOverrides] = useState(true);
   const [enableAttachments, setEnableAttachments] = useState(true);
+  const [requireDoubleValidation, setRequireDoubleValidation] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // ── New category state
@@ -150,6 +151,7 @@ const SystemeParametres = () => {
       setAllowNegativeStock(settings.allow_negative_stock);
       setAllowAdminOverrides(settings.allow_admin_overrides);
       setEnableAttachments(settings.enable_attachments);
+      setRequireDoubleValidation(settings.require_double_validation ?? false);
     }
   }, [settings]);
 
@@ -179,6 +181,7 @@ const SystemeParametres = () => {
       allow_negative_stock: allowNegativeStock,
       allow_admin_overrides: allowAdminOverrides,
       enable_attachments: enableAttachments,
+      require_double_validation: requireDoubleValidation,
     });
     setSaving(false);
   };
@@ -517,6 +520,16 @@ const SystemeParametres = () => {
                 <p className="text-xs text-muted-foreground">Activer/désactiver les pièces jointes sur les documents</p>
               </div>
               <Switch checked={enableAttachments} onCheckedChange={setEnableAttachments} disabled={!isSuperAdmin} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Double validation (Admin requise)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Si activé : l'utilisateur soumet le document, puis un admin doit l'approuver avant validation définitive.
+                  S'applique aux Devis, Bons de commande et Factures.
+                </p>
+              </div>
+              <Switch checked={requireDoubleValidation} onCheckedChange={setRequireDoubleValidation} disabled={!isSuperAdmin} />
             </div>
           </CardContent>
         </Card>

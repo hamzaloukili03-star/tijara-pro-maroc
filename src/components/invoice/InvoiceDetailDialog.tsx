@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { InvoiceLineEditor } from "./InvoiceLineEditor";
-import { InvoiceAttachmentsPanel } from "./InvoiceAttachmentsPanel";
+import { DocumentAttachmentsPanel } from "@/components/DocumentAttachmentsPanel";
 import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { useAuth } from "@/hooks/useAuth";
+import { useCompany } from "@/hooks/useCompany";
 import { CheckCircle, XCircle, CreditCard, FileText, Loader2 } from "lucide-react";
 
 interface InvoiceDetailDialogProps {
@@ -25,6 +26,7 @@ export function InvoiceDetailDialog({
   invoice, lines, products, onClose, onValidate, onCancel, onMarkPaid, onCreateCreditNote,
 }: InvoiceDetailDialogProps) {
   const { isAdmin } = useAuth();
+  const { activeCompany } = useCompany();
   const [acting, setActing] = useState(false);
 
   if (!invoice) return null;
@@ -92,7 +94,11 @@ export function InvoiceDetailDialog({
         )}
 
         <div className="mt-4 border-t pt-4">
-          <InvoiceAttachmentsPanel invoiceId={invoice.id} />
+          <DocumentAttachmentsPanel
+            docType="invoice"
+            docId={invoice.id}
+            companyId={activeCompany?.id}
+          />
         </div>
 
         <DialogFooter className="flex-wrap gap-2">

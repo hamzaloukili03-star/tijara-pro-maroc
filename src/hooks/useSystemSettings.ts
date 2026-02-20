@@ -12,6 +12,7 @@ export interface SystemSettings {
   allow_negative_stock: boolean;
   allow_admin_overrides: boolean;
   enable_attachments: boolean;
+  require_double_validation: boolean;
   created_at: string;
   updated_at: string;
 }

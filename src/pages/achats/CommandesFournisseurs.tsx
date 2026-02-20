@@ -3,10 +3,13 @@ import { AppLayout } from "@/components/AppLayout";
 import { usePurchaseOrders } from "@/hooks/usePurchases";
 import { PurchaseDocList } from "@/components/purchases/PurchaseDocList";
 import { PurchaseFormDialog } from "@/components/purchases/PurchaseFormDialog";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 const CommandesFournisseurs = () => {
   const orders = usePurchaseOrders();
   const [showForm, setShowForm] = useState(false);
+  const { settings } = useSystemSettings();
+  const requireDoubleValidation = settings?.require_double_validation ?? false;
 
   return (
     <AppLayout title="Bons de commande fournisseurs" subtitle="Gestion des commandes fournisseurs">
@@ -15,7 +18,8 @@ const CommandesFournisseurs = () => {
         items={orders.items}
         loading={orders.loading}
         onCreate={() => setShowForm(true)}
-        onValidate={(id) => orders.validate(id)}
+        onValidate={(id) => orders.validate(id, requireDoubleValidation)}
+        onAdminValidate={(id) => orders.adminValidate(id)}
         onCancel={(id) => orders.cancel(id)}
         docType="order"
       />
