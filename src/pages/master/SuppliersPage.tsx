@@ -38,7 +38,7 @@ const fields: FieldConfig[] = [
 ];
 
 export default function SuppliersPage() {
-  const { data, loading, create, update, remove } = useCrud<Supplier>({ table: "suppliers", orderBy: "code", ascending: true });
+  const { data, loading, create, update, remove } = useCrud<Supplier>({ table: "suppliers", orderBy: "code", ascending: true, companyScoped: true });
 
   return (
     <AppLayout title="Fournisseurs" subtitle="Gestion des fournisseurs">

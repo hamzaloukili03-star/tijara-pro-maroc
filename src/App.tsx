@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CompanyProvider } from "@/hooks/useCompany";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import CompaniesPage from "./pages/systeme/CompaniesPage";
 
 import Index from "./pages/Index";
 import TableauxDeBord from "./pages/TableauxDeBord";
@@ -71,6 +73,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CompanyProvider>
           <Routes>
             {/* Public auth routes */}
             <Route path="/auth/login" element={<Login />} />
@@ -86,6 +89,7 @@ const App = () => (
             {/* Administration */}
             <Route path="/systeme/utilisateurs" element={<ProtectedRoute requiredRoles={["super_admin"]}><SystemeUtilisateurs /></ProtectedRoute>} />
             <Route path="/systeme/societe" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><SystemeSociete /></ProtectedRoute>} />
+            <Route path="/systeme/societes" element={<ProtectedRoute requiredRoles={["super_admin"]}><CompaniesPage /></ProtectedRoute>} />
             <Route path="/systeme/parametres" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><SystemeParametres /></ProtectedRoute>} />
             <Route path="/systeme/logs" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><SystemeLogs /></ProtectedRoute>} />
 
@@ -130,6 +134,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </CompanyProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

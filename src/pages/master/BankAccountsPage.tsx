@@ -31,7 +31,7 @@ const fields: FieldConfig[] = [
 ];
 
 export default function BankAccountsPage() {
-  const { data, loading, create, update, remove } = useCrud<BankAccount>({ table: "bank_accounts" });
+  const { data, loading, create, update, remove } = useCrud<BankAccount>({ table: "bank_accounts", companyScoped: true });
 
   return (
     <AppLayout title="Comptes Bancaires" subtitle="Gestion des comptes bancaires de l'entreprise">
