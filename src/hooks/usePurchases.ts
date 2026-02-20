@@ -201,5 +201,5 @@ export function usePurchaseOrders() {
     return data || [];
   };
 
-  return { items, loading, fetch, create, validate, cancel, createReception, createInvoiceFromReception, getLines };
+  return { items, loading, fetch, create, validate, adminValidate, cancel, createReception, createInvoiceFromReception, getLines };
 }
