@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 export interface CashRegister {
   id: string;
@@ -31,20 +32,24 @@ export function useCashRegisters() {
   const [registers, setRegisters] = useState<CashRegister[]>([]);
   const [movements, setMovements] = useState<CashMovement[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
-  const fetch = async () => {
+  const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any).from("cash_registers").select("*, warehouse:warehouses(name)").order("created_at", { ascending: false });
+    let query = (supabase as any).from("cash_registers").select("*, warehouse:warehouses(name)").order("created_at", { ascending: false });
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data } = await query;
     setRegisters(data || []);
     setLoading(false);
-  };
+  }, [companyId]);
 
   const fetchMovements = async (registerId: string) => {
     const { data } = await (supabase as any).from("cash_register_movements").select("*").eq("cash_register_id", registerId).order("created_at", { ascending: false });
     setMovements(data || []);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetch(); }, [fetch]);
 
   const create = async (values: Partial<CashRegister>) => {
     const { error } = await (supabase as any).from("cash_registers").insert({ ...values, current_balance: values.opening_balance || 0 });

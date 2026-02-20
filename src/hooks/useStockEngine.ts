@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 export interface StockLevel {
   id: string;
@@ -80,46 +81,56 @@ export function useStockEngine() {
   const [transfers, setTransfers] = useState<StockTransfer[]>([]);
   const [adjustments, setAdjustments] = useState<InventoryAdjustment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetchStockLevels = useCallback(async () => {
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("stock_levels")
       .select("*, product:products(name, code, sale_price, purchase_price), warehouse:warehouses(name, code)")
       .order("updated_at", { ascending: false });
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data, error } = await query;
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
     setStockLevels((data || []).map((d: any) => ({
       ...d,
       stock_available: Number(d.stock_on_hand) - Number(d.stock_reserved),
     })));
-  }, []);
+  }, [companyId]);
 
   const fetchMovements = useCallback(async () => {
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("stock_movements")
       .select("*, product:products(name, code), warehouse:warehouses(name)")
       .order("created_at", { ascending: false })
       .limit(200);
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data, error } = await query;
     if (error) return;
     setMovements(data || []);
-  }, []);
+  }, [companyId]);
 
   const fetchTransfers = useCallback(async () => {
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("stock_transfers")
       .select("*, from_warehouse:warehouses!stock_transfers_from_warehouse_id_fkey(name), to_warehouse:warehouses!stock_transfers_to_warehouse_id_fkey(name)")
       .order("created_at", { ascending: false });
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data, error } = await query;
     if (error) return;
     setTransfers(data || []);
-  }, []);
+  }, [companyId]);
 
   const fetchAdjustments = useCallback(async () => {
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("inventory_adjustments")
       .select("*, warehouse:warehouses(name)")
       .order("created_at", { ascending: false });
+    if (companyId) query = query.eq("company_id", companyId);
+    const { data, error } = await query;
     if (error) return;
     setAdjustments(data || []);
-  }, []);
+  }, [companyId]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
