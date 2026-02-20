@@ -1,5 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
-import type { CompanySettings } from "@/hooks/useCompanySettings";
+import type { CompanySettings, CompanyBankAccount } from "@/hooks/useCompanySettings";
 
 interface PdfLine {
   description: string;
@@ -35,7 +34,11 @@ const DOC_TITLES: Record<string, string> = {
   avoir: "AVOIR",
 };
 
-export async function generateDocumentPdf(data: PdfDocData, company: CompanySettings) {
+export async function generateDocumentPdf(
+  data: PdfDocData,
+  company: CompanySettings,
+  bankAccount?: CompanyBankAccount | null
+) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
 
@@ -54,6 +57,15 @@ export async function generateDocumentPdf(data: PdfDocData, company: CompanySett
       <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:500;">${Number(l.total_ht).toLocaleString("fr-MA", { minimumFractionDigits: 2 })}</td>
     </tr>
   `).join("");
+
+  // Build bank footer from dedicated bank account (not companies table)
+  const bankFooter = bankAccount
+    ? [
+        bankAccount.bank_name ? `Banque: ${bankAccount.bank_name}` : "",
+        bankAccount.rib ? `RIB: ${bankAccount.rib}` : "",
+        bankAccount.swift ? `SWIFT: ${bankAccount.swift}` : "",
+      ].filter(Boolean).join(" | ")
+    : "";
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -150,7 +162,7 @@ export async function generateDocumentPdf(data: PdfDocData, company: CompanySett
 
   <div class="footer">
     ${company.raison_sociale} — ${company.forme_juridique || ""} au capital de ${company.capital ? Number(company.capital).toLocaleString("fr-MA") : "—"} MAD<br/>
-    ${company.bank_name ? `Banque: ${company.bank_name}` : ""} ${company.bank_rib ? `| RIB: ${company.bank_rib}` : ""} ${company.bank_swift ? `| SWIFT: ${company.bank_swift}` : ""}<br/>
+    ${bankFooter ? `${bankFooter}<br/>` : ""}
     ICE: ${company.ice || "—"} | IF: ${company.if_number || "—"} | RC: ${company.rc || "—"} | Patente: ${company.patente || "—"}
   </div>
 </body>
