@@ -2,24 +2,32 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { calcTotals, SalesDocLine } from "@/hooks/useSales";
+import { useCompany } from "@/hooks/useCompany";
 
 export function usePurchaseRequests() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
+    if (!companyId) { setItems([]); setLoading(false); return; }
     setLoading(true);
-    const { data } = await (supabase as any).from("purchase_requests").select("*").order("created_at", { ascending: false });
+    const { data } = await (supabase as any)
+      .from("purchase_requests")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false });
     setLoading(false);
     setItems((data || []).map((d: any) => ({ ...d, number: d.request_number, date: d.request_date })));
-  }, []);
+  }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   const create = async (lines: { product_id: string; description: string; quantity: number }[], notes?: string) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "DA" });
     const userId = (await supabase.auth.getUser()).data.user?.id;
-    const { data, error } = await (supabase as any).from("purchase_requests").insert({ request_number: num, notes, requested_by: userId }).select().single();
+    const { data, error } = await (supabase as any).from("purchase_requests").insert({ request_number: num, notes, requested_by: userId, company_id: companyId }).select().single();
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
     for (let i = 0; i < lines.length; i++) {
       await (supabase as any).from("purchase_request_lines").insert({ request_id: data.id, product_id: lines[i].product_id, description: lines[i].description, quantity: lines[i].quantity, sort_order: i });
@@ -46,13 +54,20 @@ export function usePurchaseRequests() {
 export function usePurchaseOrders() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
+    if (!companyId) { setItems([]); setLoading(false); return; }
     setLoading(true);
-    const { data } = await (supabase as any).from("purchase_orders").select("*, supplier:suppliers(name, code)").order("created_at", { ascending: false });
+    const { data } = await (supabase as any)
+      .from("purchase_orders")
+      .select("*, supplier:suppliers(name, code)")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false });
     setLoading(false);
     setItems((data || []).map((d: any) => ({ ...d, number: d.order_number, date: d.order_date })));
-  }, []);
+  }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -62,7 +77,7 @@ export function usePurchaseOrders() {
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data, error } = await (supabase as any).from("purchase_orders").insert({
-      order_number: num, request_id: requestId || null, supplier_id: supplierId, subtotal_ht, total_tva, total_ttc, notes, warehouse_id: warehouseId, created_by: userId,
+      order_number: num, request_id: requestId || null, supplier_id: supplierId, subtotal_ht, total_tva, total_ttc, notes, warehouse_id: warehouseId, created_by: userId, company_id: companyId,
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
@@ -70,7 +85,7 @@ export function usePurchaseOrders() {
     for (let i = 0; i < calcLines.length; i++) {
       const l = calcLines[i];
       await (supabase as any).from("purchase_order_lines").insert({
-        purchase_order_id: data.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: i,
+        purchase_order_id: data.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: i, company_id: companyId,
       });
     }
     toast({ title: "BC fournisseur créé", description: num as string });
@@ -104,7 +119,7 @@ export function usePurchaseOrders() {
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data: rec, error } = await (supabase as any).from("receptions").insert({
-      reception_number: num, purchase_order_id: orderId, supplier_id: po.supplier_id, warehouse_id: po.warehouse_id, created_by: userId,
+      reception_number: num, purchase_order_id: orderId, supplier_id: po.supplier_id, warehouse_id: po.warehouse_id, created_by: userId, company_id: companyId,
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
@@ -118,13 +133,11 @@ export function usePurchaseOrders() {
         reception_id: rec.id, purchase_order_line_id: rl.purchase_order_line_id, product_id: rl.product_id, description: rl.description, quantity: rl.quantity, unit_price: rl.unit_price, discount_percent: rl.discount_percent, tva_rate: rl.tva_rate, total_ht: Math.round(ht * 100) / 100, total_tva: Math.round(tvaAmt * 100) / 100, total_ttc: Math.round((ht + tvaAmt) * 100) / 100, sort_order: i,
       });
 
-      // Update received qty on order line
       const { data: polData } = await (supabase as any).from("purchase_order_lines").select("received_qty").eq("id", rl.purchase_order_line_id).single();
       if (polData) {
         await (supabase as any).from("purchase_order_lines").update({ received_qty: Number(polData.received_qty) + rl.quantity }).eq("id", rl.purchase_order_line_id);
       }
 
-      // Add stock
       if (rl.product_id && po.warehouse_id) {
         await addStockFn(rl.product_id, po.warehouse_id, rl.quantity, rl.unit_price, "reception", rec.id);
       }
@@ -132,7 +145,6 @@ export function usePurchaseOrders() {
 
     await (supabase as any).from("receptions").update({ status: "validated" }).eq("id", rec.id);
 
-    // Check fully received
     const { data: allLines } = await (supabase as any).from("purchase_order_lines").select("quantity, received_qty").eq("purchase_order_id", orderId);
     const fullyReceived = (allLines || []).every((l: any) => Number(l.received_qty) >= Number(l.quantity));
     if (fullyReceived) {
@@ -159,14 +171,14 @@ export function usePurchaseOrders() {
     const total_ttc = lines.reduce((s: number, l: any) => s + Number(l.total_ttc), 0);
 
     const { data: inv, error } = await (supabase as any).from("invoices").insert({
-      invoice_number: num, invoice_type: "supplier", supplier_id: rec.supplier_id, subtotal_ht, total_tva, total_ttc, remaining_balance: total_ttc, status: "draft", created_by: userId,
+      invoice_number: num, invoice_type: "supplier", supplier_id: rec.supplier_id, subtotal_ht, total_tva, total_ttc, remaining_balance: total_ttc, status: "draft", created_by: userId, company_id: companyId,
     }).select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
     for (const l of lines) {
       await (supabase as any).from("invoice_lines").insert({
-        invoice_id: inv.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent || 0, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: l.sort_order,
+        invoice_id: inv.id, product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_percent: l.discount_percent || 0, tva_rate: l.tva_rate, total_ht: l.total_ht, total_tva: l.total_tva, total_ttc: l.total_ttc, sort_order: l.sort_order, company_id: companyId,
       });
     }
 

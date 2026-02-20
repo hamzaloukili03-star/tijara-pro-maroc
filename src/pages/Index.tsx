@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import {
   Settings, Users, Building2, ShoppingCart, Package, TrendingUp,
   FileText, Wallet, BarChart3, ArrowRight, DollarSign, AlertCircle,
@@ -43,6 +44,8 @@ const modules = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [loading, setLoading] = useState(true);
   const [kpi, setKpi] = useState({ revenue: 0, unpaid: 0, supplierDebt: 0, cash: 0, userCount: 0, productCount: 0 });
 
@@ -53,13 +56,14 @@ const Index = () => {
 
   useEffect(() => {
     const fetch = async () => {
+      if (!companyId) { setKpi({ revenue: 0, unpaid: 0, supplierDebt: 0, cash: 0, userCount: 0, productCount: 0 }); setLoading(false); return; }
       setLoading(true);
       const [clientInv, suppInv, banks, profiles, products] = await Promise.all([
-        (supabase as any).from("invoices").select("total_ttc, remaining_balance").eq("invoice_type", "client").in("status", ["validated", "paid"]),
-        (supabase as any).from("invoices").select("remaining_balance").eq("invoice_type", "supplier").in("status", ["validated", "paid"]),
-        (supabase as any).from("bank_accounts").select("current_balance").eq("is_active", true),
+        (supabase as any).from("invoices").select("total_ttc, remaining_balance").eq("invoice_type", "client").eq("company_id", companyId).in("status", ["validated", "paid"]),
+        (supabase as any).from("invoices").select("remaining_balance").eq("invoice_type", "supplier").eq("company_id", companyId).in("status", ["validated", "paid"]),
+        (supabase as any).from("bank_accounts").select("current_balance").eq("is_active", true).eq("company_id", companyId),
         (supabase as any).from("profiles").select("id", { count: "exact", head: true }),
-        (supabase as any).from("products").select("id", { count: "exact", head: true }),
+        (supabase as any).from("products").select("id", { count: "exact", head: true }).eq("company_id", companyId),
       ]);
       const revenue = (clientInv.data || []).reduce((s: number, i: any) => s + Number(i.total_ttc), 0);
       const unpaid = (clientInv.data || []).reduce((s: number, i: any) => s + Number(i.remaining_balance), 0);
@@ -69,7 +73,7 @@ const Index = () => {
       setLoading(false);
     };
     fetch();
-  }, []);
+  }, [companyId]);
 
   const kpiCards = [
     { label: "Chiffre d'affaires", value: fmt(animRevenue), suffix: "MAD", icon: DollarSign, color: "hsl(197, 100%, 53%)", path: "/facturation/clients", trend: "up" as const },
