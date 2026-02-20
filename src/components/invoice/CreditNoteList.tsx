@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useCreditNotes } from "@/hooks/useCreditNotes";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useCompany } from "@/hooks/useCompany";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,9 @@ import { DocumentAttachmentsPanel } from "@/components/DocumentAttachmentsPanel"
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CREDIT_NOTE_STATUS_LABELS, calcLineTotals, type CreditNote, type CreditNoteLine, type Invoice } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
-import { generateDocumentPdf } from "@/lib/pdf-generator";
-import { Plus, Search, Loader2, CheckCircle, XCircle, Printer } from "lucide-react";
+import { printCreditNotePdf } from "@/lib/pdf";
+import { PrintButton } from "@/components/PrintButton";
+import { Plus, Search, Loader2, CheckCircle, XCircle } from "lucide-react";
 
 interface CreditNoteListProps {
   linkedInvoice?: Invoice | null;
@@ -28,6 +30,7 @@ export function CreditNoteList({ linkedInvoice, onClearLinked }: CreditNoteListP
   const { creditNotes, loading, create, validate, cancel } = useCreditNotes();
   const { isAdmin, hasRole } = useAuth();
   const { settings: companySettings } = useCompanySettings();
+  const { activeCompany } = useCompany();
   const canManage = isAdmin() || hasRole("accountant");
 
   const [search, setSearch] = useState("");
@@ -94,28 +97,9 @@ export function CreditNoteList({ linkedInvoice, onClearLinked }: CreditNoteListP
 
   const partnerOptions = partners.map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` }));
 
-  const handlePrint = async (cn: any) => {
-    if (!companySettings) return;
+  const handlePrint = async (cn: any, download = false) => {
     const { data: lines } = await supabase.from("credit_note_lines").select("*").eq("credit_note_id", cn.id).order("sort_order");
-    await generateDocumentPdf({
-      type: "avoir",
-      number: cn.credit_note_number,
-      date: cn.credit_note_date,
-      clientName: cn.customer?.name || cn.supplier?.name || "—",
-      lines: (lines || []).map((l: any) => ({
-        description: l.description,
-        quantity: Number(l.quantity),
-        unit_price: Number(l.unit_price),
-        discount_percent: 0,
-        tva_rate: Number(l.tva_rate),
-        total_ht: Number(l.total_ht),
-        total_ttc: Number(l.total_ttc),
-      })),
-      subtotalHt: Number(cn.subtotal_ht),
-      totalTva: Number(cn.total_tva),
-      totalTtc: Number(cn.total_ttc),
-      notes: cn.reason,
-    }, companySettings);
+    await printCreditNotePdf(cn, lines || [], activeCompany?.id, download);
   };
 
   const statusVariant = (s: string) => s === "draft" ? "secondary" as const : s === "validated" ? "default" as const : "destructive" as const;
@@ -163,9 +147,11 @@ export function CreditNoteList({ linkedInvoice, onClearLinked }: CreditNoteListP
                   <TableCell className="text-right font-medium">{cn.total_ttc.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Imprimer" onClick={() => handlePrint(cn)}>
-                        <Printer className="h-4 w-4" />
-                      </Button>
+                      <PrintButton
+                        iconOnly
+                        onPrint={() => handlePrint(cn, false)}
+                        onDownload={() => handlePrint(cn, true)}
+                      />
                       {cn.status === "draft" && canManage && (
                         <Button variant="ghost" size="sm" onClick={() => validate(cn.id, cn.invoice_id, cn.total_ttc)} className="gap-1">
                           <CheckCircle className="h-4 w-4" /> Valider

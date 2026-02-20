@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Paperclip, Printer, Eye, FileText, Check, X } from "lucide-react";
+import { Loader2, Paperclip, Eye, FileText, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
 import { useCompany } from "@/hooks/useCompany";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { generateDocumentPdf } from "@/lib/pdf-generator";
+import { printDeliveryPdf } from "@/lib/pdf";
+import { PrintButton } from "@/components/PrintButton";
 import { DELIVERY_STATUS_LABELS, DELIVERY_STATUS_COLORS } from "@/hooks/useSales";
 import { useNavigate } from "react-router-dom";
 
@@ -28,26 +29,13 @@ export function DeliveryListPage({ deliveries, stock, onView, onNew }: Props) {
     await deliveries.validateDelivery(d.id, stock.deductStock, stock.releaseReservation);
   };
 
-  const handlePrint = async (d: any) => {
-    if (!companySettings) return;
+  const handlePrint = async (d: any, download = false) => {
     const { data: lines } = await (supabase as any)
-      .from("delivery_lines").select("*").eq("delivery_id", d.id).order("sort_order");
-    await generateDocumentPdf({
-      type: "bon_livraison",
-      number: d.delivery_number,
-      date: d.delivery_date,
-      clientName: d.customer?.name || "—",
-      lines: (lines || []).map((l: any) => ({
-        description: l.description,
-        quantity: Number(l.quantity),
-        unit_price: Number(l.unit_price),
-        discount_percent: Number(l.discount_percent || 0),
-        tva_rate: Number(l.tva_rate),
-        total_ht: Number(l.total_ht),
-        total_ttc: Number(l.total_ttc),
-      })),
-      subtotalHt: 0, totalTva: 0, totalTtc: 0,
-    }, companySettings);
+      .from("delivery_lines")
+      .select("*, product:products(code,name,unit,tva_rate)")
+      .eq("delivery_id", d.id)
+      .order("sort_order");
+    await printDeliveryPdf(d, lines || [], activeCompany?.id, download);
   };
 
   return (
@@ -92,9 +80,7 @@ export function DeliveryListPage({ deliveries, stock, onView, onNew }: Props) {
                           <Eye className="h-3.5 w-3.5 mr-1" /> Ouvrir
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Imprimer" onClick={() => handlePrint(d)}>
-                        <Printer className="h-3.5 w-3.5" />
-                      </Button>
+                      <PrintButton iconOnly onPrint={() => handlePrint(d)} onDownload={() => handlePrint(d, true)} />
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Pièces jointes"
                         onClick={() => setAttachDialog({ id: d.id, number: d.delivery_number })}>
                         <Paperclip className="h-3.5 w-3.5" />

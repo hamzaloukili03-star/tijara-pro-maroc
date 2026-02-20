@@ -10,6 +10,8 @@ import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/i
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { CheckCircle, XCircle, CreditCard, FileText, Loader2 } from "lucide-react";
+import { PrintButton } from "@/components/PrintButton";
+import { printInvoicePdf } from "@/lib/pdf";
 
 interface InvoiceDetailDialogProps {
   invoice: Invoice | null;
@@ -102,6 +104,10 @@ export function InvoiceDetailDialog({
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
+          <PrintButton
+            onPrint={() => printInvoicePdf(invoice.id, invoice, lines, activeCompany?.id, false)}
+            onDownload={() => printInvoicePdf(invoice.id, invoice, lines, activeCompany?.id, true)}
+          />
           {isDraft && (
             <Button onClick={() => handleAction(() => onValidate(invoice.id))} disabled={acting} className="gap-1">
               {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />} Valider
