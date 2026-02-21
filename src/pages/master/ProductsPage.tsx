@@ -73,8 +73,8 @@ export default function ProductsPage() {
         ) : view === "kanban" ? (
           <ProductKanban
             products={filtered}
-            onView={openEdit}
-            onEdit={openEdit}
+            onView={(p) => { setEditingProduct(p); setDialogOpen(true); }}
+            onEdit={(p) => { setEditingProduct(p); setDialogOpen(true); }}
           />
         ) : (
           <div className="bg-card rounded-lg border border-border shadow-card overflow-hidden">
