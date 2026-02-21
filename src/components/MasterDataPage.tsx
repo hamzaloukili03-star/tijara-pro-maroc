@@ -31,6 +31,7 @@ interface MasterDataPageProps<T> {
   onDelete: (id: string) => Promise<boolean>;
   canCreate?: boolean;
   canDelete?: boolean;
+  extraActions?: ReactNode;
 }
 
 export function MasterDataPage<T extends { id: string }>({
@@ -44,6 +45,7 @@ export function MasterDataPage<T extends { id: string }>({
   onDelete,
   canCreate = true,
   canDelete = true,
+  extraActions,
 }: MasterDataPageProps<T>) {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -181,12 +183,15 @@ export function MasterDataPage<T extends { id: string }>({
             className="pl-9 w-64"
           />
         </div>
-        {canCreate && (
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {extraActions}
+          {canCreate && (
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="bg-card rounded-lg border border-border shadow-card overflow-hidden">
