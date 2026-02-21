@@ -29,12 +29,19 @@ import SystemeLogs from "./pages/SystemeLogs";
 
 // Référentiel
 import ProductsPage from "./pages/master/ProductsPage";
-import CategoriesPage from "./pages/master/CategoriesPage";
 import CustomersPage from "./pages/master/CustomersPage";
 import SuppliersPage from "./pages/master/SuppliersPage";
 import WarehousesPage from "./pages/master/WarehousesPage";
 import BankAccountsPage from "./pages/master/BankAccountsPage";
 import CashRegistersPage from "./pages/CashRegistersPage";
+
+// Configurations
+import CategoriesPage from "./pages/master/CategoriesPage";
+import PaymentTermsPage from "./pages/config/PaymentTermsPage";
+import UnitsOfMeasurePage from "./pages/config/UnitsOfMeasurePage";
+import TvaRatesPage from "./pages/config/TvaRatesPage";
+import BanksPage from "./pages/config/BanksPage";
+import CurrenciesPage from "./pages/config/CurrenciesPage";
 
 // Achats
 import DemandesAchat from "./pages/achats/DemandesAchat";
@@ -103,10 +110,17 @@ const App = () => (
             <Route path="/referentiel/clients" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
             <Route path="/referentiel/fournisseurs" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
             <Route path="/referentiel/produits" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
-            <Route path="/referentiel/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
             <Route path="/referentiel/depots" element={<ProtectedRoute><WarehousesPage /></ProtectedRoute>} />
             <Route path="/referentiel/comptes-bancaires" element={<ProtectedRoute><BankAccountsPage /></ProtectedRoute>} />
             <Route path="/referentiel/caisses" element={<ProtectedRoute><CashRegistersPage /></ProtectedRoute>} />
+
+            {/* Configurations */}
+            <Route path="/config/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
+            <Route path="/config/conditions-paiement" element={<ProtectedRoute><PaymentTermsPage /></ProtectedRoute>} />
+            <Route path="/config/unites-mesure" element={<ProtectedRoute><UnitsOfMeasurePage /></ProtectedRoute>} />
+            <Route path="/config/tva" element={<ProtectedRoute><TvaRatesPage /></ProtectedRoute>} />
+            <Route path="/config/banques" element={<ProtectedRoute><BanksPage /></ProtectedRoute>} />
+            <Route path="/config/devises" element={<ProtectedRoute><CurrenciesPage /></ProtectedRoute>} />
 
             {/* Achats */}
             <Route path="/achats/demandes" element={<ProtectedRoute><DemandesAchat /></ProtectedRoute>} />

@@ -36,6 +36,12 @@ import {
   ScrollText,
   ShieldCheck,
   Tag,
+  SlidersHorizontal,
+  Clock,
+  Percent,
+  Building,
+  Coins,
+  Ruler,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_MODULE_ACCESS } from "@/types/auth";
@@ -70,7 +76,6 @@ const sections: SidebarSection[] = [
       { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
       { title: "Fournisseurs", icon: Truck, path: "/referentiel/fournisseurs" },
       { title: "Produits", icon: Package, path: "/referentiel/produits" },
-      { title: "Catégories", icon: Tag, path: "/referentiel/categories" },
       { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
       { title: "Comptes Bancaires", icon: Landmark, path: "/referentiel/comptes-bancaires" },
       { title: "Caisses", icon: CreditCard, path: "/referentiel/caisses" },
@@ -85,12 +90,6 @@ const sections: SidebarSection[] = [
       { title: "Bons de commande", icon: ScrollText, path: "/achats/commandes" },
       { title: "Réceptions", icon: Package, path: "/achats/receptions" },
     ],
-  },
-  {
-    label: "Dépenses",
-    icon: TrendingDown,
-    basePath: "/depenses",
-    subItems: [],
   },
   {
     label: "Stock",
@@ -133,6 +132,25 @@ const sections: SidebarSection[] = [
       { title: "Décaissements", icon: ArrowUpCircle, path: "/reglements/decaissements" },
       { title: "Rapprochement", icon: Link2, path: "/reglements/rapprochement" },
       { title: "Impayés & Relances", icon: AlertTriangle, path: "/reglements/impayes" },
+    ],
+  },
+  {
+    label: "Dépenses",
+    icon: TrendingDown,
+    basePath: "/depenses",
+    subItems: [],
+  },
+  {
+    label: "Configurations",
+    icon: SlidersHorizontal,
+    basePath: "/config",
+    subItems: [
+      { title: "Catégories", icon: Tag, path: "/config/categories" },
+      { title: "Conditions de Paiement", icon: Clock, path: "/config/conditions-paiement" },
+      { title: "Unités de Mesure", icon: Ruler, path: "/config/unites-mesure" },
+      { title: "Liste des TVA", icon: Percent, path: "/config/tva" },
+      { title: "Banques", icon: Building, path: "/config/banques" },
+      { title: "Devises", icon: Coins, path: "/config/devises" },
     ],
   },
   // Administration — last, super_admin only
