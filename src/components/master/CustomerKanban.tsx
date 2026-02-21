@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, FilePlus, Phone, Mail, MapPin, CreditCard, AlertCircle } from "lucide-react";
+import { Eye, Phone, MapPin, CreditCard, AlertCircle } from "lucide-react";
 
 interface CustomerKanbanProps {
   customers: any[];
@@ -9,20 +9,20 @@ interface CustomerKanbanProps {
   onNewInvoice?: (customer: any) => void;
 }
 
-export function CustomerKanban({ customers, stats, onView, onNewInvoice }: CustomerKanbanProps) {
+export function CustomerKanban({ customers, stats, onView }: CustomerKanbanProps) {
   const fmt = (n: number) => n.toLocaleString("fr-MA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const getBorderClass = (customer: any) => {
+  const getAccent = (customer: any) => {
     const s = stats[customer.id];
     const unpaid = s?.outstandingReceivable ?? 0;
     const limit = Number(customer.credit_limit || 0);
-    if (unpaid > 0) return "border-destructive/50";
-    if (limit > 0 && unpaid >= limit) return "border-warning/50";
-    return "border-success/30";
+    if (unpaid > 0) return "border-destructive/40 hover:border-destructive/60";
+    if (limit > 0 && unpaid >= limit) return "border-warning/40 hover:border-warning/60";
+    return "border-border hover:border-[hsl(195,78%,53%)]/30";
   };
 
   if (customers.length === 0) {
-    return <p className="text-center text-muted-foreground py-12">Aucun client trouvé.</p>;
+    return <p className="text-center text-muted-foreground py-16">Aucun client trouvé.</p>;
   }
 
   return (
@@ -36,7 +36,7 @@ export function CustomerKanban({ customers, stats, onView, onNewInvoice }: Custo
         return (
           <div
             key={c.id}
-            className={`bg-card rounded-xl border-2 p-4 transition-all hover:shadow-[var(--shadow-card-hover)] cursor-pointer group ${getBorderClass(c)}`}
+            className={`bg-card rounded-xl border p-5 cursor-pointer group transition-all duration-[250ms] ease-in-out hover:-translate-y-[3px] hover:scale-[1.01] hover:shadow-[0_8px_30px_-8px_hsl(195,78%,53%,0.12)] ${getAccent(c)}`}
             onClick={() => onView(c)}
           >
             {/* Header */}
@@ -46,12 +46,12 @@ export function CustomerKanban({ customers, stats, onView, onNewInvoice }: Custo
               </h3>
               <div className="flex gap-1 flex-shrink-0">
                 {unpaid > 0 && (
-                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-destructive/15 text-destructive border-destructive/30">
+                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-destructive/10 text-destructive border-destructive/20 font-medium">
                     Impayé
                   </Badge>
                 )}
                 {overLimit && (
-                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-warning/15 text-warning-foreground border-warning/30">
+                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-warning/10 text-warning-foreground border-warning/20 font-medium">
                     <AlertCircle className="h-2.5 w-2.5 mr-0.5" />
                     Dépassé
                   </Badge>
@@ -59,58 +59,39 @@ export function CustomerKanban({ customers, stats, onView, onNewInvoice }: Custo
               </div>
             </div>
 
-            {/* Body */}
-            <div className="space-y-1.5 text-xs text-muted-foreground mb-3">
+            {/* Body — max 4 lines */}
+            <div className="space-y-1.5 text-xs text-muted-foreground mb-4">
               {c.ice && (
                 <div className="flex items-center gap-1.5">
-                  <CreditCard className="h-3 w-3 flex-shrink-0" />
+                  <CreditCard className="h-3 w-3 flex-shrink-0 opacity-60" />
                   <span className="truncate">ICE: {c.ice}</span>
                 </div>
               )}
               {c.phone && (
                 <div className="flex items-center gap-1.5">
-                  <Phone className="h-3 w-3 flex-shrink-0" />
+                  <Phone className="h-3 w-3 flex-shrink-0 opacity-60" />
                   <span>{c.phone}</span>
-                </div>
-              )}
-              {c.email && (
-                <div className="flex items-center gap-1.5">
-                  <Mail className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{c.email}</span>
                 </div>
               )}
               {c.city && (
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <MapPin className="h-3 w-3 flex-shrink-0 opacity-60" />
                   <span>{c.city}</span>
                 </div>
               )}
-            </div>
-
-            {/* Financial info */}
-            <div className="grid grid-cols-2 gap-2 text-xs border-t border-border pt-2 mb-3">
-              <div>
-                <span className="text-muted-foreground">Plafond</span>
-                <div className="font-semibold text-foreground">{fmt(limit)} MAD</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Impayés</span>
-                <div className={`font-semibold ${unpaid > 0 ? "text-destructive" : "text-foreground"}`}>
+              <div className="pt-1 border-t border-border/50">
+                <span className="text-muted-foreground">Impayés : </span>
+                <span className={`font-semibold ${unpaid > 0 ? "text-destructive" : "text-foreground"}`}>
                   {fmt(unpaid)} MAD
-                </div>
+                </span>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-              <Button variant="outline" size="sm" className="flex-1 h-7 text-xs gap-1" onClick={() => onView(c)}>
-                <Eye className="h-3 w-3" /> Voir fiche
+            {/* Single action */}
+            <div onClick={(e) => e.stopPropagation()}>
+              <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5 font-medium" onClick={() => onView(c)}>
+                <Eye className="h-3.5 w-3.5" /> Voir fiche
               </Button>
-              {onNewInvoice && (
-                <Button variant="outline" size="sm" className="flex-1 h-7 text-xs gap-1" onClick={() => onNewInvoice(c)}>
-                  <FilePlus className="h-3 w-3" /> Facture
-                </Button>
-              )}
             </div>
           </div>
         );

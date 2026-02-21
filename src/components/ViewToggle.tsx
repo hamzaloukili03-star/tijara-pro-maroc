@@ -1,5 +1,11 @@
-import { LayoutList, Kanban } from "lucide-react";
+import { LayoutList, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ViewToggleProps {
   view: "list" | "kanban";
@@ -8,33 +14,43 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onChange }: ViewToggleProps) {
   return (
-    <div className="inline-flex rounded-lg border border-border bg-muted/50 p-0.5">
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`h-8 px-3 gap-1.5 rounded-md text-xs font-medium transition-all ${
-          view === "list"
-            ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        onClick={() => onChange("list")}
-      >
-        <LayoutList className="h-3.5 w-3.5" />
-        Liste
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`h-8 px-3 gap-1.5 rounded-md text-xs font-medium transition-all ${
-          view === "kanban"
-            ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        onClick={() => onChange("kanban")}
-      >
-        <Kanban className="h-3.5 w-3.5" />
-        Kanban
-      </Button>
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5 gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 rounded-md transition-all duration-200 ${
+                view === "list"
+                  ? "bg-[hsl(195,78%,53%)]/15 text-[hsl(195,78%,53%)] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => onChange("list")}
+            >
+              <LayoutList className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Vue liste</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 rounded-md transition-all duration-200 ${
+                view === "kanban"
+                  ? "bg-[hsl(195,78%,53%)]/15 text-[hsl(195,78%,53%)] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => onChange("kanban")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Vue cartes</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
