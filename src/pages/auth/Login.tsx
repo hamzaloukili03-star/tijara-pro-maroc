@@ -23,7 +23,7 @@ export default function Login() {
     if (error) {
       toast({ title: "Erreur de connexion", description: error.message, variant: "destructive" });
     } else {
-      navigate("/");
+      navigate("/tableaux-de-bord");
     }
   };
 
