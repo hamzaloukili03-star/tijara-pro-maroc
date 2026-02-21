@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +19,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useCompany } from "@/hooks/useCompany";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, getDaysInMonth } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const MONTH_LABELS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+const MONTH_FULL_LABELS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+type QuickFilter = "today" | "week" | "month" | "custom";
 
 /* ─── types ─── */
 interface KPI {
@@ -104,6 +109,27 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+/* ─── Quick filter helpers ─── */
+function getQuickFilterRange(filter: QuickFilter): { from: string; to: string } {
+  const today = new Date();
+  switch (filter) {
+    case "today":
+      return { from: format(today, "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") };
+    case "week": {
+      const ws = startOfWeek(today, { weekStartsOn: 1 });
+      const we = endOfWeek(today, { weekStartsOn: 1 });
+      return { from: format(ws, "yyyy-MM-dd"), to: format(we, "yyyy-MM-dd") };
+    }
+    case "month": {
+      const ms = startOfMonth(today);
+      const me = endOfMonth(today);
+      return { from: format(ms, "yyyy-MM-dd"), to: format(me, "yyyy-MM-dd") };
+    }
+    default:
+      return { from: "", to: "" };
+  }
+}
+
 /* ================================================================
    MAIN COMPONENT
    ================================================================ */
@@ -116,6 +142,7 @@ const TableauxDeBord = () => {
     grossMargin: 0, totalPurchases: 0, profit: 0,
   });
   const [monthlyData, setMonthlyData] = useState<{ month: string; ventes: number; achats: number }[]>([]);
+  const [dailyData, setDailyData] = useState<{ day: string; ventes: number; achats: number }[]>([]);
   const [topClients, setTopClients] = useState<RankedItem[]>([]);
   const [topProducts, setTopProducts] = useState<RankedItem[]>([]);
   const [topCategories, setTopCategories] = useState<RankedItem[]>([]);
@@ -123,12 +150,30 @@ const TableauxDeBord = () => {
   const [recentTx, setRecentTx] = useState<RecentTx[]>([]);
   const [stockAlerts, setStockAlerts] = useState<{ name: string; qty: number }[]>([]);
   const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth(); // 0-indexed
   const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Quick filter state
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
-  const dateFrom = customFrom || `${selectedYear}-01-01`;
-  const dateTo = customTo || `${selectedYear}-12-31`;
+  // Month drill-down state for the evolution chart
+  const [drillMonth, setDrillMonth] = useState<number | null>(null); // 0-indexed month, null = show yearly
+
+  // Compute effective date range
+  const effectiveRange = useMemo(() => {
+    if (quickFilter === "custom") {
+      return {
+        from: customFrom || `${selectedYear}-01-01`,
+        to: customTo || `${selectedYear}-12-31`,
+      };
+    }
+    return getQuickFilterRange(quickFilter);
+  }, [quickFilter, customFrom, customTo, selectedYear]);
+
+  const dateFrom = effectiveRange.from;
+  const dateTo = effectiveRange.to;
   const [loading, setLoading] = useState(true);
 
   const animRevenue = useAnimatedNumber(kpi.revenue);
@@ -147,18 +192,34 @@ const TableauxDeBord = () => {
     [kpi.revenue, kpi.profit],
   );
 
+  const handleQuickFilter = (f: QuickFilter) => {
+    setQuickFilter(f);
+    if (f !== "custom") {
+      setCustomFrom("");
+      setCustomTo("");
+    }
+    // Reset drill-down when changing filter
+    if (f === "month") {
+      setDrillMonth(new Date().getMonth());
+    } else {
+      setDrillMonth(null);
+    }
+  };
+
+  const handleCustomDateChange = (field: "from" | "to", value: string) => {
+    setQuickFilter("custom");
+    if (field === "from") setCustomFrom(value);
+    else setCustomTo(value);
+  };
+
   /* ─── data fetching ─── */
   const fetchData = async () => {
     setLoading(true);
 
-    // Build base queries scoped to active company
     const scopeInv = (q: any) => companyId ? q.eq("company_id", companyId) : q;
     const scopeLines = (q: any) => companyId ? q.eq("company_id", companyId) : q;
     const scopeBank = (q: any) => companyId ? q.eq("company_id", companyId) : q;
     const scopePay = (q: any) => companyId ? q.eq("company_id", companyId) : q;
-    const scopeStock = (q: any) => companyId
-      ? q.in("product_id", (supabase as any).from("products").select("id").eq("company_id", companyId))
-      : q;
 
     const [clientInvRes, suppInvRes, banksRes, paymentsRes, lowStockRes, invoiceLinesRes, catRes] = await Promise.all([
       scopeInv((supabase as any)
@@ -185,13 +246,11 @@ const TableauxDeBord = () => {
         .from("stock_levels")
         .select("stock_on_hand, product:products(name, min_stock)")
         .limit(20),
-      // Invoice lines for top products + categories
       scopeLines((supabase as any)
         .from("invoice_lines")
         .select("total_ttc, total_ht, unit_price, quantity, product:products(name, category_id, category:product_categories(name, parent_id, parent:product_categories!product_categories_parent_id_fkey(name)))")
         .gte("created_at", dateFrom + "T00:00:00")
         .lte("created_at", dateTo + "T23:59:59")),
-      // Categories (global, not company-scoped)
       (supabase as any).from("product_categories").select("id, name, parent_id"),
     ]);
 
@@ -206,8 +265,7 @@ const TableauxDeBord = () => {
     const totalPurchases = suppInv.reduce((s: number, i: any) => s + Number(i.total_ttc), 0);
     const cashPosition = (banksRes.data || []).reduce((s: number, b: any) => s + Number(b.current_balance), 0);
     const grossMargin = revenue - totalPurchases;
-    // Rough profit: gross margin minus cash position delta is not directly available, use grossMargin * 0.6 as operational proxy
-    const profit = grossMargin * 0.6; // Net profit estimation (operating costs not tracked)
+    const profit = grossMargin * 0.6;
 
     setKpi({ revenue, supplierDebt, customerUnpaid, cashPosition, paidInvoices, pendingInvoices, grossMargin, totalPurchases, profit });
 
@@ -230,6 +288,35 @@ const TableauxDeBord = () => {
       return { month: MONTH_LABELS[mIdx], ...v };
     }));
 
+    // ── Daily breakdown for drilled month ──
+    if (drillMonth !== null) {
+      const daysInMonth = getDaysInMonth(new Date(selectedYear, drillMonth));
+      const dayMap = new Map<number, { ventes: number; achats: number }>();
+      for (let d = 1; d <= daysInMonth; d++) {
+        dayMap.set(d, { ventes: 0, achats: 0 });
+      }
+      clientInv.forEach((inv: any) => {
+        const date = new Date(inv.invoice_date);
+        if (date.getMonth() === drillMonth && date.getFullYear() === selectedYear) {
+          const d = date.getDate();
+          if (dayMap.has(d)) dayMap.get(d)!.ventes += Number(inv.total_ttc);
+        }
+      });
+      suppInv.forEach((inv: any) => {
+        const date = new Date(inv.invoice_date);
+        if (date.getMonth() === drillMonth && date.getFullYear() === selectedYear) {
+          const d = date.getDate();
+          if (dayMap.has(d)) dayMap.get(d)!.achats += Number(inv.total_ttc);
+        }
+      });
+      setDailyData(Array.from(dayMap.entries()).sort((a, b) => a[0] - b[0]).map(([day, v]) => ({
+        day: String(day),
+        ...v,
+      })));
+    } else {
+      setDailyData([]);
+    }
+
     // ── Top clients ──
     const cm = new Map<string, number>();
     clientInv.forEach((inv: any) => {
@@ -251,20 +338,15 @@ const TableauxDeBord = () => {
 
     invLines.forEach((line: any) => {
       const ttc = Number(line.total_ttc || 0);
-      // Products
       const pName = line.product?.name || "Sans produit";
       prodMap.set(pName, (prodMap.get(pName) || 0) + ttc);
-
-      // Categories & subcategories
       const cat = line.product?.category;
       if (cat) {
         if (cat.parent_id && cat.parent) {
-          // cat is a subcategory, parent is the root category
           const parentName = cat.parent?.name || "—";
           catMap.set(parentName, (catMap.get(parentName) || 0) + ttc);
           subCatMap.set(cat.name, (subCatMap.get(cat.name) || 0) + ttc);
         } else {
-          // cat is a root category
           catMap.set(cat.name, (catMap.get(cat.name) || 0) + ttc);
         }
       }
@@ -312,7 +394,7 @@ const TableauxDeBord = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [selectedYear, customFrom, customTo, companyId]);
+  useEffect(() => { fetchData(); }, [selectedYear, dateFrom, dateTo, companyId, drillMonth]);
 
   const exportCSV = () => {
     const header = "Mois,Ventes,Achats\n";
@@ -321,6 +403,19 @@ const TableauxDeBord = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "rapport-tijarapro.csv"; a.click();
   };
+
+  // Chart data: daily or monthly
+  const chartData = drillMonth !== null ? dailyData : monthlyData;
+  const chartDataKey = drillMonth !== null ? "day" : "month";
+  const chartTitle = drillMonth !== null
+    ? `Évolution journalière — ${MONTH_FULL_LABELS[drillMonth]} ${selectedYear}`
+    : `Évolution mensuelle — ${quickFilter === "custom" ? "Période personnalisée" : selectedYear}`;
+
+  const QUICK_FILTERS: { key: QuickFilter; label: string }[] = [
+    { key: "today", label: "Aujourd'hui" },
+    { key: "week", label: "Cette semaine" },
+    { key: "month", label: "Ce mois" },
+  ];
 
   /* ================================================================
      RENDER
@@ -332,9 +427,27 @@ const TableauxDeBord = () => {
         {/* ── Filter bar ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Quick filter chips */}
+            <div className="flex items-center gap-1.5 bg-card rounded-xl border border-border px-1.5 py-1.5 shadow-card">
+              {QUICK_FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => handleQuickFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    quickFilter === f.key
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Year selector */}
             <div className="flex items-center gap-2 bg-card rounded-xl border border-border px-3 py-2 shadow-card">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Select value={String(selectedYear)} onValueChange={(v) => { setSelectedYear(Number(v)); setCustomFrom(""); setCustomTo(""); }}>
+              <Select value={String(selectedYear)} onValueChange={(v) => { setSelectedYear(Number(v)); if (quickFilter !== "custom") handleQuickFilter(quickFilter); }}>
                 <SelectTrigger className="border-0 bg-transparent p-0 h-auto text-sm w-[80px] focus:ring-0 shadow-none">
                   <SelectValue />
                 </SelectTrigger>
@@ -345,14 +458,18 @@ const TableauxDeBord = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2 bg-card rounded-xl border border-border px-3 py-2 shadow-card">
-              <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
+
+            {/* Custom date range */}
+            <div className={`flex items-center gap-2 bg-card rounded-xl border px-3 py-2 shadow-card transition-colors duration-200 ${
+              quickFilter === "custom" ? "border-primary/50" : "border-border"
+            }`}>
+              <Input type="date" value={customFrom} onChange={(e) => handleCustomDateChange("from", e.target.value)}
                 className="border-0 bg-transparent p-0 h-auto text-sm w-[130px] focus-visible:ring-0" />
               <span className="text-muted-foreground text-sm">→</span>
-              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
+              <Input type="date" value={customTo} onChange={(e) => handleCustomDateChange("to", e.target.value)}
                 className="border-0 bg-transparent p-0 h-auto text-sm w-[130px] focus-visible:ring-0" />
-              {(customFrom || customTo) && (
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => { setCustomFrom(""); setCustomTo(""); }}>✕</Button>
+              {quickFilter === "custom" && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => handleQuickFilter("today")}>✕</Button>
               )}
             </div>
           </div>
@@ -380,18 +497,43 @@ const TableauxDeBord = () => {
           {/* Main chart — 7/10 */}
           <Card className="lg:col-span-7 border border-border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">Évolution mensuelle — {customFrom ? "Période personnalisée" : selectedYear}</CardTitle>
-                <div className="flex items-center gap-4 text-xs">
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> Ventes</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(210,60%,16%)" }} /> Achats</span>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-base font-semibold">{chartTitle}</CardTitle>
+                  {drillMonth !== null && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={() => setDrillMonth(null)}>
+                      ← Vue annuelle
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Month selector for drill-down */}
+                  <Select
+                    value={drillMonth !== null ? String(drillMonth) : "all"}
+                    onValueChange={(v) => setDrillMonth(v === "all" ? null : Number(v))}
+                  >
+                    <SelectTrigger className="h-8 w-[140px] text-xs rounded-lg border-border">
+                      <SelectValue placeholder="Mois" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Vue annuelle</SelectItem>
+                      {MONTH_FULL_LABELS.map((label, idx) => (
+                        <SelectItem key={idx} value={String(idx)}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> Ventes</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(210,60%,16%)" }} /> Achats</span>
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-2">
-              {monthlyData.length > 0 ? (
+              {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={340}>
-                  <AreaChart data={monthlyData}>
+                  <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="hsl(197,100%,53%)" stopOpacity={0.35} />
@@ -403,7 +545,7 @@ const TableauxDeBord = () => {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(216,18%,88%)" strokeOpacity={0.5} />
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(210,10%,42%)" />
+                    <XAxis dataKey={chartDataKey} fontSize={11} tickLine={false} axisLine={false} stroke="hsl(210,10%,42%)" />
                     <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="hsl(210,10%,42%)" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<CustomTooltip />} />
                     <Area type="monotone" dataKey="ventes" name="Ventes" stroke="hsl(197,100%,53%)" strokeWidth={2.5} fill="url(#gV)" animationDuration={1500} />
@@ -462,7 +604,6 @@ const TableauxDeBord = () => {
             ROW 3 — Top Clients + Top Products
             ═══════════════════════════════════════════ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Top Clients */}
           <RankedListCard
             title="Top Clients"
             subtitle="Par chiffre d'affaires"
@@ -474,7 +615,6 @@ const TableauxDeBord = () => {
             emptyText="Aucun client sur la période"
             emptyIcon={Users}
           />
-          {/* Top Products */}
           <RankedListCard
             title="Top Produits"
             subtitle="Par montant facturé"
@@ -493,7 +633,6 @@ const TableauxDeBord = () => {
             ROW 4 — Top Categories + Top Subcategories
             ═══════════════════════════════════════════ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Top Categories */}
           <RankedListCard
             title="Top Catégories"
             subtitle="Par chiffre d'affaires"
@@ -506,7 +645,6 @@ const TableauxDeBord = () => {
             emptyIcon={Tag}
             chartColor="hsl(38, 92%, 50%)"
           />
-          {/* Top Subcategories */}
           <RankedListCard
             title="Top Sous-catégories"
             subtitle="Par chiffre d'affaires"
@@ -525,7 +663,6 @@ const TableauxDeBord = () => {
             ROW 5 — Stock alerts + Recent TX
             ═══════════════════════════════════════════ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Stock alerts */}
           <Card className="border border-border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -554,7 +691,6 @@ const TableauxDeBord = () => {
             </CardContent>
           </Card>
 
-          {/* Recent transactions */}
           <Card className="border border-border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -716,7 +852,6 @@ function RankedListCard({ title, subtitle, icon: Icon, iconColor, iconBg, items,
       <CardContent className="pt-0">
         {items.length > 0 ? (
           <div className="space-y-0">
-            {/* Bar chart */}
             <ResponsiveContainer width="100%" height={130}>
               <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
                 <XAxis type="number" hide />
@@ -731,7 +866,6 @@ function RankedListCard({ title, subtitle, icon: Icon, iconColor, iconBg, items,
                 <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} maxBarSize={16} />
               </BarChart>
             </ResponsiveContainer>
-            {/* Ranked list */}
             <div className="space-y-2 pt-2 border-t border-border/50">
               {items.map((item, i) => (
                 <div key={i} className="flex items-center gap-2.5 text-sm">

@@ -7,6 +7,29 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import logo from "@/assets/logo-tijarapro.jpg";
 import { Loader2 } from "lucide-react";
+import { ROLE_MODULE_ACCESS, type AppRole } from "@/types/auth";
+
+function getFirstAccessibleRoute(roles: AppRole[]): string {
+  const orderedRoutes = [
+    "/tableaux-de-bord",
+    "/referentiel/clients",
+    "/achats/demandes",
+    "/stock/niveaux",
+    "/ventes/devis",
+    "/facturation/clients",
+    "/reglements/encaissements",
+    "/depenses",
+    "/config/categories",
+    "/documents",
+  ];
+  for (const route of orderedRoutes) {
+    const allowedRoles = ROLE_MODULE_ACCESS[route];
+    if (!allowedRoles || allowedRoles.some((r) => roles.includes(r))) {
+      return route;
+    }
+  }
+  return "/";
+}
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,11 +41,25 @@ export default function Login() {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setLoading(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
+      setLoading(false);
       toast({ title: "Erreur de connexion", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    // Fetch user roles to determine redirect
+    const userId = data.user?.id;
+    if (userId) {
+      const { data: rolesData } = await supabase
+        .from("user_roles" as any)
+        .select("role")
+        .eq("user_id", userId);
+      const roles: AppRole[] = (rolesData as any[] || []).map((r: any) => r.role as AppRole).filter(Boolean);
+      setLoading(false);
+      navigate(getFirstAccessibleRoute(roles));
     } else {
+      setLoading(false);
       navigate("/tableaux-de-bord");
     }
   };
