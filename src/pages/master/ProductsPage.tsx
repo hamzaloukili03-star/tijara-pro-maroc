@@ -3,6 +3,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { ProductFormDialog } from "@/components/products/ProductFormDialog";
 import { ProductImportExport } from "@/components/products/ProductImportExport";
+import { ProductKanban } from "@/components/master/ProductKanban";
+import { ViewToggle } from "@/components/ViewToggle";
 import { Package, Loader2, Plus, Search, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,7 @@ export default function ProductsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<"list" | "kanban">("list");
 
   const openCreate = () => { setEditingProduct(null); setDialogOpen(true); };
   const openEdit = (p: Product) => { setEditingProduct(p); setDialogOpen(true); };
@@ -57,6 +60,7 @@ export default function ProductsPage() {
             <Input placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-64" />
           </div>
           <div className="flex items-center gap-2">
+            <ViewToggle view={view} onChange={setView} />
             <ProductImportExport products={products} onImportDone={fetchProducts} />
             <Button onClick={openCreate} className="gap-2">
               <Plus className="h-4 w-4" /> Nouveau produit
@@ -66,6 +70,12 @@ export default function ProductsPage() {
 
         {products.length === 0 && !search ? (
           <EmptyState icon={<Package className="h-8 w-8" />} title="Aucun produit" description="Ajoutez votre premier produit." actionLabel="Ajouter" onAction={openCreate} />
+        ) : view === "kanban" ? (
+          <ProductKanban
+            products={filtered}
+            onView={openEdit}
+            onEdit={openEdit}
+          />
         ) : (
           <div className="bg-card rounded-lg border border-border shadow-card overflow-hidden">
             <Table>

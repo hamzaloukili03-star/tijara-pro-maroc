@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCrud } from "@/hooks/useCrud";
 import { useCompany } from "@/hooks/useCompany";
 import { MasterDataPage, FieldConfig } from "@/components/MasterDataPage";
+import { SupplierKanban } from "@/components/master/SupplierKanban";
+import { ViewToggle } from "@/components/ViewToggle";
 import { Badge } from "@/components/ui/badge";
-import { Truck, TrendingUp, AlertCircle } from "lucide-react";
+import { Truck, AlertCircle } from "lucide-react";
 
 interface Supplier {
   id: string;
@@ -43,6 +45,7 @@ export default function SuppliersPage() {
 
   const [stats, setStats] = useState<SupplierStats>({});
   const [statsLoading, setStatsLoading] = useState(false);
+  const [view, setView] = useState<"list" | "kanban">("list");
 
   const fetchStats = useCallback(async () => {
     if (!data.length) return;
@@ -89,7 +92,6 @@ export default function SuppliersPage() {
         </span>
       ),
     },
-    // Computed columns shown in table only via render
     {
       key: "id",
       label: "Total achats",
@@ -123,7 +125,6 @@ export default function SuppliersPage() {
         );
       },
     } as any,
-    // Form-only fields
     { key: "ice", label: "ICE", showInTable: false },
     { key: "rc", label: "RC", showInTable: false },
     { key: "if_number", label: "IF", showInTable: false },
@@ -150,16 +151,31 @@ export default function SuppliersPage() {
 
   return (
     <AppLayout title="Fournisseurs" subtitle="Gestion des fournisseurs">
-      <MasterDataPage
-        title="Fournisseur"
-        icon={<Truck className="h-8 w-8" />}
-        data={data}
-        loading={loading || statsLoading}
-        fields={fields}
-        onCreate={create}
-        onUpdate={update}
-        onDelete={remove}
-      />
+      {view === "list" ? (
+        <MasterDataPage
+          title="Fournisseur"
+          icon={<Truck className="h-8 w-8" />}
+          data={data}
+          loading={loading || statsLoading}
+          fields={fields}
+          onCreate={create}
+          onUpdate={update}
+          onDelete={remove}
+          extraActions={<ViewToggle view={view} onChange={setView} />}
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
+          <SupplierKanban
+            suppliers={data}
+            stats={stats}
+            onView={() => {}}
+            onNewPO={() => {}}
+          />
+        </div>
+      )}
     </AppLayout>
   );
 }
