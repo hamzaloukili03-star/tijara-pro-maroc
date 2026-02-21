@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Phone, CreditCard, Clock, AlertCircle } from "lucide-react";
+import { Eye, Phone, CreditCard, Clock, AlertCircle, Ban } from "lucide-react";
 
 interface SupplierKanbanProps {
   suppliers: any[];
@@ -40,6 +40,12 @@ export function SupplierKanban({ suppliers, stats, onView }: SupplierKanbanProps
                 {s.name}
               </h3>
               <div className="flex gap-1 flex-shrink-0">
+                {s.is_active === false && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 font-medium">
+                    <Ban className="h-2.5 w-2.5 mr-0.5" />
+                    Bloqué
+                  </Badge>
+                )}
                 {debt > 0 && (
                   <Badge className="text-[10px] px-1.5 py-0 h-4 bg-destructive/10 text-destructive border-destructive/20 font-medium">
                     Impayé

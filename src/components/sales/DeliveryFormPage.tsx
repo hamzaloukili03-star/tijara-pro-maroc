@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isCustomerBlocked } from "@/lib/blocked-check";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -253,6 +254,7 @@ export function DeliveryFormPage({ delivery, salesOrderId, onBack, onSaved, stoc
       toast({ title: "Champs requis", description: "Client et dépôt sont obligatoires.", variant: "destructive" });
       return;
     }
+    if (await isCustomerBlocked(customerId)) return;
     setSaving(true);
     try {
       const userId = (await supabase.auth.getUser()).data.user?.id;

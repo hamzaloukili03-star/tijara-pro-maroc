@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isSupplierBlocked } from "@/lib/blocked-check";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
 
   const handleSave = async () => {
     if (!supplierId || !warehouseId) return;
+    if (await isSupplierBlocked(supplierId)) return;
     setSaving(true);
     if (editItem) {
       await hook.update(editItem.id, { supplier_id: supplierId, warehouse_id: warehouseId, payment_terms: paymentTerms, expected_delivery_date: expectedDate || null, notes }, lines);
