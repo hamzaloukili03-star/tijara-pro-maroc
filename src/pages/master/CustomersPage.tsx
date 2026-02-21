@@ -2,16 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { MasterDataPage, FieldConfig } from "@/components/MasterDataPage";
 import { CustomerKanban } from "@/components/master/CustomerKanban";
+import { TierDetailDialog } from "@/components/master/TierDetailDialog";
 import { ViewToggle } from "@/components/ViewToggle";
 import { useCrud } from "@/hooks/useCrud";
 import { useCompany } from "@/hooks/useCompany";
 import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -20,11 +18,23 @@ interface Customer {
   contact_name: string;
   email: string;
   phone: string;
+  phone2: string;
   city: string;
   ice: string;
+  rc: string;
+  if_number: string;
+  patente: string;
+  address: string;
   payment_terms: string;
   credit_limit: number;
   is_active: boolean;
+  bank_name: string;
+  rib: string;
+  account_number: string;
+  iban: string;
+  swift: string;
+  fax: string;
+  notes: string;
 }
 
 const fields: FieldConfig[] = [
@@ -34,11 +44,22 @@ const fields: FieldConfig[] = [
   { key: "email", label: "Email", type: "email", placeholder: "email@entreprise.ma" },
   { key: "phone", label: "Téléphone", placeholder: "+212..." },
   { key: "city", label: "Ville", placeholder: "Casablanca" },
-  { key: "ice", label: "ICE", placeholder: "ICE", showInTable: false },
-  { key: "rc", label: "RC", showInTable: false },
-  { key: "if_number", label: "IF", showInTable: false },
-  { key: "patente", label: "Patente", showInTable: false },
-  { key: "address", label: "Adresse", type: "textarea", showInTable: false },
+  {
+    key: "is_active",
+    label: "Statut",
+    showInTable: true,
+    render: (val: any) => {
+      const active = val !== false;
+      return active ? (
+        <Badge className="text-[10px] px-1.5 py-0 h-4 bg-success/10 text-success border-success/20 font-medium">Actif</Badge>
+      ) : (
+        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 font-medium">
+          <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />Bloqué
+        </Badge>
+      );
+    },
+  },
+  { key: "ice", label: "ICE", showInTable: false },
   { key: "payment_terms", label: "Conditions de paiement", type: "select", defaultValue: "30j", options: [
     { value: "comptant", label: "Comptant" },
     { value: "30j", label: "30 jours" },
@@ -54,10 +75,9 @@ export default function CustomersPage() {
   const { activeCompany } = useCompany();
   const [view, setView] = useState<"list" | "kanban">("list");
   const [stats, setStats] = useState<Record<string, { outstandingReceivable: number }>>({});
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Customer | null>(null);
-  const [form, setForm] = useState<Record<string, any>>({});
-  const [saving, setSaving] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<Customer | null>(null);
+  const [isNew, setIsNew] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!data.length) return;
@@ -79,20 +99,20 @@ export default function CustomersPage() {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  const openKanbanEdit = (item: Customer) => {
-    const values: Record<string, any> = {};
-    fields.forEach((f) => { values[f.key] = (item as any)[f.key] ?? ""; });
-    setForm(values);
-    setEditingItem(item);
-    setEditDialogOpen(true);
+  const openDetail = (item: Customer) => {
+    setDetailItem(item);
+    setIsNew(false);
+    setDetailOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!editingItem) return;
-    setSaving(true);
-    const ok = await update(editingItem.id, form as unknown as Partial<Customer>);
-    setSaving(false);
-    if (ok) setEditDialogOpen(false);
+  const handleSave = async (formData: Record<string, any>) => {
+    if (isNew) {
+      return await create(formData as Partial<Customer>);
+    }
+    if (detailItem) {
+      return await update(detailItem.id, formData as Partial<Customer>);
+    }
+    return false;
   };
 
   return (
@@ -108,6 +128,7 @@ export default function CustomersPage() {
           onUpdate={update}
           onDelete={remove}
           extraActions={<ViewToggle view={view} onChange={setView} />}
+          onRowClick={openDetail}
         />
       ) : (
         <div className="space-y-4">
@@ -117,62 +138,18 @@ export default function CustomersPage() {
           <CustomerKanban
             customers={data}
             stats={stats}
-            onView={openKanbanEdit}
+            onView={openDetail}
           />
-          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogContent className="max-w-[90vw] md:max-w-[70vw] lg:max-w-[65vw] max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Fiche Client</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {fields.map((f) => (
-                  <div key={f.key} className={f.type === "textarea" ? "sm:col-span-2" : ""}>
-                    <Label htmlFor={f.key}>{f.label}{f.required && " *"}</Label>
-                    {f.type === "select" ? (
-                      <select
-                        id={f.key}
-                        value={form[f.key] || ""}
-                        onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Sélectionner...</option>
-                        {f.options?.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                    ) : f.type === "textarea" ? (
-                      <textarea
-                        id={f.key}
-                        value={form[f.key] || ""}
-                        onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                        placeholder={f.placeholder}
-                        className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        rows={3}
-                      />
-                    ) : (
-                      <Input
-                        id={f.key}
-                        type={f.type || "text"}
-                        value={form[f.key] || ""}
-                        onChange={(e) => setForm({ ...form, [f.key]: f.type === "number" ? Number(e.target.value) : e.target.value })}
-                        placeholder={f.placeholder}
-                        required={f.required}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Enregistrer
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       )}
+      <TierDetailDialog
+        open={detailOpen}
+        onOpenChange={(v) => { setDetailOpen(v); if (!v) setDetailItem(null); }}
+        item={detailItem as any}
+        isNew={isNew}
+        type="client"
+        onSave={handleSave}
+      />
     </AppLayout>
   );
 }

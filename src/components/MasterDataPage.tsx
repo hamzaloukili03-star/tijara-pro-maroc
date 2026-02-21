@@ -32,6 +32,7 @@ interface MasterDataPageProps<T> {
   canCreate?: boolean;
   canDelete?: boolean;
   extraActions?: ReactNode;
+  onRowClick?: (row: T) => void;
 }
 
 export function MasterDataPage<T extends { id: string }>({
@@ -46,6 +47,7 @@ export function MasterDataPage<T extends { id: string }>({
   canCreate = true,
   canDelete = true,
   extraActions,
+  onRowClick,
 }: MasterDataPageProps<T>) {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -206,7 +208,7 @@ export function MasterDataPage<T extends { id: string }>({
           </TableHeader>
           <TableBody>
             {filtered.map((row: any, i) => (
-              <TableRow key={row.id} className={i % 2 === 0 ? "" : "bg-muted/20"}>
+              <TableRow key={row.id} className={`cursor-pointer hover:bg-muted/30 transition-colors ${i % 2 === 0 ? "" : "bg-muted/20"}`} onClick={() => onRowClick ? onRowClick(row) : openEdit(row)}>
                 {tableFields.map((f) => (
                   <TableCell key={f.key}>
                     {f.render ? f.render(row[f.key], row) : (

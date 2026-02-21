@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isCustomerBlocked } from "@/lib/blocked-check";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
 
   const handleSubmit = async () => {
     if (!customerId) return;
+    if (await isCustomerBlocked(customerId)) return;
     setSubmitting(true);
     await onSubmit(customerId, lines, notes, terms);
     setSubmitting(false);

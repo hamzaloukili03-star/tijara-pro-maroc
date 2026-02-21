@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isCustomerBlocked, isSupplierBlocked } from "@/lib/blocked-check";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,6 +107,8 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
 
   const handleSubmit = async () => {
     if (!partnerId || lines.length === 0) return;
+    if (invoiceType === "client" && await isCustomerBlocked(partnerId)) return;
+    if (invoiceType === "supplier" && await isSupplierBlocked(partnerId)) return;
     setSaving(true);
     const invoice: Partial<Invoice> = {
       invoice_date: invoiceDate,

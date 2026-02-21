@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isSupplierBlocked } from "@/lib/blocked-check";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -237,6 +238,7 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
       toast({ title: "Champs requis", description: "Fournisseur et dépôt sont obligatoires.", variant: "destructive" });
       return;
     }
+    if (await isSupplierBlocked(supplierId)) return;
     setSaving(true);
     try {
       const userId = (await supabase.auth.getUser()).data.user?.id;

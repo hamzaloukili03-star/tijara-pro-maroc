@@ -585,7 +585,9 @@ export type Database = {
       }
       customers: {
         Row: {
+          account_number: string | null
           address: string | null
+          bank_name: string | null
           city: string | null
           code: string
           company_id: string | null
@@ -594,6 +596,7 @@ export type Database = {
           credit_limit: number | null
           email: string | null
           fax: string | null
+          iban: string | null
           ice: string | null
           id: string
           if_number: string | null
@@ -603,11 +606,16 @@ export type Database = {
           patente: string | null
           payment_terms: string | null
           phone: string | null
+          phone2: string | null
           rc: string | null
+          rib: string | null
+          swift: string | null
           updated_at: string
         }
         Insert: {
+          account_number?: string | null
           address?: string | null
+          bank_name?: string | null
           city?: string | null
           code: string
           company_id?: string | null
@@ -616,6 +624,7 @@ export type Database = {
           credit_limit?: number | null
           email?: string | null
           fax?: string | null
+          iban?: string | null
           ice?: string | null
           id?: string
           if_number?: string | null
@@ -625,11 +634,16 @@ export type Database = {
           patente?: string | null
           payment_terms?: string | null
           phone?: string | null
+          phone2?: string | null
           rc?: string | null
+          rib?: string | null
+          swift?: string | null
           updated_at?: string
         }
         Update: {
+          account_number?: string | null
           address?: string | null
+          bank_name?: string | null
           city?: string | null
           code?: string
           company_id?: string | null
@@ -638,6 +652,7 @@ export type Database = {
           credit_limit?: number | null
           email?: string | null
           fax?: string | null
+          iban?: string | null
           ice?: string | null
           id?: string
           if_number?: string | null
@@ -647,7 +662,10 @@ export type Database = {
           patente?: string | null
           payment_terms?: string | null
           phone?: string | null
+          phone2?: string | null
           rc?: string | null
+          rib?: string | null
+          swift?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3265,7 +3283,9 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          account_number: string | null
           address: string | null
+          bank_name: string | null
           city: string | null
           code: string
           company_id: string | null
@@ -3274,6 +3294,7 @@ export type Database = {
           credit_limit: number
           email: string | null
           fax: string | null
+          iban: string | null
           ice: string | null
           id: string
           if_number: string | null
@@ -3283,11 +3304,16 @@ export type Database = {
           patente: string | null
           payment_terms: string | null
           phone: string | null
+          phone2: string | null
           rc: string | null
+          rib: string | null
+          swift: string | null
           updated_at: string
         }
         Insert: {
+          account_number?: string | null
           address?: string | null
+          bank_name?: string | null
           city?: string | null
           code: string
           company_id?: string | null
@@ -3296,6 +3322,7 @@ export type Database = {
           credit_limit?: number
           email?: string | null
           fax?: string | null
+          iban?: string | null
           ice?: string | null
           id?: string
           if_number?: string | null
@@ -3305,11 +3332,16 @@ export type Database = {
           patente?: string | null
           payment_terms?: string | null
           phone?: string | null
+          phone2?: string | null
           rc?: string | null
+          rib?: string | null
+          swift?: string | null
           updated_at?: string
         }
         Update: {
+          account_number?: string | null
           address?: string | null
+          bank_name?: string | null
           city?: string | null
           code?: string
           company_id?: string | null
@@ -3318,6 +3350,7 @@ export type Database = {
           credit_limit?: number
           email?: string | null
           fax?: string | null
+          iban?: string | null
           ice?: string | null
           id?: string
           if_number?: string | null
@@ -3327,7 +3360,10 @@ export type Database = {
           patente?: string | null
           payment_terms?: string | null
           phone?: string | null
+          phone2?: string | null
           rc?: string | null
+          rib?: string | null
+          swift?: string | null
           updated_at?: string
         }
         Relationships: [
