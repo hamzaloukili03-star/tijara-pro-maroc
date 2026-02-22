@@ -69,19 +69,6 @@ const sections: SidebarSection[] = [
     subItems: [],
   },
   {
-    label: "Référentiels",
-    icon: Database,
-    basePath: "/referentiel",
-    subItems: [
-      { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
-      { title: "Fournisseurs", icon: Truck, path: "/referentiel/fournisseurs" },
-      { title: "Produits", icon: Package, path: "/referentiel/produits" },
-      { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
-      { title: "Comptes Bancaires", icon: Landmark, path: "/referentiel/comptes-bancaires" },
-      { title: "Caisses", icon: CreditCard, path: "/referentiel/caisses" },
-    ],
-  },
-  {
     label: "Achats",
     icon: ShoppingCart,
     basePath: "/achats",
@@ -151,6 +138,19 @@ const sections: SidebarSection[] = [
       { title: "Liste des TVA", icon: Percent, path: "/config/tva" },
       { title: "Banques", icon: Building, path: "/config/banques" },
       { title: "Devises", icon: Coins, path: "/config/devises" },
+    ],
+  },
+  {
+    label: "Référentiels",
+    icon: Database,
+    basePath: "/referentiel",
+    subItems: [
+      { title: "Clients", icon: UserCheck, path: "/referentiel/clients" },
+      { title: "Fournisseurs", icon: Truck, path: "/referentiel/fournisseurs" },
+      { title: "Produits", icon: Package, path: "/referentiel/produits" },
+      { title: "Dépôts", icon: Warehouse, path: "/referentiel/depots" },
+      { title: "Comptes Bancaires", icon: Landmark, path: "/referentiel/comptes-bancaires" },
+      { title: "Caisses", icon: CreditCard, path: "/referentiel/caisses" },
     ],
   },
   // Administration — last, super_admin only
