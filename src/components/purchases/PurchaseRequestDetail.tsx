@@ -36,8 +36,9 @@ export function PurchaseRequestDetail({ item, onClose }: Props) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div><span className="text-muted-foreground">Fournisseur :</span> <strong>{item.supplier?.name || "—"}</strong></div>
-            <div><span className="text-muted-foreground">Dépôt :</span> <strong>{item.warehouse?.name || "—"}</strong></div>
-            <div><span className="text-muted-foreground">Date besoin :</span> <strong>{item.needed_date || "—"}</strong></div>
+            <div><span className="text-muted-foreground">Réf. fournisseur :</span> <strong>{item.supplier_reference || "—"}</strong></div>
+            <div><span className="text-muted-foreground">Arrivée prévue :</span> <strong>{item.needed_date || "—"}</strong></div>
+            <div><span className="text-muted-foreground">Devise :</span> <strong>{item.currency?.code || "MAD"}</strong></div>
             <div><span className="text-muted-foreground">Demandeur :</span> <strong>{item.requester?.full_name || "—"}</strong></div>
           </div>
 

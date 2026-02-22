@@ -74,7 +74,7 @@ export function usePurchaseRequests() {
     setLoading(true);
     const { data } = await (supabase as any)
       .from("purchase_requests")
-      .select("*, warehouse:warehouses(name), supplier:suppliers(name, code), requester:profiles(full_name)")
+      .select("*, supplier:suppliers(name, code), requester:profiles(full_name), currency:currencies(code, symbol)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
@@ -84,10 +84,11 @@ export function usePurchaseRequests() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const create = async (payload: {
-    warehouseId: string;
     supplierId?: string;
     neededDate?: string;
     notes?: string;
+    supplierReference?: string;
+    currencyId?: string;
     lines: Partial<PurchaseLine>[];
   }) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "DA" });
@@ -95,10 +96,11 @@ export function usePurchaseRequests() {
     const { data, error } = await (supabase as any).from("purchase_requests").insert({
       request_number: num,
       status: "draft",
-      warehouse_id: payload.warehouseId || null,
       supplier_id: payload.supplierId || null,
       needed_date: payload.neededDate || null,
       notes: payload.notes,
+      supplier_reference: payload.supplierReference || null,
+      currency_id: payload.currencyId || null,
       requested_by: userId,
       company_id: companyId,
     }).select().single();
@@ -188,7 +190,7 @@ export function usePurchaseRequests() {
       order_number: num,
       status: "draft",
       supplier_id: req.supplier_id || null,
-      warehouse_id: req.warehouse_id || null,
+      warehouse_id: null,
       purchase_request_id: requestId,
       notes: req.notes,
       created_by: userId,
