@@ -125,12 +125,13 @@ const App = () => (
             {/* Achats */}
             <Route path="/achats/demandes" element={<ProtectedRoute><DemandesAchat /></ProtectedRoute>} />
             <Route path="/achats/commandes" element={<ProtectedRoute><CommandesFournisseurs /></ProtectedRoute>} />
-            <Route path="/achats/receptions" element={<ProtectedRoute><Receptions /></ProtectedRoute>} />
+            <Route path="/achats/depenses" element={<ProtectedRoute><Depenses /></ProtectedRoute>} />
 
             {/* Stock */}
             <Route path="/stock/niveaux" element={<ProtectedRoute><NiveauxStock /></ProtectedRoute>} />
             <Route path="/stock/mouvements" element={<ProtectedRoute><Mouvements /></ProtectedRoute>} />
             <Route path="/stock/transferts" element={<ProtectedRoute><Transferts /></ProtectedRoute>} />
+            <Route path="/stock/receptions" element={<ProtectedRoute><Receptions /></ProtectedRoute>} />
             <Route path="/stock/inventaires" element={<ProtectedRoute><Inventaires /></ProtectedRoute>} />
 
             {/* Ventes */}
@@ -150,8 +151,10 @@ const App = () => (
             <Route path="/reglements/rapprochement" element={<ProtectedRoute><Rapprochement /></ProtectedRoute>} />
             <Route path="/reglements/impayes" element={<ProtectedRoute><Impayes /></ProtectedRoute>} />
 
-            {/* Dépenses */}
+            {/* Legacy redirect for old depenses route */}
             <Route path="/depenses" element={<ProtectedRoute><Depenses /></ProtectedRoute>} />
+            {/* Legacy redirect for old receptions route */}
+            <Route path="/achats/receptions" element={<ProtectedRoute><Receptions /></ProtectedRoute>} />
 
             {/* Documents */}
             <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
