@@ -73,6 +73,8 @@ export interface PdfDocumentData {
   subtotalHt: number;
   totalTva: number;
   totalTtc: number;
+  globalDiscountAmount?: number;
+  globalDiscountLabel?: string;
   remainingBalance?: number | null;
   amountPaid?: number | null;
   notes?: string | null;

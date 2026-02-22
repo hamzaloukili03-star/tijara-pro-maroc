@@ -12,6 +12,8 @@ import { Plus, Trash2, Loader2, Lock } from "lucide-react";
 import { calcPurchaseTotals, type PurchaseLine } from "@/hooks/usePurchases";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { GlobalDiscountSection, type GlobalDiscount, calcTotalsWithGlobalDiscount } from "@/components/GlobalDiscountSection";
+import { DocumentTotalsBlock } from "@/components/DocumentTotalsBlock";
 
 interface Props { editItem: any | null; hook: any; onClose: () => void; }
 
@@ -36,6 +38,10 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const [expectedDate, setExpectedDate] = useState(editItem?.expected_delivery_date || "");
   const [notes, setNotes] = useState(editItem?.notes || "");
   const [lines, setLines] = useState<Partial<PurchaseLine>[]>([emptyLine()]);
+  const [globalDiscount, setGlobalDiscount] = useState<GlobalDiscount>({
+    type: (editItem?.global_discount_type || "percentage") as "percentage" | "fixed",
+    value: Number(editItem?.global_discount_value) || 0,
+  });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!editItem);
 
@@ -45,14 +51,12 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
     (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
     (supabase as any).from("payment_terms").select("id, name, days").eq("is_active", true).order("sort_order").then(({ data }: any) => {
       if (data?.length) {
-        // Build options mapping days to the legacy format (e.g. "30j")
         const opts = data.map((pt: any) => ({
           value: pt.days === 0 ? "comptant" : `${pt.days}j`,
           label: pt.name,
         }));
         setPaymentTermsOptions(opts);
       } else {
-        // Fallback hardcoded
         setPaymentTermsOptions([
           { value: "comptant", label: "Comptant" },
           { value: "30j", label: "30 jours" },
@@ -69,7 +73,6 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
     }
   }, []);
 
-  // Auto-fill payment terms from supplier when supplier changes (new orders only)
   const handleSupplierChange = (id: string) => {
     setSupplierId(id);
     if (!editItem) {
@@ -92,16 +95,30 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
     setLines(updated);
   };
 
-  const { subtotal_ht, total_tva, total_ttc } = calcPurchaseTotals(lines as PurchaseLine[]);
+  const { lines: calcedLines } = calcPurchaseTotals(lines as PurchaseLine[]);
+  const totals = calcTotalsWithGlobalDiscount(calcedLines, globalDiscount.type, globalDiscount.value);
 
   const handleSave = async () => {
     if (!supplierId || !warehouseId) return;
     if (await isSupplierBlocked(supplierId)) return;
     setSaving(true);
     if (editItem) {
-      await hook.update(editItem.id, { supplier_id: supplierId, warehouse_id: warehouseId, payment_terms: paymentTerms, expected_delivery_date: expectedDate || null, notes }, lines);
+      await hook.update(editItem.id, {
+        supplier_id: supplierId, warehouse_id: warehouseId, payment_terms: paymentTerms,
+        expected_delivery_date: expectedDate || null, notes,
+        global_discount_type: globalDiscount.type,
+        global_discount_value: globalDiscount.value,
+        global_discount_amount: totals.globalDiscountAmount,
+        subtotal_ht: totals.subtotalHt,
+        total_tva: totals.totalTva,
+        total_ttc: totals.totalTtc,
+      }, lines);
     } else {
-      await hook.create({ supplierId, warehouseId, lines, notes, paymentTerms, expectedDeliveryDate: expectedDate || undefined });
+      await hook.create({
+        supplierId, warehouseId, lines, notes, paymentTerms,
+        expectedDeliveryDate: expectedDate || undefined,
+        globalDiscount,
+      });
     }
     setSaving(false);
     onClose();
@@ -109,8 +126,6 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
 
   const supplierOptions = suppliers.map(s => ({ value: s.id, label: `${s.code} — ${s.name}` }));
   const productOptions = products.map(p => ({ value: p.id, label: `${p.code} — ${p.name}` }));
-
-  // Find current payment term label for read-only display
   const currentPTLabel = paymentTermsOptions.find(o => o.value === paymentTerms)?.label || paymentTerms;
 
   return (
@@ -180,12 +195,22 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
             </div>
           )}
 
+          <GlobalDiscountSection
+            discount={globalDiscount}
+            onChange={setGlobalDiscount}
+            maxAmount={totals.subtotalHtBrut}
+          />
+
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
 
-          <div className="flex gap-6 pt-2 text-sm border-t">
-            <span>Total HT : <strong>{subtotal_ht.toLocaleString("fr-MA")} MAD</strong></span>
-            <span>TVA : <strong>{total_tva.toLocaleString("fr-MA")} MAD</strong></span>
-            <span className="text-base font-bold">TTC : {total_ttc.toLocaleString("fr-MA")} MAD</span>
+          <div className="flex justify-end pt-2 border-t">
+            <DocumentTotalsBlock
+              subtotalHtBrut={totals.subtotalHtBrut}
+              globalDiscountAmount={totals.globalDiscountAmount}
+              subtotalHt={totals.subtotalHt}
+              totalTva={totals.totalTva}
+              totalTtc={totals.totalTtc}
+            />
           </div>
         </div>
         <DialogFooter>

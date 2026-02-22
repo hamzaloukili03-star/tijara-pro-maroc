@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
+import { calcTotalsWithGlobalDiscount, type GlobalDiscount } from "@/components/GlobalDiscountSection";
 
 // ─────────────────────────────────────────────
 // Types
@@ -251,8 +252,11 @@ export function usePurchaseOrders() {
     paymentTerms?: string;
     expectedDeliveryDate?: string;
     purchaseRequestId?: string;
+    globalDiscount?: GlobalDiscount;
   }) => {
-    const { lines: calcLines, subtotal_ht, total_tva, total_ttc } = calcPurchaseTotals(payload.lines as PurchaseLine[]);
+    const { lines: calcLines } = calcPurchaseTotals(payload.lines as PurchaseLine[]);
+    const gd = payload.globalDiscount || { type: "percentage" as const, value: 0 };
+    const totals = calcTotalsWithGlobalDiscount(calcLines, gd.type, gd.value);
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA" });
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
@@ -262,7 +266,10 @@ export function usePurchaseOrders() {
       supplier_id: payload.supplierId,
       warehouse_id: payload.warehouseId,
       purchase_request_id: payload.purchaseRequestId || null,
-      subtotal_ht, total_tva, total_ttc,
+      subtotal_ht: totals.subtotalHt, total_tva: totals.totalTva, total_ttc: totals.totalTtc,
+      global_discount_type: gd.type,
+      global_discount_value: gd.value,
+      global_discount_amount: totals.globalDiscountAmount,
       notes: payload.notes,
       payment_terms: payload.paymentTerms || "30j",
       expected_delivery_date: payload.expectedDeliveryDate || null,

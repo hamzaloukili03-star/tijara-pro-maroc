@@ -10,11 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { SalesDocLine, calcTotals } from "@/hooks/useSales";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Plus, Trash2 } from "lucide-react";
+import { GlobalDiscountSection, type GlobalDiscount, calcTotalsWithGlobalDiscount } from "@/components/GlobalDiscountSection";
+import { DocumentTotalsBlock } from "@/components/DocumentTotalsBlock";
 
 interface Props {
   type: "quotation" | "order";
   onClose: () => void;
-  onSubmit: (customerId: string, lines: SalesDocLine[], notes?: string, terms?: string) => Promise<void>;
+  onSubmit: (customerId: string, lines: SalesDocLine[], notes?: string, terms?: string, globalDiscount?: GlobalDiscount) => Promise<void>;
 }
 
 export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
@@ -23,6 +25,7 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
   const [customerId, setCustomerId] = useState("");
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("30j");
+  const [globalDiscount, setGlobalDiscount] = useState<GlobalDiscount>({ type: "percentage", value: 0 });
   const [lines, setLines] = useState<SalesDocLine[]>([
     { product_id: null, description: "", quantity: 1, unit_price: 0, discount_percent: 0, tva_rate: 20, total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: 0 },
   ]);
@@ -53,13 +56,14 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
   const addLine = () => setLines([...lines, { product_id: null, description: "", quantity: 1, unit_price: 0, discount_percent: 0, tva_rate: 20, total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: lines.length }]);
   const removeLine = (idx: number) => setLines(lines.filter((_, i) => i !== idx));
 
-  const { subtotal_ht, total_tva, total_ttc } = calcTotals(lines);
+  const { lines: calcedLines } = calcTotals(lines);
+  const totals = calcTotalsWithGlobalDiscount(calcedLines, globalDiscount.type, globalDiscount.value);
 
   const handleSubmit = async () => {
     if (!customerId) return;
     if (await isCustomerBlocked(customerId)) return;
     setSubmitting(true);
-    await onSubmit(customerId, lines, notes, terms);
+    await onSubmit(customerId, lines, notes, terms, globalDiscount);
     setSubmitting(false);
   };
 
@@ -130,17 +134,25 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
             <Button size="sm" variant="outline" onClick={addLine}><Plus className="h-3 w-3 mr-1" /> Ligne</Button>
           </div>
 
+          <GlobalDiscountSection
+            discount={globalDiscount}
+            onChange={setGlobalDiscount}
+            maxAmount={totals.subtotalHtBrut}
+          />
+
           <div>
             <Label>Notes</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="space-y-1 text-sm">
-              <p>Total HT: <strong>{subtotal_ht.toLocaleString("fr-MA")} MAD</strong></p>
-              <p>TVA: <strong>{total_tva.toLocaleString("fr-MA")} MAD</strong></p>
-              <p className="text-lg font-bold">TTC: {total_ttc.toLocaleString("fr-MA")} MAD</p>
-            </div>
+          <div className="flex justify-between items-end pt-4 border-t">
+            <DocumentTotalsBlock
+              subtotalHtBrut={totals.subtotalHtBrut}
+              globalDiscountAmount={totals.globalDiscountAmount}
+              subtotalHt={totals.subtotalHt}
+              totalTva={totals.totalTva}
+              totalTtc={totals.totalTtc}
+            />
             <div className="space-x-2">
               <Button variant="outline" onClick={onClose}>Annuler</Button>
               <Button onClick={handleSubmit} disabled={submitting || !customerId}>Enregistrer</Button>
