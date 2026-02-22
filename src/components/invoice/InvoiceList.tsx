@@ -1,21 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InvoiceFormDialog } from "./InvoiceFormDialog";
 import { InvoiceDetailDialog } from "./InvoiceDetailDialog";
 import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Loader2, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Loader2, Eye, Pencil, Trash2 } from "lucide-react";
 import { printInvoicePdf } from "@/lib/pdf";
 import { PrintButton } from "@/components/PrintButton";
 import { INVOICE_STATUS, getStatus } from "@/lib/status-config";
+import { AdvancedSearch, applyAdvancedSearch, type SearchOperator, type SearchableField, type FilterOption, type QuickFilter } from "@/components/AdvancedSearch";
+
+const INV_SEARCH_FIELDS: SearchableField[] = [
+  { key: "invoice_number", label: "N° Facture" },
+  { key: "_party_name", label: "Client / Fournisseur" },
+];
+
+const INV_FILTERS: FilterOption[] = [
+  {
+    key: "status", label: "Statut", type: "select",
+    options: [
+      { value: "draft", label: "Brouillon" },
+      { value: "validated", label: "Validée" },
+      { value: "paid", label: "Payée" },
+      { value: "cancelled", label: "Annulée" },
+    ],
+  },
+];
+
+const INV_QUICK_FILTERS: QuickFilter[] = [
+  { label: "Brouillons", filters: { status: "draft" } },
+  { label: "Validées", filters: { status: "validated" } },
+  { label: "Payées", filters: { status: "paid" } },
+];
 
 interface InvoiceListProps {
   invoiceType: "client" | "supplier";
@@ -29,8 +51,10 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
   const { settings: companySettings } = useCompanySettings();
   const canManage = isAdmin() || hasRole("accountant");
 
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchState, setSearchState] = useState<{
+    query: string; operator: SearchOperator; activeFilters: Record<string, string>;
+  }>({ query: "", operator: "contains", activeFilters: {} });
+
   const [formOpen, setFormOpen] = useState(false);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [editLines, setEditLines] = useState<Partial<InvoiceLine>[]>([]);
@@ -45,12 +69,21 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
     });
   }, [activeCompany?.id]);
 
-  const filtered = invoices.filter((inv) => {
-    const matchSearch = !search || inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      (inv.customer?.name || inv.supplier?.name || "").toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "all" || inv.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  // Augment invoices with a searchable party name
+  const augmented = invoices.map((inv) => ({
+    ...inv,
+    _party_name: inv.customer?.name || inv.supplier?.name || "",
+  }));
+
+  const filtered = applyAdvancedSearch(
+    augmented,
+    INV_SEARCH_FIELDS.map((f) => f.key),
+    searchState.query,
+    searchState.operator,
+    searchState.activeFilters,
+  );
+
+  const handleSearch = useCallback((state: typeof searchState) => { setSearchState(state); }, []);
 
   const openDetail = async (inv: Invoice) => {
     const lines = await fetchLines(inv.id);
@@ -84,26 +117,21 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-end">
+          {canManage && (
+            <Button onClick={() => { setEditInvoice(null); setEditLines([]); setFormOpen(true); }} className="gap-1">
+              <Plus className="h-4 w-4" /> Nouvelle facture
+            </Button>
+          )}
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tous les statuts" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="draft">Brouillon</SelectItem>
-            <SelectItem value="validated">Validée</SelectItem>
-            <SelectItem value="paid">Payée</SelectItem>
-            <SelectItem value="cancelled">Annulée</SelectItem>
-          </SelectContent>
-        </Select>
-        {canManage && (
-          <Button onClick={() => { setEditInvoice(null); setEditLines([]); setFormOpen(true); }} className="gap-1">
-            <Plus className="h-4 w-4" /> Nouvelle facture
-          </Button>
-        )}
+        <AdvancedSearch
+          searchFields={INV_SEARCH_FIELDS}
+          filters={INV_FILTERS}
+          quickFilters={INV_QUICK_FILTERS}
+          onSearch={handleSearch}
+          placeholder="Rechercher par numéro, client, fournisseur..."
+        />
       </div>
 
       {loading ? (
