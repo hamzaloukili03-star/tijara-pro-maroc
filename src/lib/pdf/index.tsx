@@ -3,23 +3,15 @@ import React from "react";
 import { TijaraProPDF } from "./TijaraProPDF";
 import type { PdfDocumentData, PdfDocumentType, PdfCompany, PdfBankAccount, PdfParty, PdfLine } from "./types";
 import { supabase } from "@/integrations/supabase/client";
+import { openPrintHtml } from "./print-html";
 
 // Re-export types for convenience
 export type { PdfDocumentData, PdfDocumentType, PdfCompany, PdfBankAccount, PdfParty, PdfLine };
 
-// ─── Core PDF generation ───────────────────────────────────────────────────────
+// ─── Core: Print (opens native print dialog) ─────────────────────────────────
 
 export async function generateAndOpenPdf(data: PdfDocumentData) {
-  try {
-    const blob = await pdf(<TijaraProPDF data={data} />).toBlob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    // Revoke after a delay to allow tab to load
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    throw err;
-  }
+  openPrintHtml(data);
 }
 
 export async function generateAndDownloadPdf(data: PdfDocumentData) {
