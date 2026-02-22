@@ -50,7 +50,6 @@ import Receptions from "./pages/achats/Receptions";
 
 // Stock
 import NiveauxStock from "./pages/stock/NiveauxStock";
-import Mouvements from "./pages/stock/Mouvements";
 import Transferts from "./pages/stock/Transferts";
 import Inventaires from "./pages/stock/Inventaires";
 
@@ -58,6 +57,7 @@ import Inventaires from "./pages/stock/Inventaires";
 import Devis from "./pages/ventes/Devis";
 import CommandesClients from "./pages/ventes/CommandesClients";
 import BonsLivraison from "./pages/ventes/BonsLivraison";
+// Stock - Mouvements removed from UI
 
 // Facturation
 import FacturesClients from "./pages/facturation/FacturesClients";
@@ -129,14 +129,15 @@ const App = () => (
 
             {/* Stock */}
             <Route path="/stock/niveaux" element={<ProtectedRoute><NiveauxStock /></ProtectedRoute>} />
-            <Route path="/stock/mouvements" element={<ProtectedRoute><Mouvements /></ProtectedRoute>} />
             <Route path="/stock/transferts" element={<ProtectedRoute><Transferts /></ProtectedRoute>} />
             <Route path="/stock/receptions" element={<ProtectedRoute><Receptions /></ProtectedRoute>} />
+            <Route path="/stock/livraisons" element={<ProtectedRoute><BonsLivraison /></ProtectedRoute>} />
             <Route path="/stock/inventaires" element={<ProtectedRoute><Inventaires /></ProtectedRoute>} />
 
             {/* Ventes */}
             <Route path="/ventes/devis" element={<ProtectedRoute><Devis /></ProtectedRoute>} />
             <Route path="/ventes/commandes" element={<ProtectedRoute><CommandesClients /></ProtectedRoute>} />
+            {/* Legacy redirect for old livraisons route */}
             <Route path="/ventes/livraisons" element={<ProtectedRoute><BonsLivraison /></ProtectedRoute>} />
 
             {/* Facturation */}
