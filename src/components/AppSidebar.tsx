@@ -84,10 +84,10 @@ const sections: SidebarSection[] = [
     basePath: "/stock",
     subItems: [
       { title: "Niveaux de stock", icon: Activity, path: "/stock/niveaux" },
-      { title: "Mouvements", icon: ArrowRightLeft, path: "/stock/mouvements" },
+      { title: "Réceptions", icon: Package, path: "/stock/receptions" },
+      { title: "Livraisons", icon: Truck, path: "/stock/livraisons" },
       { title: "Transferts", icon: ArrowRightLeft, path: "/stock/transferts" },
       { title: "Inventaires", icon: ClipboardCheck, path: "/stock/inventaires" },
-      { title: "Réceptions", icon: Package, path: "/stock/receptions" },
     ],
   },
   {
