@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { ProductFormDialog } from "@/components/products/ProductFormDialog";
 import { ProductImportExport } from "@/components/products/ProductImportExport";
 import { ProductKanban } from "@/components/master/ProductKanban";
 import { ViewToggle } from "@/components/ViewToggle";
-import { Package, Loader2, Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Package, Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/EmptyState";
+import {
+  AdvancedSearch,
+  applyAdvancedSearch,
+  type SearchOperator,
+  type SearchableField,
+  type FilterOption,
+  type QuickFilter,
+} from "@/components/AdvancedSearch";
 
 const TYPE_LABELS: Record<string, string> = {
   stockable: "Stockable",
@@ -18,28 +25,74 @@ const TYPE_LABELS: Record<string, string> = {
   service: "Service",
 };
 
+const SEARCH_FIELDS: SearchableField[] = [
+  { key: "name", label: "Nom" },
+  { key: "code", label: "Référence / SKU" },
+  { key: "barcode", label: "Code-barres" },
+  { key: "category", label: "Catégorie" },
+];
+
+const FILTERS: FilterOption[] = [
+  {
+    key: "product_type",
+    label: "Type",
+    type: "select",
+    options: [
+      { value: "stockable", label: "Stockable" },
+      { value: "consumable", label: "Consommable" },
+      { value: "service", label: "Service" },
+    ],
+  },
+  {
+    key: "is_active",
+    label: "Statut",
+    type: "boolean",
+    trueLabel: "Actif",
+    falseLabel: "Inactif",
+  },
+];
+
+const QUICK_FILTERS: QuickFilter[] = [
+  { label: "Actifs uniquement", filters: { is_active: "true" } },
+  { label: "Stockables", filters: { product_type: "stockable" } },
+  { label: "Services", filters: { product_type: "service" } },
+];
+
 export default function ProductsPage() {
   const { products, loading, fetchProducts, createProduct, updateProduct, deleteProduct } = useProducts();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [search, setSearch] = useState("");
   const [view, setView] = useState<"list" | "kanban">("list");
+
+  // Search state
+  const [searchState, setSearchState] = useState<{
+    query: string;
+    operator: SearchOperator;
+    activeFilters: Record<string, string>;
+  }>({ query: "", operator: "contains", activeFilters: {} });
 
   const openCreate = () => { setEditingProduct(null); setDialogOpen(true); };
   const openEdit = (p: Product) => { setEditingProduct(p); setDialogOpen(true); };
 
   const handleSave = async (data: Partial<Product>) => {
-    if (editingProduct) {
-      return await updateProduct(editingProduct.id, data);
-    }
+    if (editingProduct) return await updateProduct(editingProduct.id, data);
     return await createProduct(data);
   };
 
-  const filtered = products.filter((p) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return p.name.toLowerCase().includes(s) || p.code.toLowerCase().includes(s) || (p.category || "").toLowerCase().includes(s);
-  });
+  const handleSearch = useCallback((state: typeof searchState) => {
+    setSearchState(state);
+  }, []);
+
+  const filtered = applyAdvancedSearch(
+    products,
+    SEARCH_FIELDS.map((f) => f.key),
+    searchState.query,
+    searchState.operator,
+    searchState.activeFilters,
+    {
+      is_active: (item, value) => String(item.is_active !== false) === value,
+    }
+  );
 
   if (loading) {
     return (
@@ -54,21 +107,27 @@ export default function ProductsPage() {
   return (
     <AppLayout title="Produits & Articles" subtitle="Catalogue des produits et services">
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-64" />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1" />
+            <div className="flex items-center gap-2">
+              <ViewToggle view={view} onChange={setView} />
+              <ProductImportExport products={products} onImportDone={fetchProducts} />
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="h-4 w-4" /> Nouveau produit
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ViewToggle view={view} onChange={setView} />
-            <ProductImportExport products={products} onImportDone={fetchProducts} />
-            <Button onClick={openCreate} className="gap-2">
-              <Plus className="h-4 w-4" /> Nouveau produit
-            </Button>
-          </div>
+          <AdvancedSearch
+            searchFields={SEARCH_FIELDS}
+            filters={FILTERS}
+            quickFilters={QUICK_FILTERS}
+            onSearch={handleSearch}
+            placeholder="Rechercher par nom, code, catégorie..."
+          />
         </div>
 
-        {products.length === 0 && !search ? (
+        {products.length === 0 && !searchState.query ? (
           <EmptyState icon={<Package className="h-8 w-8" />} title="Aucun produit" description="Ajoutez votre premier produit." actionLabel="Ajouter" onAction={openCreate} />
         ) : view === "kanban" ? (
           <ProductKanban

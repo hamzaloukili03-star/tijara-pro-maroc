@@ -10,6 +10,7 @@ import { Loader2, AlertTriangle, Building2, Landmark, Contact } from "lucide-rea
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { validateEmail, normalizeEmail } from "@/lib/email-validation";
 
 interface TierDetailDialogProps {
   open: boolean;
@@ -92,11 +93,25 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
     set("is_active", newActive);
   };
 
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const handleSave = async () => {
     if (!form.code || !form.name) {
       toast.error("Le code et le nom sont obligatoires.");
       return;
     }
+    // Email validation
+    if (form.email) {
+      const err = validateEmail(form.email);
+      if (err) {
+        setEmailError(err);
+        setTab("contact");
+        toast.error(err);
+        return;
+      }
+      form.email = normalizeEmail(form.email);
+    }
+    setEmailError(null);
     setSaving(true);
 
     // Log status change if it changed
@@ -254,7 +269,8 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
                 <Input value={form.phone2 || ""} onChange={(e) => set("phone2", e.target.value)} placeholder="+212..." />
               </Field>
               <Field label="Email">
-                <Input type="email" value={form.email || ""} onChange={(e) => set("email", e.target.value)} placeholder="email@entreprise.ma" />
+                <Input type="email" value={form.email || ""} onChange={(e) => { set("email", e.target.value); setEmailError(null); }} placeholder="email@entreprise.ma" className={emailError ? "border-destructive" : ""} />
+                {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
               </Field>
               <Field label="Fax">
                 <Input value={form.fax || ""} onChange={(e) => set("fax", e.target.value)} placeholder="Fax (optionnel)" />

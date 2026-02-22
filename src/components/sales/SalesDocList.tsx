@@ -2,10 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Check, X, ArrowRight, Loader2, Paperclip, Eye, Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
 import { useCompany } from "@/hooks/useCompany";
 import { printSalesDocPdf } from "@/lib/pdf";
@@ -15,6 +14,24 @@ import {
   QUOTATION_STATUS_LABELS, QUOTATION_STATUS_COLORS,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
 } from "@/hooks/useSales";
+import { AdvancedSearch, applyAdvancedSearch, type SearchOperator, type SearchableField, type FilterOption, type QuickFilter } from "@/components/AdvancedSearch";
+
+const SALES_SEARCH_FIELDS: SearchableField[] = [
+  { key: "number", label: "N°" },
+  { key: "_customer_name", label: "Client" },
+];
+
+const SALES_FILTERS: FilterOption[] = [
+  {
+    key: "status", label: "Statut", type: "select",
+    options: [
+      { value: "draft", label: "Brouillon" },
+      { value: "sent", label: "Envoyé" },
+      { value: "confirmed", label: "Confirmé" },
+      { value: "cancelled", label: "Annulé" },
+    ],
+  },
+];
 
 interface Props {
   title: string;
@@ -39,6 +56,10 @@ export function SalesDocList({
   const { activeCompany } = useCompany();
   const { settings: companySettings } = useCompanySettings();
 
+  const [searchState, setSearchState] = useState<{
+    query: string; operator: SearchOperator; activeFilters: Record<string, string>;
+  }>({ query: "", operator: "contains", activeFilters: {} });
+
   useEffect(() => {
     (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => {
       setWarehouses(data || []);
@@ -58,6 +79,19 @@ export function SalesDocList({
   const statusLabels = docType === "quotation" ? QUOTATION_STATUS_LABELS : ORDER_STATUS_LABELS;
   const statusColors = docType === "quotation" ? QUOTATION_STATUS_COLORS : ORDER_STATUS_COLORS;
 
+  const handleSearch = useCallback((state: typeof searchState) => { setSearchState(state); }, []);
+
+  // Augment items with searchable customer name
+  const augmented = items.map((item) => ({ ...item, _customer_name: item.customer?.name || "" }));
+
+  const filtered = applyAdvancedSearch(
+    augmented,
+    SALES_SEARCH_FIELDS.map((f) => f.key),
+    searchState.query,
+    searchState.operator,
+    searchState.activeFilters,
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -69,9 +103,16 @@ export function SalesDocList({
         )}
       </div>
 
+      <AdvancedSearch
+        searchFields={SALES_SEARCH_FIELDS}
+        filters={SALES_FILTERS}
+        onSearch={handleSearch}
+        placeholder="Rechercher par numéro, client..."
+      />
+
       {loading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">Aucun document</p>
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -87,7 +128,7 @@ export function SalesDocList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {filtered.map((item) => (
                 <TableRow key={item.id} className="hover:bg-muted/30">
                   <TableCell className="font-mono text-sm font-medium">{item.number}</TableCell>
                   <TableCell>{item.customer?.name || "—"}</TableCell>
@@ -102,53 +143,38 @@ export function SalesDocList({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1 flex-wrap">
-                      {/* View / Open */}
                       {onView && (
                         <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" onClick={() => onView(item.id)}>
                           <Eye className="h-3.5 w-3.5 mr-1" /> Ouvrir
                         </Button>
                       )}
-
-                      {/* Print */}
                       <PrintButton iconOnly onPrint={() => handlePrint(item)} onDownload={() => handlePrint(item, true)} />
-
-                      {/* Attachments */}
                       <Button
                         size="sm" variant="ghost" className="h-8 w-8 p-0" title="Pièces jointes"
                         onClick={() => setAttachDialog({ id: item.id, number: item.number })}
                       >
                         <Paperclip className="h-3.5 w-3.5" />
                       </Button>
-
-                      {/* Quotation: mark sent */}
                       {docType === "quotation" && item.status === "draft" && (
                         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onValidate?.(item.id)}>
                           <Send className="h-3 w-3 mr-1" /> Envoyer
                         </Button>
                       )}
-
-                      {/* Quotation: confirm */}
                       {docType === "quotation" && item.status === "sent" && onValidate && (
                         <Button size="sm" variant="outline" className="h-8 text-xs border-success/50 text-success" onClick={() => onValidate(item.id)}>
                           <Check className="h-3 w-3 mr-1" /> Confirmer
                         </Button>
                       )}
-
-                      {/* Pending admin validation */}
                       {item.status === "pending_admin" && onAdminValidate && (
                         <Button size="sm" variant="outline" className="h-8 text-xs border-warning/50 text-warning-foreground" onClick={() => onAdminValidate(item.id)}>
                           <Check className="h-3 w-3 mr-1" /> Approuver
                         </Button>
                       )}
-
-                      {/* Order: confirm */}
                       {docType === "order" && item.status === "draft" && onValidate && (
                         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onValidate(item.id)}>
                           <Check className="h-3 w-3 mr-1" /> Confirmer
                         </Button>
                       )}
-
-                      {/* Convert quotation → order */}
                       {item.status === "confirmed" && onConvert && docType === "quotation" && (
                         <div className="inline-flex items-center gap-1">
                           <Select value={selectedWh} onValueChange={setSelectedWh}>
@@ -162,8 +188,6 @@ export function SalesDocList({
                           </Button>
                         </div>
                       )}
-
-                      {/* Cancel */}
                       {["draft", "sent", "confirmed"].includes(item.status) && onCancel && (
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" title="Annuler" onClick={() => onCancel(item.id)}>
                           <X className="h-3 w-3" />
