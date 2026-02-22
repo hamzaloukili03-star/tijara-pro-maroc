@@ -91,6 +91,37 @@ const sections: SidebarSection[] = [
     ],
   },
   {
+    label: "Ventes",
+    icon: TrendingUp,
+    basePath: "/ventes",
+    subItems: [
+      { title: "Devis", icon: FileText, path: "/ventes/devis" },
+      { title: "Commandes clients", icon: ScrollText, path: "/ventes/commandes" },
+    ],
+  },
+  {
+    label: "Facturation",
+    icon: Receipt,
+    basePath: "/facturation",
+    subItems: [
+      { title: "Factures clients", icon: ReceiptText, path: "/facturation/clients" },
+      { title: "Factures fournisseurs", icon: ReceiptText, path: "/facturation/fournisseurs" },
+      { title: "Avoirs", icon: ArrowDownCircle, path: "/facturation/avoirs" },
+      { title: "Exports & Journaux", icon: BarChart2, path: "/facturation/exports" },
+    ],
+  },
+  {
+    label: "Règlements",
+    icon: Wallet,
+    basePath: "/reglements",
+    subItems: [
+      { title: "Encaissements", icon: ArrowDownCircle, path: "/reglements/encaissements" },
+      { title: "Décaissements", icon: ArrowUpCircle, path: "/reglements/decaissements" },
+      { title: "Rapprochement", icon: Link2, path: "/reglements/rapprochement" },
+      { title: "Impayés", icon: AlertTriangle, path: "/reglements/impayes" },
+    ],
+  },
+  {
     label: "Configurations",
     icon: SlidersHorizontal,
     basePath: "/config",
@@ -116,7 +147,6 @@ const sections: SidebarSection[] = [
       { title: "Caisses", icon: CreditCard, path: "/referentiel/caisses" },
     ],
   },
-  // Administration — last, super_admin only
   {
     label: "Administration",
     icon: Settings,
