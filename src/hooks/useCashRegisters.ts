@@ -52,8 +52,18 @@ export function useCashRegisters() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const create = async (values: Partial<CashRegister>) => {
-    const { error } = await (supabase as any).from("cash_registers").insert({ ...values, current_balance: values.opening_balance || 0 });
-    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
+    const payload: any = { ...values, current_balance: values.opening_balance || 0 };
+    if (companyId) payload.company_id = companyId;
+    const { error } = await (supabase as any).from("cash_registers").insert(payload);
+    if (error) {
+      const msg = error.message?.includes("cash_registers_company_code_unique")
+        ? "Code caisse déjà utilisé."
+        : error.message?.includes("cash_registers_company_name_unique")
+        ? "Nom de caisse déjà utilisé."
+        : error.message;
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
+      return false;
+    }
     toast({ title: "Caisse créée" });
     await fetch();
     return true;
