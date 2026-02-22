@@ -74,8 +74,8 @@ const Devis = () => {
         <SalesFormDialog
           type="quotation"
           onClose={() => setShowForm(false)}
-          onSubmit={async (customerId, lines, notes, terms) => {
-            await quotations.create({ customerId, lines, notes, paymentTerms: terms });
+          onSubmit={async (customerId, lines, notes, terms, globalDiscount) => {
+            await quotations.create({ customerId, lines, notes, paymentTerms: terms, globalDiscount });
             setShowForm(false);
           }}
         />

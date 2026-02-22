@@ -1397,6 +1397,9 @@ export type Database = {
           created_by: string | null
           customer_id: string | null
           due_date: string | null
+          global_discount_amount: number
+          global_discount_type: string
+          global_discount_value: number
           id: string
           invoice_date: string
           invoice_number: string
@@ -1423,6 +1426,9 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           due_date?: string | null
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           invoice_date?: string
           invoice_number: string
@@ -1449,6 +1455,9 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           due_date?: string | null
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           invoice_date?: string
           invoice_number?: string
@@ -2237,6 +2246,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           expected_delivery_date: string | null
+          global_discount_amount: number
+          global_discount_type: string
+          global_discount_value: number
           id: string
           notes: string | null
           order_date: string
@@ -2262,6 +2274,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           expected_delivery_date?: string | null
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -2287,6 +2302,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           expected_delivery_date?: string | null
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -2559,6 +2577,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string
+          global_discount_amount: number
+          global_discount_type: string
+          global_discount_value: number
           id: string
           notes: string | null
           payment_terms: string | null
@@ -2585,6 +2606,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id: string
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           notes?: string | null
           payment_terms?: string | null
@@ -2611,6 +2635,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           notes?: string | null
           payment_terms?: string | null
@@ -3073,6 +3100,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string
+          global_discount_amount: number
+          global_discount_type: string
+          global_discount_value: number
           id: string
           invoiced_at: string | null
           notes: string | null
@@ -3100,6 +3130,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id: string
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           invoiced_at?: string | null
           notes?: string | null
@@ -3127,6 +3160,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          global_discount_amount?: number
+          global_discount_type?: string
+          global_discount_value?: number
           id?: string
           invoiced_at?: string | null
           notes?: string | null

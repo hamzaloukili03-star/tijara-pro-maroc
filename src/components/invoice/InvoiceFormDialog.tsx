@@ -11,6 +11,8 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { calcLineTotals, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { GlobalDiscountSection, type GlobalDiscount, calcTotalsWithGlobalDiscount } from "@/components/GlobalDiscountSection";
+import { DocumentTotalsBlock } from "@/components/DocumentTotalsBlock";
 
 interface InvoiceFormDialogProps {
   open: boolean;
@@ -45,6 +47,7 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
   const [paymentTerms, setPaymentTerms] = useState("30j");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Partial<InvoiceLine>[]>([]);
+  const [globalDiscount, setGlobalDiscount] = useState<GlobalDiscount>({ type: "percentage", value: 0 });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -66,6 +69,10 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
       setPaymentTerms(editInvoice.payment_terms || "30j");
       setNotes(editInvoice.notes || "");
       setLines(editLines || []);
+      setGlobalDiscount({
+        type: ((editInvoice as any).global_discount_type || "percentage") as "percentage" | "fixed",
+        value: Number((editInvoice as any).global_discount_value) || 0,
+      });
     } else {
       setPartnerId("");
       const today = new Date().toISOString().split("T")[0];
@@ -74,10 +81,10 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
       setDueDate(calcDueDate(today, "30j"));
       setNotes("");
       setLines([]);
+      setGlobalDiscount({ type: "percentage", value: 0 });
     }
   }, [editInvoice, editLines, open]);
 
-  // Auto-fill payment terms + due date when partner changes (new invoices only)
   const handlePartnerChange = (id: string) => {
     setPartnerId(id);
     if (!editInvoice) {
@@ -88,7 +95,6 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
     }
   };
 
-  // Recalculate due date when invoice date or payment terms change
   const handleInvoiceDateChange = (date: string) => {
     setInvoiceDate(date);
     setDueDate(calcDueDate(date, paymentTerms));
@@ -101,24 +107,31 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
 
   const partnerOptions = partners.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }));
 
-  const subtotalHt = lines.reduce((s, l) => s + (l.total_ht || 0), 0);
-  const totalTva = lines.reduce((s, l) => s + (l.total_tva || 0), 0);
-  const totalTtc = lines.reduce((s, l) => s + (l.total_ttc || 0), 0);
+  // Calculate with global discount
+  const lineTotals = lines.map(l => ({
+    total_ht: l.total_ht || 0,
+    total_tva: l.total_tva || 0,
+    total_ttc: l.total_ttc || 0,
+  }));
+  const totals = calcTotalsWithGlobalDiscount(lineTotals, globalDiscount.type, globalDiscount.value);
 
   const handleSubmit = async () => {
     if (!partnerId || lines.length === 0) return;
     if (invoiceType === "client" && await isCustomerBlocked(partnerId)) return;
     if (invoiceType === "supplier" && await isSupplierBlocked(partnerId)) return;
     setSaving(true);
-    const invoice: Partial<Invoice> = {
+    const invoice: Partial<Invoice> & Record<string, any> = {
       invoice_date: invoiceDate,
       due_date: dueDate || null,
       payment_terms: paymentTerms,
       notes: notes || null,
-      subtotal_ht: Math.round(subtotalHt * 100) / 100,
-      total_tva: Math.round(totalTva * 100) / 100,
-      total_ttc: Math.round(totalTtc * 100) / 100,
-      remaining_balance: Math.round(totalTtc * 100) / 100,
+      subtotal_ht: totals.subtotalHt,
+      total_tva: totals.totalTva,
+      total_ttc: totals.totalTtc,
+      remaining_balance: totals.totalTtc,
+      global_discount_type: globalDiscount.type,
+      global_discount_value: globalDiscount.value,
+      global_discount_amount: totals.globalDiscountAmount,
       created_by: (await supabase.auth.getUser()).data.user?.id || undefined,
     };
     if (invoiceType === "client") invoice.customer_id = partnerId;
@@ -172,12 +185,22 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
           <InvoiceLineEditor lines={lines} onChange={setLines} products={products} invoiceType={invoiceType} />
         </div>
 
+        <div className="mt-4">
+          <GlobalDiscountSection
+            discount={globalDiscount}
+            onChange={setGlobalDiscount}
+            maxAmount={totals.subtotalHtBrut}
+          />
+        </div>
+
         <div className="flex justify-end mt-4">
-          <div className="w-64 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Total HT</span><span className="font-medium">{subtotalHt.toFixed(2)} MAD</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">TVA</span><span className="font-medium">{totalTva.toFixed(2)} MAD</span></div>
-            <div className="flex justify-between border-t pt-1 text-base"><span className="font-semibold">Total TTC</span><span className="font-bold text-primary">{totalTtc.toFixed(2)} MAD</span></div>
-          </div>
+          <DocumentTotalsBlock
+            subtotalHtBrut={totals.subtotalHtBrut}
+            globalDiscountAmount={totals.globalDiscountAmount}
+            subtotalHt={totals.subtotalHt}
+            totalTva={totals.totalTva}
+            totalTtc={totals.totalTtc}
+          />
         </div>
 
         <div className="mt-4 space-y-2">

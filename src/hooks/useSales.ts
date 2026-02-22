@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
+import { calcTotalsWithGlobalDiscount, type GlobalDiscount } from "@/components/GlobalDiscountSection";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -175,16 +176,22 @@ export function useQuotations() {
     notes?: string;
     paymentTerms?: string;
     validityDate?: string;
+    globalDiscount?: GlobalDiscount;
   }) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "DEV" });
-    const { lines: calcLines, subtotal_ht, total_tva, total_ttc } = calcTotals(params.lines);
+    const { lines: calcLines } = calcTotals(params.lines);
+    const gd = params.globalDiscount || { type: "percentage" as const, value: 0 };
+    const totals = calcTotalsWithGlobalDiscount(calcLines, gd.type, gd.value);
     const userId = await getUserId();
 
     const { data, error } = await (supabase as any).from("quotations").insert({
       quotation_number: num,
       customer_id: params.customerId,
       warehouse_id: params.warehouseId || null,
-      subtotal_ht, total_tva, total_ttc,
+      subtotal_ht: totals.subtotalHt, total_tva: totals.totalTva, total_ttc: totals.totalTtc,
+      global_discount_type: gd.type,
+      global_discount_value: gd.value,
+      global_discount_amount: totals.globalDiscountAmount,
       notes: params.notes || null,
       payment_terms: params.paymentTerms || "30j",
       validity_date: params.validityDate || null,
@@ -314,6 +321,9 @@ export function useQuotations() {
       subtotal_ht: q.subtotal_ht,
       total_tva: q.total_tva,
       total_ttc: q.total_ttc,
+      global_discount_type: q.global_discount_type || "percentage",
+      global_discount_value: q.global_discount_value || 0,
+      global_discount_amount: q.global_discount_amount || 0,
       notes: q.notes,
       payment_terms: q.payment_terms,
       created_by: userId,

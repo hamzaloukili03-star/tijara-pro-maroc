@@ -579,11 +579,25 @@ function LineItemsTable({ lines }: { lines: PdfLine[] }) {
 
 function TotalsSection({ data }: { data: PdfDocumentData }) {
   const hasBalance = data.remainingBalance != null && data.amountPaid != null;
+  const hasGlobalDiscount = (data.globalDiscountAmount || 0) > 0;
+  const subtotalHtBrut = hasGlobalDiscount ? data.subtotalHt + data.globalDiscountAmount! : data.subtotalHt;
   return (
     <View style={styles.totalsSection}>
       <View style={styles.totalsBox}>
+        {hasGlobalDiscount && (
+          <>
+            <View style={styles.totalsRow}>
+              <Text style={styles.totalsLabel}>Total HT brut</Text>
+              <Text style={styles.totalsValue}>{fmt(subtotalHtBrut)} MAD</Text>
+            </View>
+            <View style={styles.totalsRow}>
+              <Text style={[styles.totalsLabel, { color: "#DC2626" }]}>{data.globalDiscountLabel || "Remise globale"}</Text>
+              <Text style={[styles.totalsValue, { color: "#DC2626" }]}>-{fmt(data.globalDiscountAmount!)} MAD</Text>
+            </View>
+          </>
+        )}
         <View style={styles.totalsRow}>
-          <Text style={styles.totalsLabel}>Total HT</Text>
+          <Text style={styles.totalsLabel}>{hasGlobalDiscount ? "Total HT net" : "Total HT"}</Text>
           <Text style={styles.totalsValue}>{fmt(data.subtotalHt)} MAD</Text>
         </View>
         <View style={styles.totalsRow}>
