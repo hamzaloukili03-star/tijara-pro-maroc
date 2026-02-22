@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Lock } from "lucide-react";
 import { calcPurchaseTotals, type PurchaseLine } from "@/hooks/usePurchases";
+import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props { editItem: any | null; hook: any; onClose: () => void; }
 
@@ -18,19 +20,19 @@ const emptyLine = (): Partial<PurchaseLine> => ({
   total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: 0,
 });
 
-const PAYMENT_TERMS_OPTIONS = [
-  { value: "30j", label: "30 jours" },
-  { value: "60j", label: "60 jours" },
-  { value: "90j", label: "90 jours" },
-];
+const SYSTEM_DEFAULT_PAYMENT_TERMS = "30j";
 
 export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
+  const { roles } = useAuth();
+  const canEditPaymentTerms = roles.some(r => ["super_admin", "admin", "manager"].includes(r));
+
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [paymentTermsOptions, setPaymentTermsOptions] = useState<{ value: string; label: string }[]>([]);
   const [supplierId, setSupplierId] = useState(editItem?.supplier_id || "");
   const [warehouseId, setWarehouseId] = useState(editItem?.warehouse_id || "");
-  const [paymentTerms, setPaymentTerms] = useState(editItem?.payment_terms || "30j");
+  const [paymentTerms, setPaymentTerms] = useState(editItem?.payment_terms || SYSTEM_DEFAULT_PAYMENT_TERMS);
   const [expectedDate, setExpectedDate] = useState(editItem?.expected_delivery_date || "");
   const [notes, setNotes] = useState(editItem?.notes || "");
   const [lines, setLines] = useState<Partial<PurchaseLine>[]>([emptyLine()]);
@@ -41,6 +43,24 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
     (supabase as any).from("suppliers").select("id, name, code, payment_terms").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
     (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (!editItem && data?.length) setWarehouseId(data[0].id); });
     (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
+    (supabase as any).from("payment_terms").select("id, name, days").eq("is_active", true).order("sort_order").then(({ data }: any) => {
+      if (data?.length) {
+        // Build options mapping days to the legacy format (e.g. "30j")
+        const opts = data.map((pt: any) => ({
+          value: pt.days === 0 ? "comptant" : `${pt.days}j`,
+          label: pt.name,
+        }));
+        setPaymentTermsOptions(opts);
+      } else {
+        // Fallback hardcoded
+        setPaymentTermsOptions([
+          { value: "comptant", label: "Comptant" },
+          { value: "30j", label: "30 jours" },
+          { value: "60j", label: "60 jours" },
+          { value: "90j", label: "90 jours" },
+        ]);
+      }
+    });
     if (editItem) {
       hook.getLines(editItem.id).then((l: any[]) => {
         setLines(l.length ? l.map((r: any) => ({ product_id: r.product_id, description: r.description, quantity: r.quantity, unit: r.unit || "Unité", unit_price: r.unit_price, discount_percent: r.discount_percent, tva_rate: r.tva_rate, total_ht: r.total_ht, total_tva: r.total_tva, total_ttc: r.total_ttc, sort_order: r.sort_order })) : [emptyLine()]);
@@ -54,7 +74,11 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
     setSupplierId(id);
     if (!editItem) {
       const supplier = suppliers.find((s: any) => s.id === id);
-      if (supplier?.payment_terms) setPaymentTerms(supplier.payment_terms);
+      if (supplier?.payment_terms) {
+        setPaymentTerms(supplier.payment_terms);
+      } else {
+        setPaymentTerms(SYSTEM_DEFAULT_PAYMENT_TERMS);
+      }
     }
   };
 
@@ -86,6 +110,9 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const supplierOptions = suppliers.map(s => ({ value: s.id, label: `${s.code} — ${s.name}` }));
   const productOptions = products.map(p => ({ value: p.id, label: `${p.code} — ${p.name}` }));
 
+  // Find current payment term label for read-only display
+  const currentPTLabel = paymentTermsOptions.find(o => o.value === paymentTerms)?.label || paymentTerms;
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
@@ -103,9 +130,31 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
               /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><Label>Conditions de paiement</Label>
-              <Select value={paymentTerms} onValueChange={setPaymentTerms}><SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PAYMENT_TERMS_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+            <div>
+              <Label className="flex items-center gap-1.5">
+                Conditions de paiement
+                {!canEditPaymentTerms && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>Seul un Gérant ou Admin peut modifier ce champ</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </Label>
+              {canEditPaymentTerms ? (
+                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {paymentTermsOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={currentPTLabel} disabled className="bg-muted" />
+              )}
+            </div>
             <div><Label>Date livraison prévue</Label><Input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} /></div>
           </div>
 
