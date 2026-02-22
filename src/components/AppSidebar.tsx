@@ -75,7 +75,7 @@ const sections: SidebarSection[] = [
     subItems: [
       { title: "Demandes d'achat", icon: FileCheck, path: "/achats/demandes" },
       { title: "Bons de commande", icon: ScrollText, path: "/achats/commandes" },
-      { title: "Réceptions", icon: Package, path: "/achats/receptions" },
+      { title: "Dépenses", icon: TrendingDown, path: "/achats/depenses" },
     ],
   },
   {
@@ -87,45 +87,8 @@ const sections: SidebarSection[] = [
       { title: "Mouvements", icon: ArrowRightLeft, path: "/stock/mouvements" },
       { title: "Transferts", icon: ArrowRightLeft, path: "/stock/transferts" },
       { title: "Inventaires", icon: ClipboardCheck, path: "/stock/inventaires" },
+      { title: "Réceptions", icon: Package, path: "/stock/receptions" },
     ],
-  },
-  {
-    label: "Ventes",
-    icon: TrendingUp,
-    basePath: "/ventes",
-    subItems: [
-      { title: "Devis", icon: FileText, path: "/ventes/devis" },
-      { title: "Bons de commande", icon: ScrollText, path: "/ventes/commandes" },
-      { title: "Bons de livraison", icon: Truck, path: "/ventes/livraisons" },
-    ],
-  },
-  {
-    label: "Facturation",
-    icon: FileText,
-    basePath: "/facturation",
-    subItems: [
-      { title: "Factures Clients", icon: Receipt, path: "/facturation/clients" },
-      { title: "Factures Fournisseurs", icon: Receipt, path: "/facturation/fournisseurs" },
-      { title: "Avoirs", icon: ReceiptText, path: "/facturation/avoirs" },
-      { title: "Exports & Journaux", icon: BarChart2, path: "/facturation/exports" },
-    ],
-  },
-  {
-    label: "Règlements & Trésorerie",
-    icon: Wallet,
-    basePath: "/reglements",
-    subItems: [
-      { title: "Encaissements", icon: ArrowDownCircle, path: "/reglements/encaissements" },
-      { title: "Décaissements", icon: ArrowUpCircle, path: "/reglements/decaissements" },
-      { title: "Rapprochement", icon: Link2, path: "/reglements/rapprochement" },
-      { title: "Impayés & Relances", icon: AlertTriangle, path: "/reglements/impayes" },
-    ],
-  },
-  {
-    label: "Dépenses",
-    icon: TrendingDown,
-    basePath: "/depenses",
-    subItems: [],
   },
   {
     label: "Configurations",
