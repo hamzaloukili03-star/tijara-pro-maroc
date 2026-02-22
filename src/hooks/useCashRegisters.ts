@@ -69,12 +69,38 @@ export function useCashRegisters() {
     return true;
   };
 
+  const update = async (id: string, values: Partial<CashRegister>) => {
+    const { error } = await (supabase as any).from("cash_registers").update(values).eq("id", id);
+    if (error) {
+      const msg = error.message?.includes("cash_registers_company_code_unique")
+        ? "Code déjà utilisé."
+        : error.message?.includes("cash_registers_company_name_unique")
+        ? "Nom déjà utilisé."
+        : error.message;
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
+      return false;
+    }
+    toast({ title: "Caisse modifiée avec succès." });
+    await fetch();
+    return true;
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await (supabase as any).from("cash_registers").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return false;
+    }
+    toast({ title: "Caisse supprimée" });
+    await fetch();
+    return true;
+  };
+
   const addMovement = async (registerId: string, type: string, amount: number, reference?: string, notes?: string, paymentId?: string) => {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     await (supabase as any).from("cash_register_movements").insert({
       cash_register_id: registerId, movement_type: type, amount, reference, notes, payment_id: paymentId || null, created_by: userId,
     });
-    // Update balance
     const { data: reg } = await (supabase as any).from("cash_registers").select("current_balance").eq("id", registerId).single();
     if (reg) {
       const newBalance = type === "in" || type === "opening" ? Number(reg.current_balance) + amount : Number(reg.current_balance) - amount;
@@ -85,5 +111,5 @@ export function useCashRegisters() {
     await fetchMovements(registerId);
   };
 
-  return { registers, movements, loading, fetch, fetchMovements, create, addMovement };
+  return { registers, movements, loading, fetch, fetchMovements, create, update, remove, addMovement };
 }
