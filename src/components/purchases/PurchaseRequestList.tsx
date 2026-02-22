@@ -61,8 +61,9 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onSubmit, o
               <TableRow>
                 <TableHead>Référence</TableHead>
                 <TableHead>Fournisseur</TableHead>
-                <TableHead>Dépôt</TableHead>
-                <TableHead>Date besoin</TableHead>
+                <TableHead>Réf. fournisseur</TableHead>
+                <TableHead>Arrivée prévue</TableHead>
+                <TableHead>Devise</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -75,8 +76,9 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onSubmit, o
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-sm font-medium">{item.number}</TableCell>
                     <TableCell>{item.supplier?.name || <span className="text-muted-foreground text-xs">Non défini</span>}</TableCell>
-                    <TableCell>{item.warehouse?.name || "—"}</TableCell>
+                    <TableCell>{item.supplier_reference || "—"}</TableCell>
                     <TableCell>{item.needed_date || "—"}</TableCell>
+                    <TableCell>{item.currency?.code || "MAD"}</TableCell>
                     <TableCell><Badge className={`${cfg.className} border-0`}>{cfg.label}</Badge></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1 flex-wrap">

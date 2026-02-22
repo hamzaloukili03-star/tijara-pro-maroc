@@ -2398,6 +2398,7 @@ export type Database = {
         Row: {
           company_id: string | null
           created_at: string
+          currency_id: string | null
           id: string
           needed_date: string | null
           notes: string | null
@@ -2406,12 +2407,14 @@ export type Database = {
           requested_by: string | null
           status: string
           supplier_id: string | null
+          supplier_reference: string | null
           updated_at: string
           warehouse_id: string | null
         }
         Insert: {
           company_id?: string | null
           created_at?: string
+          currency_id?: string | null
           id?: string
           needed_date?: string | null
           notes?: string | null
@@ -2420,12 +2423,14 @@ export type Database = {
           requested_by?: string | null
           status?: string
           supplier_id?: string | null
+          supplier_reference?: string | null
           updated_at?: string
           warehouse_id?: string | null
         }
         Update: {
           company_id?: string | null
           created_at?: string
+          currency_id?: string | null
           id?: string
           needed_date?: string | null
           notes?: string | null
@@ -2434,6 +2439,7 @@ export type Database = {
           requested_by?: string | null
           status?: string
           supplier_id?: string | null
+          supplier_reference?: string | null
           updated_at?: string
           warehouse_id?: string | null
         }
@@ -2443,6 +2449,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
             referencedColumns: ["id"]
           },
           {

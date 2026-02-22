@@ -22,11 +22,12 @@ const emptyLine = (): Partial<PurchaseLine> => ({
 
 export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
   const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [currencies, setCurrencies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [warehouseId, setWarehouseId] = useState(editItem?.warehouse_id || "");
   const [supplierId, setSupplierId] = useState(editItem?.supplier_id || "");
   const [neededDate, setNeededDate] = useState(editItem?.needed_date || "");
+  const [supplierReference, setSupplierReference] = useState(editItem?.supplier_reference || "");
+  const [currencyId, setCurrencyId] = useState(editItem?.currency_id || "");
   const [notes, setNotes] = useState(editItem?.notes || "");
   const [lines, setLines] = useState<Partial<PurchaseLine>[]>(editItem ? [] : [emptyLine()]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,14 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
 
   useEffect(() => {
     (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
-    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (!editItem && data?.length) setWarehouseId(data[0].id); });
+    (supabase as any).from("currencies").select("id, code, symbol, name").eq("is_active", true).order("sort_order").then(({ data }: any) => {
+      setCurrencies(data || []);
+      if (!editItem && data?.length) {
+        const mad = data.find((c: any) => c.code === "MAD");
+        if (mad) setCurrencyId(mad.id);
+        else setCurrencyId(data[0].id);
+      }
+    });
     (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
 
     if (editItem) {
@@ -57,12 +65,24 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
   };
 
   const handleSave = async () => {
-    if (!warehouseId) return;
     setSaving(true);
     if (editItem) {
-      await hook.update(editItem.id, { warehouse_id: warehouseId, supplier_id: supplierId || null, needed_date: neededDate || null, notes }, lines);
+      await hook.update(editItem.id, {
+        supplier_id: supplierId || null,
+        needed_date: neededDate || null,
+        supplier_reference: supplierReference || null,
+        currency_id: currencyId || null,
+        notes,
+      }, lines);
     } else {
-      await hook.create({ warehouseId, supplierId: supplierId || undefined, neededDate: neededDate || undefined, notes, lines });
+      await hook.create({
+        supplierId: supplierId || undefined,
+        neededDate: neededDate || undefined,
+        supplierReference: supplierReference || undefined,
+        currencyId: currencyId || undefined,
+        notes,
+        lines,
+      });
     }
     setSaving(false);
     onClose();
@@ -81,21 +101,31 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Dépôt <span className="text-destructive">*</span></Label>
-              <Select value={warehouseId} onValueChange={setWarehouseId}>
-                <SelectTrigger><SelectValue placeholder="Choisir un dépôt" /></SelectTrigger>
-                <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label>Fournisseur (optionnel)</Label>
               <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={setSupplierId} placeholder="Sélectionner..." />
             </div>
+            <div>
+              <Label>Référence fournisseur</Label>
+              <Input placeholder="Réf. devis fournisseur..." value={supplierReference} onChange={e => setSupplierReference(e.target.value)} />
+            </div>
           </div>
 
-          <div>
-            <Label>Date souhaitée</Label>
-            <Input type="date" value={neededDate} onChange={e => setNeededDate(e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Arrivée prévue</Label>
+              <Input type="date" value={neededDate} onChange={e => setNeededDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Devise</Label>
+              <Select value={currencyId} onValueChange={setCurrencyId}>
+                <SelectTrigger><SelectValue placeholder="Sélectionner une devise" /></SelectTrigger>
+                <SelectContent>
+                  {currencies.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.code} — {c.name || c.symbol}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {loading ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
@@ -149,7 +179,7 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSave} disabled={saving || !warehouseId}>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
             Enregistrer
           </Button>
