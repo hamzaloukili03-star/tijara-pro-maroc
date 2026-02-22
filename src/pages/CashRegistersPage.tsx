@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Loader2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 export default function CashRegistersPage() {
   const { registers, movements, loading, create, addMovement, fetchMovements } = useCashRegisters();
@@ -19,6 +20,7 @@ export default function CashRegistersPage() {
   const [showMovement, setShowMovement] = useState<string | null>(null);
   const [selectedRegister, setSelectedRegister] = useState<string | null>(null);
   const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [creating, setCreating] = useState(false);
 
   // Create form
   const [name, setName] = useState("");
@@ -37,8 +39,26 @@ export default function CashRegistersPage() {
   }, []);
 
   const handleCreate = async () => {
-    const ok = await create({ name, code, warehouse_id: warehouseId || null, opening_balance: openingBalance } as any);
-    if (ok) { setShowCreate(false); setName(""); setCode(""); setOpeningBalance(0); }
+    // Front-end uniqueness checks
+    const trimmedCode = code.trim();
+    const trimmedName = name.trim();
+    
+    if (registers.some(r => r.code.toLowerCase() === trimmedCode.toLowerCase())) {
+      toast({ title: "Erreur", description: "Code caisse déjà utilisé.", variant: "destructive" });
+      return;
+    }
+    if (registers.some(r => r.name.toLowerCase() === trimmedName.toLowerCase())) {
+      toast({ title: "Erreur", description: "Nom de caisse déjà utilisé.", variant: "destructive" });
+      return;
+    }
+
+    setCreating(true);
+    const ok = await create({ name: trimmedName, code: trimmedCode, warehouse_id: warehouseId || null, opening_balance: openingBalance } as any);
+    setCreating(false);
+    if (ok) {
+      setShowCreate(false);
+      setName(""); setCode(""); setOpeningBalance(0); setWarehouseId("");
+    }
   };
 
   const handleAddMovement = async () => {
@@ -129,8 +149,8 @@ export default function CashRegistersPage() {
           <DialogContent>
             <DialogHeader><DialogTitle>Nouvelle caisse</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>Nom</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Caisse principale" /></div>
-              <div><Label>Code</Label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="CAISSE-01" /></div>
+              <div><Label>Nom *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Caisse principale" /></div>
+              <div><Label>Code *</Label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="CAISSE-01" /></div>
               <div>
                 <Label>Dépôt (optionnel)</Label>
                 <Select value={warehouseId} onValueChange={setWarehouseId}>
@@ -141,7 +161,10 @@ export default function CashRegistersPage() {
               <div><Label>Solde d'ouverture</Label><Input type="number" value={openingBalance} onChange={(e) => setOpeningBalance(Number(e.target.value))} /></div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowCreate(false)}>Annuler</Button>
-                <Button onClick={handleCreate} disabled={!name || !code}>Créer</Button>
+                <Button onClick={handleCreate} disabled={!name.trim() || !code.trim() || creating}>
+                  {creating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Créer
+                </Button>
               </div>
             </div>
           </DialogContent>
