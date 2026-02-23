@@ -69,4 +69,5 @@ export const ROLE_MODULE_ACCESS: Record<string, AppRole[]> = {
   "/systeme/societe": ["super_admin", "admin"],
   "/systeme/parametres": ["super_admin", "admin"],
   "/systeme/logs": ["super_admin", "admin"],
+  "/systeme/conception": ["super_admin", "admin"],
 };

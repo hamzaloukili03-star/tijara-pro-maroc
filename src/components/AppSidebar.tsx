@@ -159,6 +159,7 @@ const sections: SidebarSection[] = [
       { title: "Gestion des Sociétés", icon: Building2, path: "/systeme/societes" },
       { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
       { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },
+      { title: "Conception", icon: SlidersHorizontal, path: "/systeme/conception" },
       { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
     ],
   },
