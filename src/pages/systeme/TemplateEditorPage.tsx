@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,19 +11,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, Save, Copy, RotateCcw, Eye, GripVertical,
-  ChevronUp, ChevronDown, EyeOff,
+  EyeOff, Upload, Plus, Trash2, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useDocumentTemplates,
   TEMPLATE_DOC_LABELS,
+  DYNAMIC_PLACEHOLDERS,
   getDefaultTemplate,
   type TemplateDocType,
   type TemplateConfig,
   type TemplateBlock,
   type DocumentTemplate,
+  type TemplateStatus,
 } from "@/hooks/useDocumentTemplates";
 import { TemplatePreview } from "@/components/conception/TemplatePreview";
 
@@ -30,13 +35,14 @@ export default function TemplateEditorPage() {
   const { type } = useParams<{ type: string }>();
   const navigate = useNavigate();
   const docType = type as TemplateDocType;
-  const { fetchTemplate, saveTemplate, saveAsCopy, restoreDefault, loading } = useDocumentTemplates();
+  const { fetchTemplate, saveTemplate, publishTemplate, saveAsCopy, restoreDefault, loading } = useDocumentTemplates();
 
   const [existingId, setExistingId] = useState<string | undefined>();
   const [config, setConfig] = useState<TemplateConfig>(getDefaultTemplate());
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>("logo");
   const [showPreview, setShowPreview] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [templateStatus, setTemplateStatus] = useState<TemplateStatus>("draft");
 
   useEffect(() => {
     (async () => {
@@ -44,9 +50,11 @@ export default function TemplateEditorPage() {
       if (tpl) {
         setConfig(tpl.template_json as unknown as TemplateConfig);
         setExistingId(tpl.id);
+        setTemplateStatus((tpl as any).status || "draft");
       } else {
         setConfig(getDefaultTemplate());
         setExistingId(undefined);
+        setTemplateStatus("draft");
       }
       setInitialized(true);
     })();
@@ -88,36 +96,76 @@ export default function TemplateEditorPage() {
     }));
   }, []);
 
-  const moveBlock = useCallback((blockId: string, direction: "up" | "down") => {
+  const handleDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+    const from = result.source.index;
+    const to = result.destination.index;
+    if (from === to) return;
+
     setConfig((prev) => {
       const sorted = [...prev.blocks].sort((a, b) => a.order - b.order);
-      const idx = sorted.findIndex((b) => b.id === blockId);
-      if (direction === "up" && idx > 0) {
-        const tmp = sorted[idx].order;
-        sorted[idx].order = sorted[idx - 1].order;
-        sorted[idx - 1].order = tmp;
-      } else if (direction === "down" && idx < sorted.length - 1) {
-        const tmp = sorted[idx].order;
-        sorted[idx].order = sorted[idx + 1].order;
-        sorted[idx + 1].order = tmp;
-      }
-      return { ...prev, blocks: sorted };
+      const [moved] = sorted.splice(from, 1);
+      sorted.splice(to, 0, moved);
+      return {
+        ...prev,
+        blocks: sorted.map((b, i) => ({ ...b, order: i })),
+      };
     });
   }, []);
 
+  const addCustomTextBlock = useCallback(() => {
+    setConfig((prev) => {
+      const maxOrder = Math.max(...prev.blocks.map(b => b.order), -1);
+      const newBlock: TemplateBlock = {
+        id: `custom_text_${Date.now()}`,
+        type: "custom_text",
+        label: "Texte personnalisé",
+        visible: true,
+        order: maxOrder + 1,
+        styles: { fontSize: 8, spacing: 10, alignment: "left" },
+        customContent: "",
+      };
+      return { ...prev, blocks: [...prev.blocks, newBlock] };
+    });
+  }, []);
+
+  const removeBlock = useCallback((blockId: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      blocks: prev.blocks.filter(b => b.id !== blockId).map((b, i) => ({ ...b, order: i })),
+    }));
+    if (selectedBlockId === blockId) setSelectedBlockId(null);
+  }, [selectedBlockId]);
+
   const handleSave = async () => {
-    await saveTemplate(docType, config, existingId);
+    const result = await saveTemplate(docType, config, existingId, "draft");
+    if (result) {
+      setExistingId(result.id);
+      setTemplateStatus("draft");
+    }
+  };
+
+  const handlePublish = async () => {
+    const result = await publishTemplate(docType, config, existingId);
+    if (result) {
+      setExistingId(result.id);
+      setTemplateStatus("published");
+    }
   };
 
   const handleSaveAsCopy = async () => {
     const result = await saveAsCopy(docType, config);
-    if (result) setExistingId(result.id);
+    if (result) {
+      setExistingId(result.id);
+      setTemplateStatus("draft");
+    }
   };
 
   const handleRestore = async () => {
     await restoreDefault(docType);
     setConfig(getDefaultTemplate());
     setExistingId(undefined);
+    setTemplateStatus("draft");
     toast.success("Template par défaut restauré");
   };
 
@@ -157,6 +205,9 @@ export default function TemplateEditorPage() {
         <Button variant="outline" size="sm" onClick={() => navigate("/systeme/conception")} className="gap-1.5">
           <ArrowLeft className="h-4 w-4" /> Retour
         </Button>
+        <Badge variant={templateStatus === "published" ? "default" : "secondary"} className="text-xs">
+          {templateStatus === "published" ? "Publié" : "Brouillon"}
+        </Badge>
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)} className="gap-1.5">
           <Eye className="h-4 w-4" /> {showPreview ? "Masquer aperçu" : "Aperçu"}
@@ -167,8 +218,11 @@ export default function TemplateEditorPage() {
         <Button variant="outline" size="sm" onClick={handleSaveAsCopy} disabled={loading} className="gap-1.5">
           <Copy className="h-4 w-4" /> Copie
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={loading} className="gap-1.5">
-          <Save className="h-4 w-4" /> Sauvegarder
+        <Button variant="outline" size="sm" onClick={handleSave} disabled={loading} className="gap-1.5">
+          <Save className="h-4 w-4" /> Brouillon
+        </Button>
+        <Button size="sm" onClick={handlePublish} disabled={loading} className="gap-1.5">
+          <Send className="h-4 w-4" /> Publier
         </Button>
       </div>
 
@@ -176,41 +230,54 @@ export default function TemplateEditorPage() {
         <TemplatePreview config={config} docType={docType} />
       ) : (
         <div className="grid grid-cols-12 gap-4" style={{ minHeight: "70vh" }}>
-          {/* LEFT: Blocks list */}
+          {/* LEFT: Blocks list with DnD */}
           <div className="col-span-3">
             <Card className="p-3">
-              <h3 className="text-sm font-semibold text-foreground mb-2">Blocs</h3>
-              <div className="space-y-1">
-                {sortedBlocks.map((block, idx) => (
-                  <div
-                    key={block.id}
-                    className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors ${
-                      selectedBlockId === block.id
-                        ? "bg-primary/10 text-primary border border-primary/30"
-                        : "hover:bg-muted text-foreground"
-                    } ${!block.visible ? "opacity-50" : ""}`}
-                    onClick={() => setSelectedBlockId(block.id)}
-                  >
-                    <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="flex-1 truncate">{block.label}</span>
-                    {!block.visible && <EyeOff className="h-3 w-3 text-muted-foreground" />}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); moveBlock(block.id, "up"); }}
-                      disabled={idx === 0}
-                      className="p-0.5 hover:bg-muted-foreground/10 rounded disabled:opacity-30"
-                    >
-                      <ChevronUp className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); moveBlock(block.id, "down"); }}
-                      disabled={idx === sortedBlocks.length - 1}
-                      className="p-0.5 hover:bg-muted-foreground/10 rounded disabled:opacity-30"
-                    >
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-foreground">Blocs</h3>
+                <Button variant="ghost" size="sm" onClick={addCustomTextBlock} className="h-7 w-7 p-0" title="Ajouter un bloc texte">
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="blocks">
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
+                      {sortedBlocks.map((block, idx) => (
+                        <Draggable key={block.id} draggableId={block.id} index={idx}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors ${
+                                selectedBlockId === block.id
+                                  ? "bg-primary/10 text-primary border border-primary/30"
+                                  : "hover:bg-muted text-foreground"
+                              } ${!block.visible ? "opacity-50" : ""} ${snapshot.isDragging ? "shadow-lg bg-background border border-primary/40" : ""}`}
+                              onClick={() => setSelectedBlockId(block.id)}
+                            >
+                              <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
+                              </div>
+                              <span className="flex-1 truncate">{block.label}</span>
+                              {!block.visible && <EyeOff className="h-3 w-3 text-muted-foreground" />}
+                              {block.type === "custom_text" && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
+                                  className="p-0.5 hover:bg-destructive/10 rounded text-destructive"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </Card>
           </div>
 
@@ -238,7 +305,7 @@ export default function TemplateEditorPage() {
                           <div>
                             <div className="w-12 h-3 bg-primary/20 rounded mb-0.5" />
                             <div className="font-bold text-[7px]" style={{ color: config.globalStyles.secondaryColor }}>
-                              Ma Société
+                              {"{{company.name}}"}
                             </div>
                           </div>
                           <div className="w-10 h-6 bg-muted rounded" />
@@ -260,7 +327,7 @@ export default function TemplateEditorPage() {
                           {["Date", "Échéance", "Conditions"].map((l) => (
                             <div key={l} className="flex-1 bg-muted/50 rounded px-1 py-0.5 border-l-2 border-primary/40">
                               <div className="text-[5px] font-semibold uppercase">{l}</div>
-                              <div className="text-[5px]">---</div>
+                              <div className="text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
                             </div>
                           ))}
                         </div>
@@ -270,7 +337,7 @@ export default function TemplateEditorPage() {
                           {["CLIENT", "ÉMETTEUR"].map((l) => (
                             <div key={l} className="flex-1 border border-border rounded overflow-hidden">
                               <div className="text-[5px] font-bold px-1 py-0.5" style={{ backgroundColor: config.globalStyles.secondaryColor, color: "#fff" }}>{l}</div>
-                              <div className="px-1 py-0.5 text-[5px]">Nom / Adresse</div>
+                              <div className="px-1 py-0.5 text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
                             </div>
                           ))}
                         </div>
@@ -283,7 +350,7 @@ export default function TemplateEditorPage() {
                             ))}
                           </div>
                           {[0, 1, 2].map((i) => (
-                            <div key={i} className={`flex gap-0.5 px-0.5 py-0.5 text-[5px] ${i % 2 === 1 ? "bg-muted/30" : ""}`}>
+                            <div key={i} className={`flex gap-0.5 px-0.5 py-0.5 text-[5px] italic text-muted-foreground ${i % 2 === 1 ? "bg-muted/30" : ""}`}>
                               {[1, 2, 3, 4, 5].map((j) => (
                                 <div key={j} className="flex-1 text-center">---</div>
                               ))}
@@ -295,27 +362,32 @@ export default function TemplateEditorPage() {
                         <div className="flex justify-end">
                           <div className="w-1/2 border border-border rounded overflow-hidden">
                             <div className="flex justify-between px-1 py-0.5 text-[5px] border-b border-border">
-                              <span>Total HT</span><span>0.00</span>
+                              <span>Total HT</span><span className="italic">{"{{...}}"}</span>
                             </div>
                             <div className="flex justify-between px-1 py-0.5 text-[5px] font-bold text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>
-                              <span>Total TTC</span><span style={{ color: config.globalStyles.primaryColor }}>0.00</span>
+                              <span>Total TTC</span><span className="italic" style={{ color: config.globalStyles.primaryColor }}>{"{{...}}"}</span>
                             </div>
                           </div>
                         </div>
                       )}
                       {block.type === "notes" && (
-                        <div className="border-l-2 pl-1 py-0.5 text-[5px]" style={{ borderColor: config.globalStyles.primaryColor, backgroundColor: `${config.globalStyles.primaryColor}10` }}>
-                          Notes / Conditions...
+                        <div className="border-l-2 pl-1 py-0.5 text-[5px] italic" style={{ borderColor: config.globalStyles.primaryColor, backgroundColor: `${config.globalStyles.primaryColor}10` }}>
+                          {"{{notes}}"}
                         </div>
                       )}
                       {block.type === "bank" && (
-                        <div className="bg-muted/30 rounded px-1 py-0.5 text-[5px]">
-                          Coordonnées bancaires
+                        <div className="bg-muted/30 rounded px-1 py-0.5 text-[5px] italic">
+                          {"{{bank...}}"}
                         </div>
                       )}
                       {block.type === "footer" && (
-                        <div className="text-center text-[4px] border-t pt-0.5" style={{ borderColor: config.globalStyles.primaryColor }}>
-                          Pied de page — ICE / IF / RC
+                        <div className="text-center text-[4px] border-t pt-0.5 italic" style={{ borderColor: config.globalStyles.primaryColor }}>
+                          Pied de page — {"{{company...}}"}
+                        </div>
+                      )}
+                      {block.type === "custom_text" && (
+                        <div className="text-[5px] italic text-muted-foreground px-1 py-0.5 bg-muted/20 rounded">
+                          {block.customContent || "Texte personnalisé..."}
                         </div>
                       )}
                     </div>
@@ -377,6 +449,21 @@ export default function TemplateEditorPage() {
                         <SelectItem value="Courier New, monospace">Courier New</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+
+                <Separator className="my-3" />
+
+                {/* Placeholders dropdown */}
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Champs dynamiques</h3>
+                  <div className="max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                    {DYNAMIC_PLACEHOLDERS.map((ph) => (
+                      <div key={ph.key} className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">{ph.label}</span>
+                        <code className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono">{ph.key}</code>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -458,6 +545,37 @@ export default function TemplateEditorPage() {
                             />
                           </div>
                         </div>
+                      )}
+
+                      {/* Alignment for custom_text */}
+                      {selectedBlock.type === "custom_text" && (
+                        <>
+                          <div>
+                            <Label className="text-xs">Alignement</Label>
+                            <Select
+                              value={selectedBlock.styles.alignment || "left"}
+                              onValueChange={(v) => updateBlockStyle(selectedBlock.id, "alignment", v)}
+                            >
+                              <SelectTrigger className="h-8 text-xs mt-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="left">Gauche</SelectItem>
+                                <SelectItem value="center">Centre</SelectItem>
+                                <SelectItem value="right">Droite</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Contenu</Label>
+                            <Textarea
+                              value={selectedBlock.customContent || ""}
+                              onChange={(e) => updateBlock(selectedBlock.id, { customContent: e.target.value })}
+                              className="mt-1 text-xs min-h-[60px]"
+                              placeholder="Saisissez votre texte ou utilisez des placeholders {{...}}"
+                            />
+                          </div>
+                        </>
                       )}
 
                       {/* Field visibility toggles */}
