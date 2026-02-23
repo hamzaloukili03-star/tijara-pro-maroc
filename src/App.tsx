@@ -26,6 +26,8 @@ import SystemeUtilisateurs from "./pages/SystemeUtilisateurs";
 import SystemeSociete from "./pages/SystemeSociete";
 import SystemeParametres from "./pages/SystemeParametres";
 import SystemeLogs from "./pages/SystemeLogs";
+import ConceptionPage from "./pages/systeme/ConceptionPage";
+import TemplateEditorPage from "./pages/systeme/TemplateEditorPage";
 
 // Référentiel
 import ProductsPage from "./pages/master/ProductsPage";
@@ -105,6 +107,8 @@ const App = () => (
             <Route path="/systeme/profils" element={<ProtectedRoute requiredRoles={["super_admin"]}><ProfilesRolesPage /></ProtectedRoute>} />
             <Route path="/systeme/parametres" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><SystemeParametres /></ProtectedRoute>} />
             <Route path="/systeme/logs" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><SystemeLogs /></ProtectedRoute>} />
+            <Route path="/systeme/conception" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><ConceptionPage /></ProtectedRoute>} />
+            <Route path="/systeme/conception/:type" element={<ProtectedRoute requiredRoles={["super_admin", "admin"]}><TemplateEditorPage /></ProtectedRoute>} />
 
             {/* Référentiel */}
             <Route path="/referentiel/clients" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />

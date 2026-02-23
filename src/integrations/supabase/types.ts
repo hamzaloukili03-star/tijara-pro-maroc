@@ -989,6 +989,50 @@ export type Database = {
         }
         Relationships: []
       }
+      document_templates: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          document_type: string
+          id: string
+          is_active: boolean
+          template_json: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          document_type: string
+          id?: string
+          is_active?: boolean
+          template_json?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          document_type?: string
+          id?: string
+          is_active?: boolean
+          template_json?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           code: string | null

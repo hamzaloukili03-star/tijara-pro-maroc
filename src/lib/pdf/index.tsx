@@ -4,6 +4,7 @@ import { TijaraProPDF } from "./TijaraProPDF";
 import type { PdfDocumentData, PdfDocumentType, PdfCompany, PdfBankAccount, PdfParty, PdfLine } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { openPrintHtml } from "./print-html";
+import { openPrintHtmlWithTemplate } from "./print-html-custom";
 
 // Re-export types for convenience
 export type { PdfDocumentData, PdfDocumentType, PdfCompany, PdfBankAccount, PdfParty, PdfLine };
@@ -11,7 +12,12 @@ export type { PdfDocumentData, PdfDocumentType, PdfCompany, PdfBankAccount, PdfP
 // ─── Core: Print (opens native print dialog) ─────────────────────────────────
 
 export async function generateAndOpenPdf(data: PdfDocumentData) {
-  openPrintHtml(data);
+  // Try custom template first, falls back to default internally
+  try {
+    await openPrintHtmlWithTemplate(data);
+  } catch {
+    openPrintHtml(data);
+  }
 }
 
 export async function generateAndDownloadPdf(data: PdfDocumentData) {
