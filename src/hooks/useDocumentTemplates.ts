@@ -23,9 +23,11 @@ export const TEMPLATE_DOC_LABELS: Record<TemplateDocType, string> = {
   facture_client: "Facture Client",
 };
 
+export type TemplateBlockType = "logo" | "title" | "doc_info" | "party" | "lines_table" | "totals" | "notes" | "footer" | "bank" | "custom_text";
+
 export interface TemplateBlock {
   id: string;
-  type: "logo" | "title" | "doc_info" | "party" | "lines_table" | "totals" | "notes" | "footer" | "bank";
+  type: TemplateBlockType;
   label: string;
   visible: boolean;
   order: number;
@@ -36,7 +38,8 @@ export interface TemplateBlock {
     spacing?: number;
     alignment?: "left" | "center" | "right";
   };
-  fields?: Record<string, boolean>; // field visibility toggles
+  fields?: Record<string, boolean>;
+  customContent?: string; // For custom_text blocks
 }
 
 export interface TemplateConfig {
@@ -50,6 +53,8 @@ export interface TemplateConfig {
   };
 }
 
+export type TemplateStatus = "draft" | "published";
+
 export interface DocumentTemplate {
   id: string;
   company_id: string | null;
@@ -57,6 +62,7 @@ export interface DocumentTemplate {
   template_json: TemplateConfig;
   version: number;
   is_active: boolean;
+  status: TemplateStatus;
   created_at: string;
   updated_at: string;
   updated_by: string | null;
@@ -159,6 +165,30 @@ export function getDefaultTemplate(): TemplateConfig {
   };
 }
 
+/** Available dynamic placeholders for the template editor */
+export const DYNAMIC_PLACEHOLDERS = [
+  { key: "{{company.name}}", label: "Raison sociale" },
+  { key: "{{company.ice}}", label: "ICE société" },
+  { key: "{{company.rc}}", label: "RC société" },
+  { key: "{{company.if}}", label: "IF société" },
+  { key: "{{company.address}}", label: "Adresse société" },
+  { key: "{{company.phone}}", label: "Téléphone société" },
+  { key: "{{company.email}}", label: "Email société" },
+  { key: "{{doc.number}}", label: "N° document" },
+  { key: "{{doc.date}}", label: "Date document" },
+  { key: "{{doc.due_date}}", label: "Date d'échéance" },
+  { key: "{{doc.payment_terms}}", label: "Conditions paiement" },
+  { key: "{{partner.name}}", label: "Nom client/fournisseur" },
+  { key: "{{partner.ice}}", label: "ICE client/fournisseur" },
+  { key: "{{partner.address}}", label: "Adresse client/fournisseur" },
+  { key: "{{totals.ht}}", label: "Total HT" },
+  { key: "{{totals.tva}}", label: "Total TVA" },
+  { key: "{{totals.ttc}}", label: "Total TTC" },
+  { key: "{{bank.name}}", label: "Nom banque" },
+  { key: "{{bank.rib}}", label: "RIB" },
+  { key: "{{bank.swift}}", label: "SWIFT" },
+];
+
 export function useDocumentTemplates() {
   const { activeCompany } = useCompany();
   const { user } = useAuth();
@@ -192,22 +222,38 @@ export function useDocumentTemplates() {
     return data as DocumentTemplate | null;
   }, [activeCompany?.id]);
 
-  const saveTemplate = useCallback(async (docType: TemplateDocType, config: TemplateConfig, existingId?: string) => {
+  /** Fetch published template for printing */
+  const fetchPublishedTemplate = useCallback(async (docType: string): Promise<DocumentTemplate | null> => {
+    if (!activeCompany?.id) return null;
+    const { data, error } = await (supabase as any)
+      .from("document_templates")
+      .select("*")
+      .eq("company_id", activeCompany.id)
+      .eq("document_type", docType)
+      .eq("is_active", true)
+      .eq("status", "published")
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) { console.error(error); return null; }
+    return data as DocumentTemplate | null;
+  }, [activeCompany?.id]);
+
+  const saveTemplate = useCallback(async (docType: TemplateDocType, config: TemplateConfig, existingId?: string, status: TemplateStatus = "draft") => {
     if (!activeCompany?.id) return null;
     setLoading(true);
     try {
       if (existingId) {
         const { data, error } = await (supabase as any)
           .from("document_templates")
-          .update({ template_json: config, updated_by: user?.id })
+          .update({ template_json: config, updated_by: user?.id, status })
           .eq("id", existingId)
           .select()
           .single();
         if (error) throw error;
-        toast.success("Template sauvegardé");
-        return data;
+        toast.success(status === "published" ? "Template publié" : "Brouillon sauvegardé");
+        return data as DocumentTemplate;
       } else {
-        // Get max version
         const { data: existing } = await (supabase as any)
           .from("document_templates")
           .select("version")
@@ -225,12 +271,13 @@ export function useDocumentTemplates() {
             template_json: config,
             version: nextVersion,
             updated_by: user?.id,
+            status,
           })
           .select()
           .single();
         if (error) throw error;
-        toast.success("Template créé (v" + nextVersion + ")");
-        return data;
+        toast.success(status === "published" ? `Template publié (v${nextVersion})` : `Brouillon créé (v${nextVersion})`);
+        return data as DocumentTemplate;
       }
     } catch (err: any) {
       toast.error("Erreur: " + err.message);
@@ -240,8 +287,11 @@ export function useDocumentTemplates() {
     }
   }, [activeCompany?.id, user?.id]);
 
+  const publishTemplate = useCallback(async (docType: TemplateDocType, config: TemplateConfig, existingId?: string) => {
+    return saveTemplate(docType, config, existingId, "published");
+  }, [saveTemplate]);
+
   const saveAsCopy = useCallback(async (docType: TemplateDocType, config: TemplateConfig) => {
-    // Deactivate old versions
     if (activeCompany?.id) {
       await (supabase as any)
         .from("document_templates")
@@ -254,7 +304,6 @@ export function useDocumentTemplates() {
 
   const restoreDefault = useCallback(async (docType: TemplateDocType) => {
     if (!activeCompany?.id) return;
-    // Deactivate custom templates (don't delete for history)
     await (supabase as any)
       .from("document_templates")
       .update({ is_active: false })
@@ -263,5 +312,5 @@ export function useDocumentTemplates() {
     toast.success("Template par défaut restauré");
   }, [activeCompany?.id]);
 
-  return { fetchTemplates, fetchTemplate, saveTemplate, saveAsCopy, restoreDefault, loading };
+  return { fetchTemplates, fetchTemplate, fetchPublishedTemplate, saveTemplate, publishTemplate, saveAsCopy, restoreDefault, loading };
 }

@@ -996,6 +996,7 @@ export type Database = {
           document_type: string
           id: string
           is_active: boolean
+          status: string
           template_json: Json
           updated_at: string
           updated_by: string | null
@@ -1007,6 +1008,7 @@ export type Database = {
           document_type: string
           id?: string
           is_active?: boolean
+          status?: string
           template_json?: Json
           updated_at?: string
           updated_by?: string | null
@@ -1018,6 +1020,7 @@ export type Database = {
           document_type?: string
           id?: string
           is_active?: boolean
+          status?: string
           template_json?: Json
           updated_at?: string
           updated_by?: string | null

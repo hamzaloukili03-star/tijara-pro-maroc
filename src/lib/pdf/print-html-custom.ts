@@ -1,7 +1,7 @@
 import type { PdfDocumentData } from "./types";
-import { DOC_TITLES, DOC_PARTY_LABEL, BRAND } from "./types";
+import { DOC_TITLES, DOC_PARTY_LABEL } from "./types";
 import { supabase } from "@/integrations/supabase/client";
-import type { TemplateConfig, TemplateBlock } from "@/hooks/useDocumentTemplates";
+import type { TemplateConfig } from "@/hooks/useDocumentTemplates";
 
 const fmt = (n: number) =>
   n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -22,9 +22,9 @@ const PDF_TO_TEMPLATE_TYPE: Record<string, string> = {
 };
 
 /**
- * Fetch active template for a company/type combo. Returns null if none.
+ * Fetch PUBLISHED template for a company/type combo. Returns null if none.
  */
-async function fetchCustomTemplate(
+async function fetchPublishedTemplate(
   companyId: string | undefined | null,
   pdfType: string
 ): Promise<TemplateConfig | null> {
@@ -38,6 +38,7 @@ async function fetchCustomTemplate(
     .eq("company_id", companyId)
     .eq("document_type", templateType)
     .eq("is_active", true)
+    .eq("status", "published")
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -46,21 +47,18 @@ async function fetchCustomTemplate(
 }
 
 /**
- * Build HTML using custom template config. Falls back to default if no template.
+ * Build HTML using published template config. Falls back to default if no published template.
  */
 export async function openPrintHtmlWithTemplate(data: PdfDocumentData) {
-  // Try to get company_id from data for template lookup
   const companyId = (data.company as any)?.id || null;
-  const tpl = await fetchCustomTemplate(companyId, data.type);
+  const tpl = await fetchPublishedTemplate(companyId, data.type);
 
   if (!tpl) {
-    // No custom template — use default print-html
     const { openPrintHtml } = await import("./print-html");
     openPrintHtml(data);
     return;
   }
 
-  // Render with custom template
   openCustomPrintHtml(data, tpl);
 }
 
@@ -148,7 +146,6 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
 
     if (block.type === "lines_table") {
       const f = block.fields || {};
-      let ths = "", tds = "";
       const cols = [
         { key: "ref", label: "Réf.", align: "center", w: "8%", render: (l: any, i: number) => l.ref || (i + 1) },
         { key: "description", label: "Désignation", align: "left", w: "", render: (l: any) => l.description },
@@ -162,7 +159,7 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
       ];
 
       const activeCols = cols.filter(col => f[col.key] !== false);
-      ths = activeCols.map(col => `<th style="color:#fff;font-size:7.5px;font-weight:700;padding:6px 5px;text-align:${col.align};${col.w ? `width:${col.w}` : ""}">${col.label}</th>`).join("");
+      const ths = activeCols.map(col => `<th style="color:#fff;font-size:7.5px;font-weight:700;padding:6px 5px;text-align:${col.align};${col.w ? `width:${col.w}` : ""}">${col.label}</th>`).join("");
 
       const rows = data.lines.map((l, i) => {
         const cells = activeCols.map(col => `<td style="padding:5px;font-size:${block.styles.fontSize || 8}px;text-align:${col.align};${col.key === "total_ht" || col.key === "total_ttc" ? "font-weight:600" : ""}">${col.render(l, i)}</td>`).join("");
@@ -200,6 +197,10 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
         ${block.fields?.rib !== false && ba.rib ? `<div style="font-size:7px"><span style="color:#4A6070;display:inline-block;width:55px">RIB</span>${ba.rib}</div>` : ""}
         ${block.fields?.swift !== false && ba.swift ? `<div style="font-size:7px"><span style="color:#4A6070;display:inline-block;width:55px">SWIFT</span>${ba.swift}</div>` : ""}
       </div>`;
+    }
+
+    if (block.type === "custom_text" && (block as any).customContent) {
+      bodyHtml += `<div style="margin-bottom:${mb}px;font-size:${block.styles.fontSize || 8}px;text-align:${block.styles.alignment || "left"};color:${block.styles.color || "#1A2B3C"}">${(block as any).customContent}</div>`;
     }
 
     if (block.type === "footer") {

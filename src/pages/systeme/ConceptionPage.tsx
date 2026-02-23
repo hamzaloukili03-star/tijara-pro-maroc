@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, FileText, Clock, User } from "lucide-react";
+import { Pencil, Clock } from "lucide-react";
 import {
   useDocumentTemplates,
   TEMPLATE_DOC_LABELS,
@@ -57,6 +57,7 @@ export default function ConceptionPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {DOC_TYPES.map((type) => {
           const tpl = getTemplateForType(type);
+          const status = (tpl as any)?.status || "draft";
           return (
             <Card
               key={type}
@@ -66,7 +67,6 @@ export default function ConceptionPage() {
                 {/* Preview thumbnail */}
                 <div className="bg-muted/50 rounded-lg flex items-center justify-center h-32 border border-border relative overflow-hidden">
                   <div className="text-4xl opacity-60">{DOC_ICONS[type]}</div>
-                  {/* Mini A4 preview */}
                   <div className="absolute inset-2 bg-background rounded shadow-sm border border-border/50 flex flex-col items-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-8 h-1 bg-primary/30 rounded mb-1" />
                     <div className="w-full h-1 bg-muted rounded mb-0.5" />
@@ -84,9 +84,17 @@ export default function ConceptionPage() {
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
                     {tpl ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        v{tpl.version} — Personnalisé
-                      </Badge>
+                      <>
+                        <Badge
+                          variant={status === "published" ? "default" : "secondary"}
+                          className="text-[10px]"
+                        >
+                          {status === "published" ? "Publié" : "Brouillon"}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px]">
+                          v{tpl.version}
+                        </Badge>
+                      </>
                     ) : (
                       <Badge variant="outline" className="text-[10px]">
                         Par défaut
