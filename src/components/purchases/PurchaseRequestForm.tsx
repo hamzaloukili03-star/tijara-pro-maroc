@@ -177,58 +177,57 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
           {loading ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
             <div className="space-y-3">
               <Label className="text-base font-semibold">Liste des Produits</Label>
-              <div className="space-y-4">
-                {lines.map((line, idx) => {
-                  const sku = getProductCode(line.product_id);
-                  return (
-                    <div key={idx} className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-3">
-                      <div className="flex items-end justify-end">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-1">Produit</Label>
-                        <SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Sélectionner un produit..." />
-                      </div>
-                      {sku && (
-                        <div className="text-xs text-muted-foreground">
-                          Réf. produit : <span className="font-mono font-medium">{sku}</span>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-4 gap-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">Quantité</Label>
-                          <Input className="h-9" type="number" placeholder="1" min={0} value={line.quantity || ""} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">Unité</Label>
-                          <Select value={line.unit || "Unité"} onValueChange={v => updateLine(idx, "unit", v)}>
-                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {["Unité", "Kg", "L", "m", "m²", "Boîte", "Carton", "Pièce"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">Prix unitaire</Label>
-                          <Input className="h-9" type="number" placeholder="Saisir le prix..." min={0} value={line.estimated_cost || ""} onChange={e => updateLine(idx, "estimated_cost", Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">TVA %</Label>
-                          <Input className="h-9" type="number" placeholder="0" min={0} value={line.tva_rate || ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} />
-                        </div>
-                      </div>
-                      {/* Line total */}
-                      <div className="flex justify-end pt-1 border-t border-border/30">
-                        <span className="text-xs text-muted-foreground mr-2">Total ligne HT :</span>
-                        <span className="text-sm font-medium">
-                          {((Number(line.quantity) || 0) * (Number(line.estimated_cost) || 0)).toFixed(2)} MAD
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="border border-border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Produit</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground w-[90px]">Quantité</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground w-[100px]">UdM</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground w-[110px]">Prix unitaire</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground w-[80px]">TVA %</th>
+                      <th className="text-right px-3 py-2 font-medium text-muted-foreground w-[100px]">Hors taxes</th>
+                      <th className="w-[40px]" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((line, idx) => {
+                      const lineHT = (Number(line.quantity) || 0) * (Number(line.estimated_cost) || 0);
+                      return (
+                        <tr key={idx} className="border-b border-border/50 last:border-b-0">
+                          <td className="px-3 py-2">
+                            <SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Produit..." className="min-w-[160px]" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input className="h-8 text-xs" type="number" min={0} value={line.quantity || ""} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Select value={line.unit || "Unité"} onValueChange={v => updateLine(idx, "unit", v)}>
+                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {["Unité", "Kg", "L", "m", "m²", "Boîte", "Carton", "Pièce"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input className="h-8 text-xs" type="number" min={0} placeholder="0,00" value={line.estimated_cost || ""} onChange={e => updateLine(idx, "estimated_cost", Number(e.target.value))} />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input className="h-8 text-xs" type="number" min={0} value={line.tva_rate || ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} />
+                          </td>
+                          <td className="px-3 py-2 text-right font-medium text-sm whitespace-nowrap">
+                            {lineHT.toFixed(2)}
+                          </td>
+                          <td className="px-1 py-2">
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               <Button size="sm" variant="outline" onClick={() => setLines([...lines, emptyLine()])}>
