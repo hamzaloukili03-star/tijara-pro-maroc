@@ -54,9 +54,38 @@ export function InvoiceDetailDialog({
     <Dialog open={!!invoice} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <DialogTitle>{invoice.invoice_number}</DialogTitle>
-            <Badge variant={statusColor[invoice.status]}>{INVOICE_STATUS_LABELS[invoice.status]}</Badge>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <DialogTitle>{invoice.invoice_number}</DialogTitle>
+              <Badge variant={statusColor[invoice.status]}>{INVOICE_STATUS_LABELS[invoice.status]}</Badge>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <PrintButton
+                onPrint={() => printInvoicePdf(invoice.id, invoice, lines, activeCompany?.id, false)}
+                onDownload={() => printInvoicePdf(invoice.id, invoice, lines, activeCompany?.id, true)}
+              />
+              {isDraft && (
+                <Button onClick={() => handleAction(() => onValidate(invoice.id))} disabled={acting} size="sm" className="gap-1">
+                  {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />} Valider
+                </Button>
+              )}
+              {isValidated && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => handleAction(() => onMarkPaid(invoice.id))} disabled={acting} className="gap-1">
+                    <CreditCard className="h-4 w-4" /> Marquer payée
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { onCreateCreditNote(invoice); onClose(); }} className="gap-1">
+                    <FileText className="h-4 w-4" /> Créer un avoir
+                  </Button>
+                </>
+              )}
+              {(isDraft || (isValidated && isAdmin())) && (
+                <Button variant="destructive" size="sm" onClick={() => handleAction(() => onCancel(invoice.id))} disabled={acting} className="gap-1">
+                  <XCircle className="h-4 w-4" /> Annuler
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={onClose}>Fermer</Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -103,33 +132,7 @@ export function InvoiceDetailDialog({
           />
         </div>
 
-        <DialogFooter className="flex-wrap gap-2">
-          <PrintButton
-            onPrint={() => printInvoicePdf(invoice.id, invoice, lines, activeCompany?.id, false)}
-            onDownload={() => printInvoicePdf(invoice.id, invoice, lines, activeCompany?.id, true)}
-          />
-          {isDraft && (
-            <Button onClick={() => handleAction(() => onValidate(invoice.id))} disabled={acting} className="gap-1">
-              {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />} Valider
-            </Button>
-          )}
-          {isValidated && (
-            <>
-              <Button variant="outline" onClick={() => handleAction(() => onMarkPaid(invoice.id))} disabled={acting} className="gap-1">
-                <CreditCard className="h-4 w-4" /> Marquer payée
-              </Button>
-              <Button variant="outline" onClick={() => { onCreateCreditNote(invoice); onClose(); }} className="gap-1">
-                <FileText className="h-4 w-4" /> Créer un avoir
-              </Button>
-            </>
-          )}
-          {(isDraft || (isValidated && isAdmin())) && (
-            <Button variant="destructive" onClick={() => handleAction(() => onCancel(invoice.id))} disabled={acting} className="gap-1">
-              <XCircle className="h-4 w-4" /> Annuler
-            </Button>
-          )}
-          <Button variant="outline" onClick={onClose}>Fermer</Button>
-        </DialogFooter>
+        
       </DialogContent>
     </Dialog>
   );
