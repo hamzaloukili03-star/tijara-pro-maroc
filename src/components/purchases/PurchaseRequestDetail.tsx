@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Printer, Mail, FileText, Edit } from "lucide-react";
+import { Loader2, Printer, Mail, FileText, Edit, Paperclip } from "lucide-react";
 import { PURCHASE_REQUEST_STATUS, getStatus } from "@/lib/status-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
   const [lines, setLines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingPO, setCreatingPO] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
   const { roles } = useAuth();
   const isAdmin = roles.some(r => ["super_admin", "admin"].includes(r));
   const { settings: companySettings } = useCompanySettings();
@@ -103,32 +104,36 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            {item.number}
-            <Badge className={`${cfg.className} border-0 text-xs`}>{cfg.label}</Badge>
-          </DialogTitle>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <DialogTitle>{item.number}</DialogTitle>
+              <Badge className={`${cfg.className} border-0 text-xs`}>{cfg.label}</Badge>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant="outline" onClick={handlePrint}>
+                <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAttach(!showAttach)}>
+                <Paperclip className="h-3.5 w-3.5 mr-1" /> Pièces jointes
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleEmail}>
+                <Mail className="h-3.5 w-3.5 mr-1" /> Envoyer par email
+              </Button>
+              {isDraft && onEdit && (
+                <Button size="sm" variant="outline" onClick={() => { onClose(); onEdit(item); }}>
+                  <Edit className="h-3.5 w-3.5 mr-1" /> Modifier
+                </Button>
+              )}
+              {isApprovedOrValidated && onCreatePO && (
+                <Button size="sm" variant="default" disabled={creatingPO} onClick={handleConfirmOrder}>
+                  {creatingPO ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <FileText className="h-3.5 w-3.5 mr-1" />}
+                  Confirmer la commande
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={onClose}>Fermer</Button>
+            </div>
+          </div>
         </DialogHeader>
-
-        {/* Action bar */}
-        <div className="flex items-center gap-2 flex-wrap border-b border-border pb-3 mb-4">
-          <Button size="sm" variant="outline" onClick={handlePrint}>
-            <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleEmail}>
-            <Mail className="h-3.5 w-3.5 mr-1" /> Envoyer par email
-          </Button>
-          {isDraft && onEdit && (
-            <Button size="sm" variant="outline" onClick={() => { onClose(); onEdit(item); }}>
-              <Edit className="h-3.5 w-3.5 mr-1" /> Modifier
-            </Button>
-          )}
-          {isApprovedOrValidated && onCreatePO && (
-            <Button size="sm" variant="default" disabled={creatingPO} onClick={handleConfirmOrder}>
-              {creatingPO ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <FileText className="h-3.5 w-3.5 mr-1" />}
-              Confirmer la commande
-            </Button>
-          )}
-        </div>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -209,12 +214,14 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
           })()}
 
           {/* Pièces jointes (devis fournisseur scanné, etc.) */}
-          <DocumentAttachmentsPanel
-            docType="purchase_request"
-            docId={item.id}
-            companyId={activeCompany?.id}
-            readOnly={!isDraft && !isAdmin}
-          />
+          {showAttach && (
+            <DocumentAttachmentsPanel
+              docType="purchase_request"
+              docId={item.id}
+              companyId={activeCompany?.id}
+              readOnly={!isDraft && !isAdmin}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
