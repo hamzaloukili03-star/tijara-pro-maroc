@@ -129,6 +129,21 @@ export default function TemplateEditorPage() {
     });
   }, []);
 
+  const addEmptyBlock = useCallback(() => {
+    setConfig((prev) => {
+      const maxOrder = Math.max(...prev.blocks.map(b => b.order), -1);
+      const newBlock: TemplateBlock = {
+        id: `empty_${Date.now()}`,
+        type: "empty",
+        label: "Bloc vide",
+        visible: true,
+        order: maxOrder + 1,
+        styles: { fontSize: 8, spacing: 40 },
+      };
+      return { ...prev, blocks: [...prev.blocks, newBlock] };
+    });
+  }, []);
+
   const removeBlock = useCallback((blockId: string) => {
     setConfig((prev) => ({
       ...prev,
@@ -235,9 +250,14 @@ export default function TemplateEditorPage() {
             <Card className="p-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-foreground">Blocs</h3>
-                <Button variant="ghost" size="sm" onClick={addCustomTextBlock} className="h-7 w-7 p-0" title="Ajouter un bloc texte">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={addCustomTextBlock} className="h-7 px-1.5 text-[10px] gap-1" title="Ajouter un bloc texte">
+                    <Plus className="h-3.5 w-3.5" /> Texte
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={addEmptyBlock} className="h-7 px-1.5 text-[10px] gap-1" title="Ajouter un bloc vide">
+                    <Plus className="h-3.5 w-3.5" /> Vide
+                  </Button>
+                </div>
               </div>
               <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="blocks">
@@ -261,14 +281,13 @@ export default function TemplateEditorPage() {
                               </div>
                               <span className="flex-1 truncate">{block.label}</span>
                               {!block.visible && <EyeOff className="h-3 w-3 text-muted-foreground" />}
-                              {block.type === "custom_text" && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
-                                  className="p-0.5 hover:bg-destructive/10 rounded text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              )}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
+                                className="p-0.5 hover:bg-destructive/10 rounded text-destructive"
+                                title="Supprimer le bloc"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
                             </div>
                           )}
                         </Draggable>
@@ -390,6 +409,11 @@ export default function TemplateEditorPage() {
                           {block.customContent || "Texte personnalisé..."}
                         </div>
                       )}
+                      {block.type === "empty" && (
+                        <div className="py-2 border border-dashed border-muted-foreground/30 rounded text-center text-[5px] text-muted-foreground italic">
+                          Bloc vide
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -509,29 +533,6 @@ export default function TemplateEditorPage() {
                         />
                       </div>
 
-                      <div>
-                        <Label className="text-xs">Position horizontale ({selectedBlock.styles.offsetX || 0}px)</Label>
-                        <Slider
-                          value={[selectedBlock.styles.offsetX || 0]}
-                          onValueChange={([v]) => updateBlockStyle(selectedBlock.id, "offsetX", v)}
-                          min={-50}
-                          max={50}
-                          step={1}
-                          className="mt-1"
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Position verticale ({selectedBlock.styles.offsetY || 0}px)</Label>
-                        <Slider
-                          value={[selectedBlock.styles.offsetY || 0]}
-                          onValueChange={([v]) => updateBlockStyle(selectedBlock.id, "offsetY", v)}
-                          min={-30}
-                          max={30}
-                          step={1}
-                          className="mt-1"
-                        />
-                      </div>
 
                       {selectedBlock.styles.color !== undefined && (
                         <div>
