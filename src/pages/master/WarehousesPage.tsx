@@ -24,7 +24,7 @@ export default function WarehousesPage() {
   const { data, loading, create, update, remove } = useCrud<WarehouseData>({ table: "warehouses", orderBy: "code", ascending: true });
 
   return (
-    <AppLayout title="Liste des Dépôts" subtitle="Gestion des emplacements de stockage">
+    <AppLayout title="Liste des Dépôts">
       <MasterDataPage
         title="Dépôt"
         icon={<Warehouse className="h-8 w-8" />}
