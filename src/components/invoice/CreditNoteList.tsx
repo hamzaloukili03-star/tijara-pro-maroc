@@ -85,6 +85,7 @@ export function CreditNoteList({ linkedInvoice, onClearLinked }: CreditNoteListP
       total_tva: Math.round(totalTva * 100) / 100,
       total_ttc: Math.round(totalTtc * 100) / 100,
       created_by: (await supabase.auth.getUser()).data.user?.id || undefined,
+      company_id: activeCompany?.id || undefined,
     };
     if (cnType === "client") cn.customer_id = partnerId;
     else cn.supplier_id = partnerId;
