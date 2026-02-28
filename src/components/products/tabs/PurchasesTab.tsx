@@ -1,6 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Product } from "@/hooks/useProducts";
+import { useUnitsOfMeasure } from "@/hooks/useUnitsOfMeasure";
 
 interface PurchasesTabProps {
   form: Partial<Product>;
@@ -8,6 +10,8 @@ interface PurchasesTabProps {
 }
 
 export function PurchasesTab({ form, updateField }: PurchasesTabProps) {
+  const { activeUnits, getConversionFactor } = useUnitsOfMeasure();
+
   if (!form.can_be_purchased) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -17,6 +21,10 @@ export function PurchasesTab({ form, updateField }: PurchasesTabProps) {
     );
   }
 
+  const convFactor = form.purchase_unit && form.unit && form.purchase_unit !== form.unit
+    ? getConversionFactor(form.purchase_unit, form.unit)
+    : null;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl">
       <div>
@@ -25,8 +33,27 @@ export function PurchasesTab({ form, updateField }: PurchasesTabProps) {
       </div>
       <div>
         <Label htmlFor="purchase_unit_tab">Unité d'achat</Label>
-        <Input id="purchase_unit_tab" value={form.purchase_unit || "Unité"} onChange={(e) => updateField("purchase_unit", e.target.value)} />
+        {activeUnits.length > 0 ? (
+          <Select value={form.purchase_unit || "Unité"} onValueChange={(v) => updateField("purchase_unit", v)}>
+            <SelectTrigger id="purchase_unit_tab"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {activeUnits.map((u) => (
+                <SelectItem key={u.id} value={u.name}>{u.name} ({u.symbol})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input id="purchase_unit_tab" value={form.purchase_unit || "Unité"} onChange={(e) => updateField("purchase_unit", e.target.value)} />
+        )}
       </div>
+
+      {convFactor !== null && (
+        <div className="sm:col-span-2 bg-muted/50 rounded-md p-3 text-sm">
+          <span className="font-medium">Conversion :</span>{" "}
+          1 {form.purchase_unit} = {convFactor} {form.unit}
+        </div>
+      )}
+
       <div className="sm:col-span-2">
         <p className="text-sm text-muted-foreground">
           Le coût d'achat peut être surchargé au niveau de chaque variante.
