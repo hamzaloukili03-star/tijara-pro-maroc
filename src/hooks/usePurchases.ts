@@ -225,10 +225,25 @@ export function usePurchaseRequests() {
     return po;
   };
 
+  const remove = async (id: string) => {
+    // Only allow deleting draft requests
+    const item = items.find(i => i.id === id);
+    if (item && item.status !== "draft") {
+      toast({ title: "Suppression impossible", description: "Seules les demandes en brouillon peuvent être supprimées.", variant: "destructive" });
+      return;
+    }
+    await (supabase as any).from("purchase_request_lines").delete().eq("request_id", id);
+    const { error } = await (supabase as any).from("purchase_requests").delete().eq("id", id);
+    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
+    await auditLog("delete_purchase_request", "purchase_requests", id);
+    toast({ title: "Demande supprimée" });
+    await fetch();
+  };
+
   // legacy compat
   const validate = submit;
 
-  return { items, loading, fetch, create, update, submit, approve, refuse, cancel, getLines, createPOFromRequest, validate };
+  return { items, loading, fetch, create, update, submit, approve, refuse, cancel, remove, getLines, createPOFromRequest, validate };
 }
 
 // ─────────────────────────────────────────────
