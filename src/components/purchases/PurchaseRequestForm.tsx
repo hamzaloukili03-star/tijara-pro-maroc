@@ -176,27 +176,20 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
 
           {loading ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Lignes</Label>
+              <Label className="text-base font-semibold">Liste des Produits</Label>
               <div className="space-y-4">
                 {lines.map((line, idx) => {
                   const sku = getProductCode(line.product_id);
                   return (
                     <div key={idx} className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Ligne {idx + 1}</span>
+                      <div className="flex items-end justify-end">
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">Produit</Label>
-                          <SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Sélectionner un produit..." />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">Description</Label>
-                          <Input className="h-9" placeholder="Description du produit/service" value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} />
-                        </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Produit</Label>
+                        <SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Sélectionner un produit..." />
                       </div>
                       {sku && (
                         <div className="text-xs text-muted-foreground">
@@ -238,6 +231,10 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
                 })}
               </div>
 
+              <Button size="sm" variant="outline" onClick={() => setLines([...lines, emptyLine()])}>
+                <Plus className="h-3 w-3 mr-1" /> Ajouter une ligne
+              </Button>
+
               {/* Totals summary */}
               {lines.length > 0 && (() => {
                 const totalHT = lines.reduce((sum, l) => sum + (Number(l.quantity) || 0) * (Number(l.estimated_cost) || 0), 0);
@@ -263,10 +260,6 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
                   </div>
                 );
               })()}
-
-              <Button size="sm" variant="outline" onClick={() => setLines([...lines, emptyLine()])}>
-                <Plus className="h-3 w-3 mr-1" /> Ajouter une ligne
-              </Button>
             </div>
           )}
 
