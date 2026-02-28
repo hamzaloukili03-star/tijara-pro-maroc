@@ -211,9 +211,43 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
                         <Input className="h-9" type="number" placeholder="0" min={0} value={line.tva_rate || ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} />
                       </div>
                     </div>
+                    {/* Line total */}
+                    <div className="flex justify-end pt-1 border-t border-border/30">
+                      <span className="text-xs text-muted-foreground mr-2">Total ligne HT :</span>
+                      <span className="text-sm font-medium">
+                        {((Number(line.quantity) || 0) * (Number(line.estimated_cost) || 0)).toFixed(2)} MAD
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Totals summary */}
+              {lines.length > 0 && (() => {
+                const totalHT = lines.reduce((sum, l) => sum + (Number(l.quantity) || 0) * (Number(l.estimated_cost) || 0), 0);
+                const totalTVA = lines.reduce((sum, l) => {
+                  const ht = (Number(l.quantity) || 0) * (Number(l.estimated_cost) || 0);
+                  return sum + ht * (Number(l.tva_rate) || 0) / 100;
+                }, 0);
+                const totalTTC = totalHT + totalTVA;
+                return (
+                  <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total HT</span>
+                      <span className="font-medium">{totalHT.toFixed(2)} MAD</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total TVA</span>
+                      <span className="font-medium">{totalTVA.toFixed(2)} MAD</span>
+                    </div>
+                    <div className="flex justify-between text-base font-semibold border-t border-border pt-2">
+                      <span>Total TTC</span>
+                      <span>{totalTTC.toFixed(2)} MAD</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <Button size="sm" variant="outline" onClick={() => setLines([...lines, emptyLine()])}>
                 <Plus className="h-3 w-3 mr-1" /> Ajouter une ligne
               </Button>

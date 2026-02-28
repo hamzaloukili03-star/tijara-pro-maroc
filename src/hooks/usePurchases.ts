@@ -73,11 +73,14 @@ export function usePurchaseRequests() {
   const fetch = useCallback(async () => {
     if (!companyId) { setItems([]); setLoading(false); return; }
     setLoading(true);
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("purchase_requests")
-      .select("*, supplier:suppliers(name, code), requester:profiles(full_name), currency:currencies(code, symbol)")
+      .select("*, supplier:suppliers(name, code), currency:currencies(code, symbol)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Erreur fetch purchase_requests:", error);
+    }
     setLoading(false);
     setItems((data || []).map((d: any) => ({ ...d, number: d.request_number, date: d.request_date || d.created_at?.split("T")[0] })));
   }, [companyId]);
@@ -136,7 +139,6 @@ export function usePurchaseRequests() {
   const update = async (id: string, payload: any, lines?: Partial<PurchaseLine>[]) => {
     const { error } = await (supabase as any).from("purchase_requests").update(payload).eq("id", id);
     if (error) { console.error("Erreur mise à jour purchase_requests:", error); toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
-    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
     if (lines) {
       await (supabase as any).from("purchase_request_lines").delete().eq("request_id", id);
       for (let i = 0; i < lines.length; i++) {
