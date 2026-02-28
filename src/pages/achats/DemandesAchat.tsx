@@ -16,6 +16,7 @@ const DemandesAchat = () => {
         loading={hook.loading}
         onNew={() => { setEditItem(null); setShowForm(true); }}
         onEdit={(item) => { setEditItem(item); setShowForm(true); }}
+        onDelete={hook.remove}
         onSubmit={hook.submit}
         onApprove={hook.approve}
         onRefuse={hook.refuse}
