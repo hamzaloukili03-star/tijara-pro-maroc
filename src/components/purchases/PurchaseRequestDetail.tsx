@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { PURCHASE_REQUEST_STATUS, getStatus } from "@/lib/status-config";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   item: any;
@@ -14,7 +15,6 @@ export function PurchaseRequestDetail({ item, onClose }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { supabase } = require("@/integrations/supabase/client");
     (supabase as any).from("purchase_request_lines")
       .select("*, product:products(name, code)")
       .eq("request_id", item.id).order("sort_order")
