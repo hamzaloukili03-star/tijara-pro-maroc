@@ -54,7 +54,7 @@ export function ProductImageUpload({ productId, imageUrl, onImageChange }: Produ
     <div className="space-y-2">
       <p className="text-sm font-medium text-foreground">Image produit</p>
       {preview ? (
-        <div className="relative w-28 h-28 rounded-lg border border-border overflow-hidden bg-muted group">
+        <div className="relative w-36 h-36 rounded-lg border border-border overflow-hidden bg-muted group">
           <img src={preview} alt="Produit" className="w-full h-full object-contain" />
           <button
             type="button"
@@ -65,7 +65,7 @@ export function ProductImageUpload({ productId, imageUrl, onImageChange }: Produ
           </button>
         </div>
       ) : (
-        <label className="flex flex-col items-center justify-center w-28 h-28 rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 cursor-pointer transition-colors">
+        <label className="flex flex-col items-center justify-center w-36 h-36 rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 cursor-pointer transition-colors">
           {uploading ? (
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : (
