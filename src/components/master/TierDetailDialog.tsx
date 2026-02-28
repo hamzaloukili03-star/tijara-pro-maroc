@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, AlertTriangle, Building2, Landmark, Contact } from "lucide-react";
+import { Loader2, AlertTriangle, Building2, Landmark, Contact, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { ContactsList } from "./ContactsList";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateEmail, normalizeEmail } from "@/lib/email-validation";
@@ -159,18 +160,22 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
         )}
 
         <Tabs value={tab} onValueChange={setTab} className="px-6 pt-4">
-          <TabsList className="w-full grid grid-cols-3 mb-4">
+          <TabsList className="w-full grid grid-cols-4 mb-4">
             <TabsTrigger value="general" className="gap-1.5 text-xs">
               <Building2 className="h-3.5 w-3.5" />
-              Informations Générales
+              Général
             </TabsTrigger>
             <TabsTrigger value="bank" className="gap-1.5 text-xs">
               <Landmark className="h-3.5 w-3.5" />
-              Informations Bancaires
+              Bancaire
             </TabsTrigger>
             <TabsTrigger value="contact" className="gap-1.5 text-xs">
               <Contact className="h-3.5 w-3.5" />
-              Informations Contact
+              Contact
+            </TabsTrigger>
+            <TabsTrigger value="contacts_list" className="gap-1.5 text-xs" disabled={isNew}>
+              <Users className="h-3.5 w-3.5" />
+              Contacts
             </TabsTrigger>
           </TabsList>
 
@@ -285,6 +290,11 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
                 />
               </Field>
             </div>
+          </TabsContent>
+
+          {/* TAB 4: Contacts List */}
+          <TabsContent value="contacts_list" className="mt-0">
+            <ContactsList tierId={item?.id || null} tierType={type} />
           </TabsContent>
         </Tabs>
 
