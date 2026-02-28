@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, AlertTriangle, Building2, Landmark, Contact, Users } from "lucide-react";
+import { Loader2, AlertTriangle, Building2, Landmark, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ContactsList } from "./ContactsList";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,7 +160,7 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
         )}
 
         <Tabs value={tab} onValueChange={setTab} className="px-6 pt-4">
-          <TabsList className="w-full grid grid-cols-4 mb-4">
+          <TabsList className="w-full grid grid-cols-3 mb-4">
             <TabsTrigger value="general" className="gap-1.5 text-xs">
               <Building2 className="h-3.5 w-3.5" />
               Général
@@ -168,10 +168,6 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
             <TabsTrigger value="bank" className="gap-1.5 text-xs">
               <Landmark className="h-3.5 w-3.5" />
               Bancaire
-            </TabsTrigger>
-            <TabsTrigger value="contact" className="gap-1.5 text-xs">
-              <Contact className="h-3.5 w-3.5" />
-              Contact
             </TabsTrigger>
             <TabsTrigger value="contacts_list" className="gap-1.5 text-xs" disabled={isNew}>
               <Users className="h-3.5 w-3.5" />
@@ -261,38 +257,7 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
             </div>
           </TabsContent>
 
-          {/* TAB 3: Contact */}
-          <TabsContent value="contact" className="mt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Nom du contact principal">
-                <Input value={form.contact_name || ""} onChange={(e) => set("contact_name", e.target.value)} placeholder="Nom complet" />
-              </Field>
-              <Field label="Téléphone">
-                <Input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="+212..." />
-              </Field>
-              <Field label="Téléphone secondaire">
-                <Input value={form.phone2 || ""} onChange={(e) => set("phone2", e.target.value)} placeholder="+212..." />
-              </Field>
-              <Field label="Email">
-                <Input type="email" value={form.email || ""} onChange={(e) => { set("email", e.target.value); setEmailError(null); }} placeholder="email@entreprise.ma" className={emailError ? "border-destructive" : ""} />
-                {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
-              </Field>
-              <Field label="Fax">
-                <Input value={form.fax || ""} onChange={(e) => set("fax", e.target.value)} placeholder="Fax (optionnel)" />
-              </Field>
-              <Field label="Notes" span2>
-                <textarea
-                  value={form.notes || ""}
-                  onChange={(e) => set("notes", e.target.value)}
-                  placeholder="Notes internes..."
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  rows={3}
-                />
-              </Field>
-            </div>
-          </TabsContent>
-
-          {/* TAB 4: Contacts List */}
+          {/* TAB 3: Contacts List */}
           <TabsContent value="contacts_list" className="mt-0">
             <ContactsList tierId={item?.id || null} tierType={type} />
           </TabsContent>
