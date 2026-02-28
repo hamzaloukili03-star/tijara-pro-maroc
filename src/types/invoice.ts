@@ -45,6 +45,7 @@ export interface CreditNote {
   invoice_id: string | null;
   customer_id: string | null;
   supplier_id: string | null;
+  company_id: string | null;
   reason: string;
   subtotal_ht: number;
   total_tva: number;
