@@ -105,11 +105,15 @@ export function usePurchaseRequests() {
       requested_by: userId,
       company_id: companyId,
     }).select().single();
-    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
+    if (error) {
+      console.error("Erreur insertion purchase_requests:", error);
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return null;
+    }
 
     for (let i = 0; i < payload.lines.length; i++) {
       const l = payload.lines[i];
-      await (supabase as any).from("purchase_request_lines").insert({
+      const { error: lineError } = await (supabase as any).from("purchase_request_lines").insert({
         request_id: data.id,
         product_id: l.product_id || null,
         description: l.description || "",
@@ -119,6 +123,9 @@ export function usePurchaseRequests() {
         tva_rate: l.tva_rate || 0,
         sort_order: i,
       });
+      if (lineError) {
+        console.error("Erreur insertion ligne DA:", lineError);
+      }
     }
     await auditLog("create_purchase_request", "purchase_requests", data.id, num as string);
     toast({ title: "Demande créée", description: num as string });
@@ -128,6 +135,7 @@ export function usePurchaseRequests() {
 
   const update = async (id: string, payload: any, lines?: Partial<PurchaseLine>[]) => {
     const { error } = await (supabase as any).from("purchase_requests").update(payload).eq("id", id);
+    if (error) { console.error("Erreur mise à jour purchase_requests:", error); toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
     if (lines) {
       await (supabase as any).from("purchase_request_lines").delete().eq("request_id", id);

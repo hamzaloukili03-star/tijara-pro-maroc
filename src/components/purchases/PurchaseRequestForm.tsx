@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import type { PurchaseLine } from "@/hooks/usePurchases";
 
 interface Props {
@@ -32,6 +33,7 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
   const [lines, setLines] = useState<Partial<PurchaseLine>[]>(editItem ? [] : [emptyLine()]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [supplierError, setSupplierError] = useState(false);
 
   useEffect(() => {
     (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
@@ -65,27 +67,52 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    if (editItem) {
-      await hook.update(editItem.id, {
-        supplier_id: supplierId || null,
-        needed_date: neededDate || null,
-        supplier_reference: supplierReference || null,
-        currency_id: currencyId || null,
-        notes,
-      }, lines);
-    } else {
-      await hook.create({
-        supplierId: supplierId || undefined,
-        neededDate: neededDate || undefined,
-        supplierReference: supplierReference || undefined,
-        currencyId: currencyId || undefined,
-        notes,
-        lines,
-      });
+    // Validate supplier is required
+    if (!supplierId) {
+      setSupplierError(true);
+      toast({ title: "Champ obligatoire", description: "Fournisseur obligatoire", variant: "destructive" });
+      return;
     }
-    setSaving(false);
-    onClose();
+    setSupplierError(false);
+
+    setSaving(true);
+    try {
+      if (editItem) {
+        const result = await hook.update(editItem.id, {
+          supplier_id: supplierId,
+          needed_date: neededDate || null,
+          supplier_reference: supplierReference || null,
+          currency_id: currencyId || null,
+          notes,
+        }, lines);
+        if (result === false) {
+          console.error("Échec de la mise à jour de la demande d'achat");
+          setSaving(false);
+          return;
+        }
+        toast({ title: "Demande d'achat mise à jour" });
+      } else {
+        const result = await hook.create({
+          supplierId,
+          neededDate: neededDate || undefined,
+          supplierReference: supplierReference || undefined,
+          currencyId: currencyId || undefined,
+          notes,
+          lines,
+        });
+        if (!result) {
+          console.error("Échec de la création de la demande d'achat");
+          setSaving(false);
+          return;
+        }
+      }
+      onClose();
+    } catch (err: any) {
+      console.error("Erreur sauvegarde demande d'achat:", err);
+      toast({ title: "Erreur", description: err?.message || "Erreur inattendue lors de la sauvegarde", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const supplierOptions = suppliers.map(s => ({ value: s.id, label: `${s.code} — ${s.name}` }));
@@ -93,16 +120,27 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editItem ? `Modifier DA — ${editItem.number}` : "Nouvelle demande d'achat"}</DialogTitle>
+          <DialogDescription>Remplissez les informations de la demande d'achat</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Fournisseur (optionnel)</Label>
-              <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={setSupplierId} placeholder="Sélectionner..." />
+              <Label className={supplierError ? "text-destructive" : ""}>
+                Fournisseur <span className="text-destructive">*</span>
+              </Label>
+              <SearchableSelect
+                options={supplierOptions}
+                value={supplierId}
+                onValueChange={(v) => { setSupplierId(v); setSupplierError(false); }}
+                placeholder="Sélectionner un fournisseur..."
+              />
+              {supplierError && (
+                <p className="text-sm text-destructive mt-1">Fournisseur obligatoire</p>
+              )}
             </div>
             <div>
               <Label>Référence fournisseur</Label>
@@ -129,38 +167,49 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
           </div>
 
           {loading ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
-            <div className="space-y-2">
-              <Label>Lignes</Label>
-              <div className="space-y-2">
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Lignes</Label>
+              <div className="space-y-4">
                 {lines.map((line, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-muted/30 p-2 rounded-md">
-                    <div className="col-span-3">
-                      <SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Produit..." />
-                    </div>
-                    <div className="col-span-3">
-                      <Input className="h-8 text-xs" placeholder="Description" value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} />
-                    </div>
-                    <div className="col-span-1">
-                      <Input className="h-8 text-xs" type="number" placeholder="Qté" min={0} value={line.quantity || ""} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} />
-                    </div>
-                    <div className="col-span-1">
-                      <Select value={line.unit || "Unité"} onValueChange={v => updateLine(idx, "unit", v)}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["Unité", "Kg", "L", "m", "m²", "Boîte", "Carton", "Pièce"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-2">
-                      <Input className="h-8 text-xs" type="number" placeholder="Coût estim." min={0} value={line.estimated_cost || ""} onChange={e => updateLine(idx, "estimated_cost", Number(e.target.value))} />
-                    </div>
-                    <div className="col-span-1">
-                      <Input className="h-8 text-xs" type="number" placeholder="TVA%" min={0} value={line.tva_rate || ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} />
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}>
+                  <div key={idx} className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">Ligne {idx + 1}</span>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}>
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Produit</Label>
+                        <SearchableSelect options={productOptions} value={line.product_id || ""} onValueChange={v => updateLine(idx, "product_id", v)} placeholder="Sélectionner un produit..." />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Description</Label>
+                        <Input className="h-9" placeholder="Description du produit/service" value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Quantité</Label>
+                        <Input className="h-9" type="number" placeholder="1" min={0} value={line.quantity || ""} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Unité</Label>
+                        <Select value={line.unit || "Unité"} onValueChange={v => updateLine(idx, "unit", v)}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {["Unité", "Kg", "L", "m", "m²", "Boîte", "Carton", "Pièce"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">Coût estimatif</Label>
+                        <Input className="h-9" type="number" placeholder="0.00" min={0} value={line.estimated_cost || ""} onChange={e => updateLine(idx, "estimated_cost", Number(e.target.value))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1">TVA %</Label>
+                        <Input className="h-9" type="number" placeholder="0" min={0} value={line.tva_rate || ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} />
+                      </div>
                     </div>
                   </div>
                 ))}
