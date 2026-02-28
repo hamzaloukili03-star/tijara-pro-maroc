@@ -4,12 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Product, useProductImages, useProductFiles } from "@/hooks/useProducts";
+import { Product, useProductFiles } from "@/hooks/useProducts";
 import { ProductImageUpload } from "@/components/ProductImageUpload";
 import { CategoryDropdowns } from "@/components/products/CategoryDropdowns";
 import { useProductCategories } from "@/hooks/useProductCategories";
 import { useUnitsOfMeasure } from "@/hooks/useUnitsOfMeasure";
-import { Upload, Trash2, Download, FileText, ImagePlus, X } from "lucide-react";
+import { Upload, Trash2, Download, FileText } from "lucide-react";
 
 interface GeneralTabProps {
   form: Partial<Product> & { category_id?: string | null };
@@ -26,19 +26,8 @@ const productTypes = [
 export function GeneralTab({ form, updateField, productId }: GeneralTabProps) {
   const { categories } = useProductCategories();
   const { activeUnits } = useUnitsOfMeasure();
-  const { images, addImage, deleteImage } = useProductImages(productId || "");
   const { files, addFile, deleteFile } = useProductFiles(productId || "");
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList || !productId) return;
-    for (let i = 0; i < fileList.length; i++) {
-      await addImage(productId, fileList[i]);
-    }
-    if (imageInputRef.current) imageInputRef.current.value = "";
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -267,42 +256,6 @@ export function GeneralTab({ form, updateField, productId }: GeneralTabProps) {
       {/* Attachments Section - only when editing */}
       {productId && (
         <div className="space-y-6 border-t border-border pt-6">
-          {/* Images */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold">Images du produit</h3>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => imageInputRef.current?.click()}>
-                <ImagePlus className="h-4 w-4" /> Ajouter des images
-              </Button>
-              <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-            </div>
-            {images.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground border-2 border-dashed border-border rounded-lg">
-                <ImagePlus className="h-7 w-7 mx-auto mb-1.5 opacity-50" />
-                <p className="text-sm">Aucune image. Cliquez pour en ajouter.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                {images.map((img) => (
-                  <div key={img.id} className="relative group rounded-lg border border-border overflow-hidden aspect-square bg-muted">
-                    <img src={img.image_url} alt="" className="w-full h-full object-cover" />
-                    <button
-                      onClick={() => deleteImage(img.id)}
-                      className="absolute top-1 right-1 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                    {img.is_primary && (
-                      <span className="absolute bottom-1 left-1 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                        Principale
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Files */}
           <div>
             <div className="flex items-center justify-between mb-3">
