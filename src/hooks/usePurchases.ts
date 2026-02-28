@@ -220,8 +220,11 @@ export function usePurchaseRequests() {
         total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: i, company_id: companyId,
       });
     }
+    // Mark DA as confirmed so it can't be confirmed again
+    await (supabase as any).from("purchase_requests").update({ status: "confirmed" }).eq("id", requestId);
     await auditLog("create_po_from_request", "purchase_orders", po.id, `From DA: ${req.request_number}`);
     toast({ title: "BC fournisseur (brouillon) créé", description: num as string });
+    await fetch();
     return po;
   };
 
@@ -260,7 +263,7 @@ export function usePurchaseOrders() {
     setLoading(true);
     const { data } = await (supabase as any)
       .from("purchase_orders")
-      .select("*, supplier:suppliers(name, code), warehouse:warehouses(name), request:purchase_requests(request_number)")
+      .select("*, supplier:suppliers(name, code), warehouse:warehouses(name), request:purchase_requests!purchase_orders_purchase_request_id_fkey(request_number)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
