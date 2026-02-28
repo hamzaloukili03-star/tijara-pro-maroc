@@ -34,10 +34,17 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
   const renderBlock = (block: typeof sorted[number]) => {
     const mb = block.styles.spacing || 10;
+    const ox = block.styles.offsetX || 0;
+    const oy = block.styles.offsetY || 0;
+    const positionStyle: React.CSSProperties = {
+      marginLeft: ox > 0 ? ox : 0,
+      marginRight: ox < 0 ? Math.abs(ox) : 0,
+      marginTop: oy,
+    };
 
     if (block.type === "logo") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, display: "flex", justifyContent: "space-between", borderBottom: `2.5px solid ${g.primaryColor}`, paddingBottom: 12 }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, display: "flex", justifyContent: "space-between", borderBottom: `2.5px solid ${g.primaryColor}`, paddingBottom: 12 }}>
           <div>
             <div style={{ fontSize: block.styles.fontSize || 13, fontWeight: 700, color: g.secondaryColor }}>{PH.company}</div>
             {block.fields?.forme_juridique && <div style={{ fontSize: 8, color: "#4A6070", fontStyle: "italic" }}>{"{{forme_juridique}}"}</div>}
@@ -57,7 +64,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
     if (block.type === "title") {
       return (
         <div key={block.id} style={{
-          marginBottom: mb, background: block.styles.backgroundColor || g.secondaryColor,
+          marginBottom: mb, ...positionStyle, background: block.styles.backgroundColor || g.secondaryColor,
           borderRadius: 4, padding: "9px 16px", display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <span style={{ fontSize: block.styles.fontSize || 16, fontWeight: 700, color: block.styles.color || "#fff", letterSpacing: 1.5 }}>
@@ -78,7 +85,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
         block.fields?.payment_terms !== false && { label: "Conditions", value: PH.paymentTerms },
       ].filter(Boolean) as { label: string; value: string }[];
       return (
-        <div key={block.id} style={{ marginBottom: mb, display: "flex", gap: 8 }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, display: "flex", gap: 8 }}>
           {items.map((item, i) => (
             <div key={i} style={{ flex: 1, background: "#EBF8FD", borderRadius: 4, padding: "6px 8px", borderLeft: `3px solid ${g.primaryColor}` }}>
               <div style={{ fontSize: 7, fontWeight: 700, color: "#4A6070", textTransform: "uppercase", marginBottom: 2 }}>{item.label}</div>
@@ -91,7 +98,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "party") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, display: "flex", gap: 10 }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, display: "flex", gap: 10 }}>
           <div style={{ flex: 1, border: "1px solid #D4E2E9", borderRadius: 5, overflow: "hidden" }}>
             <div style={{ background: g.secondaryColor, padding: "5px 10px" }}>
               <span style={{ fontSize: 7.5, color: "#fff", fontWeight: 700, letterSpacing: 0.8 }}>CLIENT / FOURNISSEUR</span>
@@ -120,7 +127,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
       const f = block.fields || {};
       const placeholderRows = [1, 2, 3];
       return (
-        <div key={block.id} style={{ marginBottom: mb }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: g.secondaryColor }}>
@@ -157,7 +164,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "totals") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, display: "flex", justifyContent: "flex-end" }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, display: "flex", justifyContent: "flex-end" }}>
           <table style={{ width: 210, border: "1px solid #D4E2E9", borderRadius: 5, overflow: "hidden", borderCollapse: "collapse" }}>
             <tbody>
               {block.fields?.total_ht !== false && (
@@ -186,7 +193,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "notes") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, borderLeft: `3px solid ${g.primaryColor}`, background: `${g.primaryColor}10`, padding: "7px 9px", borderRadius: 3 }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, borderLeft: `3px solid ${g.primaryColor}`, background: `${g.primaryColor}10`, padding: "7px 9px", borderRadius: 3 }}>
           <div style={{ fontSize: 7.5, fontWeight: 700, color: "#4A6070", textTransform: "uppercase", marginBottom: 2 }}>Notes</div>
           <div style={{ fontSize: block.styles.fontSize || 8, fontStyle: "italic", color: "#6B8FA0" }}>{"{{notes}}"}</div>
         </div>
@@ -195,7 +202,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "bank") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, background: "#EBF8FD", borderRadius: 3, padding: "6px 8px" }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, background: "#EBF8FD", borderRadius: 3, padding: "6px 8px" }}>
           <div style={{ fontSize: 7, fontWeight: 700, color: g.secondaryColor, textTransform: "uppercase", marginBottom: 3 }}>Coordonnées bancaires</div>
           {block.fields?.bank_name !== false && <div style={{ fontSize: 7 }}><span style={{ color: "#4A6070", width: 55, display: "inline-block" }}>Banque</span> <em style={{ color: "#6B8FA0" }}>{"{{bank.name}}"}</em></div>}
           {block.fields?.rib !== false && <div style={{ fontSize: 7 }}><span style={{ color: "#4A6070", width: 55, display: "inline-block" }}>RIB</span> <em style={{ color: "#6B8FA0" }}>{"{{bank.rib}}"}</em></div>}
@@ -206,7 +213,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "footer") {
       return (
-        <div key={block.id} style={{ borderTop: `1.5px solid ${g.primaryColor}`, paddingTop: 6, textAlign: "center", fontSize: 6.5, color: "#7A919E", fontStyle: "italic" }}>
+        <div key={block.id} style={{ ...positionStyle, borderTop: `1.5px solid ${g.primaryColor}`, paddingTop: 6, textAlign: "center", fontSize: 6.5, color: "#7A919E", fontStyle: "italic" }}>
           {PH.company} — {"{{forme_juridique}}"} au capital de {"{{capital}}"} MAD<br />
           ICE: {PH.ice} | IF: {PH.if_number} | RC: {PH.rc}
         </div>
@@ -215,7 +222,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "custom_text") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, fontSize: block.styles.fontSize || 8, textAlign: block.styles.alignment || "left", color: block.styles.color || "#1A2B3C" }}>
+        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, fontSize: block.styles.fontSize || 8, textAlign: block.styles.alignment || "left", color: block.styles.color || "#1A2B3C" }}>
           {block.customContent || <span style={{ fontStyle: "italic", color: "#6B8FA0" }}>Texte personnalisé...</span>}
         </div>
       );

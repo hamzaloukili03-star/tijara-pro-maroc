@@ -509,6 +509,30 @@ export default function TemplateEditorPage() {
                         />
                       </div>
 
+                      <div>
+                        <Label className="text-xs">Position horizontale ({selectedBlock.styles.offsetX || 0}px)</Label>
+                        <Slider
+                          value={[selectedBlock.styles.offsetX || 0]}
+                          onValueChange={([v]) => updateBlockStyle(selectedBlock.id, "offsetX", v)}
+                          min={-50}
+                          max={50}
+                          step={1}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Position verticale ({selectedBlock.styles.offsetY || 0}px)</Label>
+                        <Slider
+                          value={[selectedBlock.styles.offsetY || 0]}
+                          onValueChange={([v]) => updateBlockStyle(selectedBlock.id, "offsetY", v)}
+                          min={-30}
+                          max={30}
+                          step={1}
+                          className="mt-1"
+                        />
+                      </div>
+
                       {selectedBlock.styles.color !== undefined && (
                         <div>
                           <Label className="text-xs">Couleur texte</Label>

@@ -37,6 +37,8 @@ export interface TemplateBlock {
     backgroundColor?: string;
     spacing?: number;
     alignment?: "left" | "center" | "right";
+    offsetX?: number;
+    offsetY?: number;
   };
   fields?: Record<string, boolean>;
   customContent?: string; // For custom_text blocks
