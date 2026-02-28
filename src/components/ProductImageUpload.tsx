@@ -51,28 +51,27 @@ export function ProductImageUpload({ productId, imageUrl, onImageChange }: Produ
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <p className="text-sm font-medium text-foreground">Image produit</p>
       {preview ? (
-        <div className="relative w-full aspect-video rounded-xl border border-border overflow-hidden bg-muted group">
+        <div className="relative w-28 h-28 rounded-lg border border-border overflow-hidden bg-muted group">
           <img src={preview} alt="Produit" className="w-full h-full object-contain" />
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1 right-1 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
           </button>
         </div>
       ) : (
-        <label className="flex flex-col items-center justify-center w-full aspect-video rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 cursor-pointer transition-colors">
+        <label className="flex flex-col items-center justify-center w-28 h-28 rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/30 cursor-pointer transition-colors">
           {uploading ? (
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : (
             <>
-              <ImagePlus className="h-8 w-8 text-muted-foreground mb-2" />
-              <span className="text-sm text-muted-foreground">Cliquer pour ajouter</span>
-              <span className="text-xs text-muted-foreground/60">JPG, PNG • Max 5 Mo</span>
+              <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
+              <span className="text-[10px] text-muted-foreground">Max 5 Mo</span>
             </>
           )}
           <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
