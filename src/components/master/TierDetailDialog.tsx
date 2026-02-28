@@ -163,11 +163,11 @@ export function TierDetailDialog({ open, onOpenChange, item, isNew, type, onSave
           <TabsList className="w-full grid grid-cols-3 mb-4">
             <TabsTrigger value="general" className="gap-1.5 text-xs">
               <Building2 className="h-3.5 w-3.5" />
-              Général
+              Infos Générales
             </TabsTrigger>
             <TabsTrigger value="bank" className="gap-1.5 text-xs">
               <Landmark className="h-3.5 w-3.5" />
-              Bancaire
+              Infos Bancaires
             </TabsTrigger>
             <TabsTrigger value="contacts_list" className="gap-1.5 text-xs" disabled={isNew}>
               <Users className="h-3.5 w-3.5" />
