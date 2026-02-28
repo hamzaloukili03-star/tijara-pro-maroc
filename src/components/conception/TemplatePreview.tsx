@@ -222,9 +222,15 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
 
     if (block.type === "custom_text") {
       return (
-        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, fontSize: block.styles.fontSize || 8, textAlign: block.styles.alignment || "left", color: block.styles.color || "#1A2B3C" }}>
+        <div key={block.id} style={{ marginBottom: mb, fontSize: block.styles.fontSize || 8, textAlign: block.styles.alignment || "left", color: block.styles.color || "#1A2B3C" }}>
           {block.customContent || <span style={{ fontStyle: "italic", color: "#6B8FA0" }}>Texte personnalisé...</span>}
         </div>
+      );
+    }
+
+    if (block.type === "empty") {
+      return (
+        <div key={block.id} style={{ marginBottom: mb, minHeight: block.styles.spacing || 40 }} />
       );
     }
 

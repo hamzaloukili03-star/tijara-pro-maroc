@@ -23,7 +23,7 @@ export const TEMPLATE_DOC_LABELS: Record<TemplateDocType, string> = {
   facture_client: "Facture Client",
 };
 
-export type TemplateBlockType = "logo" | "title" | "doc_info" | "party" | "lines_table" | "totals" | "notes" | "footer" | "bank" | "custom_text";
+export type TemplateBlockType = "logo" | "title" | "doc_info" | "party" | "lines_table" | "totals" | "notes" | "footer" | "bank" | "custom_text" | "empty";
 
 export interface TemplateBlock {
   id: string;
