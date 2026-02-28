@@ -140,13 +140,12 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-12">Image</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Désignation</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead className="text-right">Prix vente</TableHead>
-                  <TableHead className="text-right">Prix achat</TableHead>
+                   <TableHead className="w-12">Image</TableHead>
+                   <TableHead className="min-w-[160px]">Code</TableHead>
+                   <TableHead>Désignation</TableHead>
+                   <TableHead>Catégorie</TableHead>
+                   <TableHead className="text-right">Prix vente</TableHead>
+                   <TableHead className="text-right">Prix achat</TableHead>
                   <TableHead className="text-right">TVA</TableHead>
                   <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
@@ -165,9 +164,6 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{p.code}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">{TYPE_LABELS[p.product_type] || p.product_type}</Badge>
-                    </TableCell>
                     <TableCell>{p.category || "—"}</TableCell>
                     <TableCell className="text-right">{p.sale_price.toLocaleString("fr-MA")} MAD</TableCell>
                     <TableCell className="text-right">{p.purchase_price.toLocaleString("fr-MA")} MAD</TableCell>
