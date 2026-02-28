@@ -83,7 +83,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
                     <TableCell>{item.supplier?.name || <span className="text-muted-foreground text-xs">Non défini</span>}</TableCell>
                     <TableCell>{item.supplier_reference || "—"}</TableCell>
                     <TableCell>{item.needed_date || "—"}</TableCell>
-                    <TableCell className="text-right font-medium">{Number(item.total_ttc || 0).toLocaleString("fr-MA", { minimumFractionDigits: 2 })} MAD</TableCell>
+                    <TableCell className="text-right font-medium">{Number(item.total_ttc || 0) > 0 ? `${Number(item.total_ttc).toLocaleString("fr-MA", { minimumFractionDigits: 2 })} MAD` : <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell><Badge className={`${cfg.className} border-0`}>{cfg.label}</Badge></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1 flex-wrap">
