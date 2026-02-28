@@ -63,7 +63,8 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onSubmit, o
                 <TableHead>Fournisseur</TableHead>
                 <TableHead>Réf. fournisseur</TableHead>
                 <TableHead>Arrivée prévue</TableHead>
-                <TableHead>Devise</TableHead>
+                <TableHead className="text-right">Montant TTC</TableHead>
+                <TableHead>Statut</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -78,7 +79,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onSubmit, o
                     <TableCell>{item.supplier?.name || <span className="text-muted-foreground text-xs">Non défini</span>}</TableCell>
                     <TableCell>{item.supplier_reference || "—"}</TableCell>
                     <TableCell>{item.needed_date || "—"}</TableCell>
-                    <TableCell>{item.currency?.code || "MAD"}</TableCell>
+                    <TableCell className="text-right font-medium">{Number(item.total_ttc || 0).toLocaleString("fr-MA", { minimumFractionDigits: 2 })} MAD</TableCell>
                     <TableCell><Badge className={`${cfg.className} border-0`}>{cfg.label}</Badge></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1 flex-wrap">
