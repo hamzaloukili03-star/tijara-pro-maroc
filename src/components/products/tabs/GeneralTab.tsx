@@ -24,74 +24,64 @@ export function GeneralTab({ form, updateField }: GeneralTabProps) {
   const { activeUnits } = useUnitsOfMeasure();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left: Image + flags */}
-      <div className="lg:col-span-1">
+    <div className="space-y-6">
+      {/* Top row: Image + Name + Code + Type */}
+      <div className="flex gap-5 items-start">
         <ProductImageUpload
           imageUrl={form.image_url}
           onImageChange={(url) => updateField("image_url", url)}
         />
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="can_be_sold"
-              checked={form.can_be_sold ?? true}
-              onCheckedChange={(v) => updateField("can_be_sold", !!v)}
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-3">
+            <Label htmlFor="name">Nom du produit *</Label>
+            <Input
+              id="name"
+              value={form.name || ""}
+              onChange={(e) => updateField("name", e.target.value)}
+              placeholder="Nom du produit"
             />
-            <Label htmlFor="can_be_sold" className="font-normal cursor-pointer">Peut être vendu</Label>
           </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="can_be_purchased"
-              checked={form.can_be_purchased ?? true}
-              onCheckedChange={(v) => updateField("can_be_purchased", !!v)}
+          <div>
+            <Label htmlFor="code">Référence interne (SKU) *</Label>
+            <Input
+              id="code"
+              value={form.code || ""}
+              onChange={(e) => updateField("code", e.target.value)}
+              placeholder="ART-001"
             />
-            <Label htmlFor="can_be_purchased" className="font-normal cursor-pointer">Peut être acheté</Label>
+          </div>
+          <div>
+            <Label htmlFor="product_type">Type de produit</Label>
+            <Select
+              value={form.product_type || "stockable"}
+              onValueChange={(v) => updateField("product_type", v)}
+            >
+              <SelectTrigger id="product_type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {productTypes.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="barcode">Code-barres</Label>
+            <Input
+              id="barcode"
+              value={form.barcode || ""}
+              onChange={(e) => updateField("barcode", e.target.value)}
+              placeholder="EAN13"
+            />
           </div>
         </div>
       </div>
 
-      {/* Right: Fields */}
-      <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2">
-          <Label htmlFor="name">Nom du produit *</Label>
-          <Input
-            id="name"
-            value={form.name || ""}
-            onChange={(e) => updateField("name", e.target.value)}
-            placeholder="Nom du produit"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="code">Référence interne (SKU) *</Label>
-          <Input
-            id="code"
-            value={form.code || ""}
-            onChange={(e) => updateField("code", e.target.value)}
-            placeholder="ART-001"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="product_type">Type de produit</Label>
-          <Select
-            value={form.product_type || "stockable"}
-            onValueChange={(v) => updateField("product_type", v)}
-          >
-            <SelectTrigger id="product_type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {productTypes.map((t) => (
-                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Category — 3-level cascading dropdowns */}
-        <div className="sm:col-span-2">
+      {/* Fields grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Category */}
+        <div className="sm:col-span-2 lg:col-span-3">
           <Label>Catégorie</Label>
           <CategoryDropdowns
             value={form.category_id ?? null}
@@ -100,17 +90,6 @@ export function GeneralTab({ form, updateField }: GeneralTabProps) {
           />
         </div>
 
-        <div>
-          <Label htmlFor="barcode">Code-barres</Label>
-          <Input
-            id="barcode"
-            value={form.barcode || ""}
-            onChange={(e) => updateField("barcode", e.target.value)}
-            placeholder="EAN13"
-          />
-        </div>
-
-        {/* Unit of sale — from UoM list */}
         <div>
           <Label htmlFor="unit">Unité de vente</Label>
           {activeUnits.length > 0 ? (
@@ -139,7 +118,6 @@ export function GeneralTab({ form, updateField }: GeneralTabProps) {
           )}
         </div>
 
-        {/* Unit of purchase — from UoM list */}
         <div>
           <Label htmlFor="purchase_unit">Unité d'achat</Label>
           {activeUnits.length > 0 ? (
@@ -221,7 +199,26 @@ export function GeneralTab({ form, updateField }: GeneralTabProps) {
           </div>
         )}
 
-        <div className="sm:col-span-2">
+        <div className="flex items-center gap-4 sm:col-span-2 lg:col-span-3">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="can_be_sold"
+              checked={form.can_be_sold ?? true}
+              onCheckedChange={(v) => updateField("can_be_sold", !!v)}
+            />
+            <Label htmlFor="can_be_sold" className="font-normal cursor-pointer">Peut être vendu</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="can_be_purchased"
+              checked={form.can_be_purchased ?? true}
+              onCheckedChange={(v) => updateField("can_be_purchased", !!v)}
+            />
+            <Label htmlFor="can_be_purchased" className="font-normal cursor-pointer">Peut être acheté</Label>
+          </div>
+        </div>
+
+        <div className="sm:col-span-2 lg:col-span-3">
           <Label htmlFor="description">Description</Label>
           <textarea
             id="description"

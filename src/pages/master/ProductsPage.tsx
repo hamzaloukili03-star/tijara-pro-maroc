@@ -140,28 +140,18 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                   <TableHead className="w-12">Image</TableHead>
                    <TableHead className="min-w-[160px]">Code</TableHead>
-                   <TableHead>Désignation</TableHead>
+                   <TableHead className="w-full">Désignation</TableHead>
                    <TableHead>Catégorie</TableHead>
                    <TableHead className="text-right">Prix vente</TableHead>
                    <TableHead className="text-right">Prix achat</TableHead>
-                  <TableHead className="text-right">TVA</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
+                   <TableHead className="text-right">TVA</TableHead>
+                   <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p, i) => (
-                  <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/30 transition-colors ${i % 2 !== 0 ? "bg-muted/10" : ""}`} onClick={() => openEdit(p)}>
-                    <TableCell>
-                      {p.image_url ? (
-                        <img src={p.image_url} alt={p.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
-                    </TableCell>
+                 {filtered.map((p, i) => (
+                   <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/30 transition-colors ${i % 2 !== 0 ? "bg-muted/10" : ""}`} onClick={() => openEdit(p)}>
                     <TableCell className="font-mono text-xs">{p.code}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category || "—"}</TableCell>
