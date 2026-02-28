@@ -6,10 +6,12 @@ import { Loader2, Printer, Mail, FileText, Edit } from "lucide-react";
 import { PURCHASE_REQUEST_STATUS, getStatus } from "@/lib/status-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCompany } from "@/hooks/useCompany";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { openPrintHtml } from "@/lib/pdf/print-html";
 import type { PdfDocumentData } from "@/lib/pdf/types";
 import { toast } from "@/hooks/use-toast";
+import { DocumentAttachmentsPanel } from "@/components/DocumentAttachmentsPanel";
 
 interface Props {
   item: any;
@@ -25,6 +27,7 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
   const { roles } = useAuth();
   const isAdmin = roles.some(r => ["super_admin", "admin"].includes(r));
   const { settings: companySettings } = useCompanySettings();
+  const { activeCompany } = useCompany();
 
   useEffect(() => {
     (supabase as any).from("purchase_request_lines")
@@ -204,6 +207,14 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
               </div>
             );
           })()}
+
+          {/* Pièces jointes (devis fournisseur scanné, etc.) */}
+          <DocumentAttachmentsPanel
+            docType="purchase_request"
+            docId={item.id}
+            companyId={activeCompany?.id}
+            readOnly={!isDraft && !isAdmin}
+          />
         </div>
       </DialogContent>
     </Dialog>
