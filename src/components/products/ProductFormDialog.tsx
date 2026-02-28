@@ -9,8 +9,6 @@ import { VariantsTab } from "./tabs/VariantsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { PurchasesTab } from "./tabs/PurchasesTab";
 import { InventoryTab } from "./tabs/InventoryTab";
-import { AccountingTab } from "./tabs/AccountingTab";
-import { AttachmentsTab } from "./tabs/AttachmentsTab";
 
 interface ProductFormDialogProps {
   open: boolean;
@@ -96,20 +94,12 @@ export function ProductFormDialog({ open, onOpenChange, product, onSave }: Produ
                   Inventaire
                 </TabsTrigger>
               )}
-              <TabsTrigger value="accounting" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 text-sm">
-                Comptabilité
-              </TabsTrigger>
-              {isEditing && (
-                <TabsTrigger value="attachments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 text-sm">
-                  Pièces jointes
-                </TabsTrigger>
-              )}
             </TabsList>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <TabsContent value="general" className="mt-0">
-              <GeneralTab form={form} updateField={updateField} />
+              <GeneralTab form={form} updateField={updateField} productId={product?.id || null} />
             </TabsContent>
             <TabsContent value="variants" className="mt-0">
               <VariantsTab productId={product?.id || null} />
@@ -123,14 +113,6 @@ export function ProductFormDialog({ open, onOpenChange, product, onSave }: Produ
             {form.product_type === "stockable" && (
               <TabsContent value="inventory" className="mt-0">
                 <InventoryTab productId={product?.id || null} />
-              </TabsContent>
-            )}
-            <TabsContent value="accounting" className="mt-0">
-              <AccountingTab form={form} updateField={updateField} />
-            </TabsContent>
-            {isEditing && (
-              <TabsContent value="attachments" className="mt-0">
-                <AttachmentsTab productId={product.id} />
               </TabsContent>
             )}
           </div>
