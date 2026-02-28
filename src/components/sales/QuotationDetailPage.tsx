@@ -265,10 +265,10 @@ export function QuotationDetailPage({ quotation, hook, onBack, onConvertedToOrde
                 </div>
                 <div>
                   <Label>Dépôt</Label>
-                  <Select value={warehouseId} onValueChange={v => { setWarehouseId(v); setDirty(true); }} disabled={isLocked}>
+                  <Select value={warehouseId || "none"} onValueChange={v => { setWarehouseId(v === "none" ? "" : v); setDirty(true); }} disabled={isLocked}>
                     <SelectTrigger><SelectValue placeholder="Dépôt..." /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">— Aucun —</SelectItem>
+                      <SelectItem value="none">— Aucun —</SelectItem>
                       {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
