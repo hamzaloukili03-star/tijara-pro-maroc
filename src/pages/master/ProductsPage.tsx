@@ -96,7 +96,7 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <AppLayout title="Produits & Services" subtitle="Catalogue des produits et services">
+      <AppLayout title="Produits & Services">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -105,7 +105,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <AppLayout title="Produits & Services" subtitle="Catalogue des produits et services">
+    <AppLayout title="Produits & Services">
       <div className="space-y-4">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
