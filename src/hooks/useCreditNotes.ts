@@ -30,7 +30,7 @@ export function useCreditNotes() {
 
   const create = async (cn: Partial<CreditNote>, lines: Partial<CreditNoteLine>[]) => {
     const prefix = cn.credit_note_type === "client" ? "AVC" : "AVF";
-    const { data: num, error: nErr } = await supabase.rpc("next_document_number", { p_type: prefix });
+    const { data: num, error: nErr } = await supabase.rpc("next_document_number", { p_type: prefix, p_company_id: companyId } as any);
     if (nErr) {
       toast({ title: "Erreur numérotation", description: nErr.message, variant: "destructive" });
       return null;
@@ -48,7 +48,7 @@ export function useCreditNotes() {
     }
 
     if (lines.length > 0) {
-      const linesToInsert = lines.map((l, i) => ({ ...l, credit_note_id: created.id, sort_order: i }));
+      const linesToInsert = lines.map((l, i) => ({ ...l, credit_note_id: created.id, sort_order: i, company_id: companyId }));
       await (supabase as any).from("credit_note_lines").insert(linesToInsert);
     }
 

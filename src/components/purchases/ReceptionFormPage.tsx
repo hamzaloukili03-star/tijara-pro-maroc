@@ -274,7 +274,7 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
         onSaved?.(reception.id);
       } else {
         // Create new
-        const { data: num } = await supabase.rpc("next_document_number", { p_type: "REC" });
+        const { data: num } = await supabase.rpc("next_document_number", { p_type: "REC", p_company_id: companyId } as any);
         const { data: rec, error } = await (supabase as any).from("receptions").insert({
           reception_number: num,
           supplier_id: supplierId,
@@ -302,6 +302,7 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
             unit_price: 0, discount_percent: 0, tva_rate: 20,
             total_ht: 0, total_tva: 0, total_ttc: 0,
             sort_order: i,
+            company_id: companyId,
           });
         }
         toast({ title: "Réception créée", description: num as string });

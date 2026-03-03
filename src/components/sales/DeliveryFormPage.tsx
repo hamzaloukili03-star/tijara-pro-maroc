@@ -291,7 +291,7 @@ export function DeliveryFormPage({ delivery, salesOrderId, onBack, onSaved, stoc
         toast({ title: "Bon de livraison sauvegardé" });
         onSaved?.(delivery.id);
       } else {
-        const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL" });
+        const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL", p_company_id: companyId } as any);
         const { data: del, error } = await (supabase as any).from("deliveries").insert({
           delivery_number: num,
           customer_id: customerId,

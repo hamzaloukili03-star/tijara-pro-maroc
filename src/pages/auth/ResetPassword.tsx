@@ -35,8 +35,16 @@ export default function ResetPassword() {
       toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas.", variant: "destructive" });
       return;
     }
-    if (password.length < 6) {
-      toast({ title: "Erreur", description: "Min. 6 caractères.", variant: "destructive" });
+    if (password.length < 10) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 10 caractères.", variant: "destructive" });
+      return;
+    }
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -81,9 +89,9 @@ export default function ResetPassword() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 6 caractères"
+                placeholder="Min. 10 caractères (maj, min, chiffre, spécial)"
                 required
-                minLength={6}
+                minLength={10}
               />
             </div>
             <div>
