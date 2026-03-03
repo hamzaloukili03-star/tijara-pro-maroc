@@ -95,7 +95,7 @@ export function usePurchaseRequests() {
     currencyId?: string;
     lines: Partial<PurchaseLine>[];
   }) => {
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "DA" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "DA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
     const { data, error } = await (supabase as any).from("purchase_requests").insert({
       request_number: num,
@@ -194,7 +194,7 @@ export function usePurchaseRequests() {
       .eq("id", requestId).single();
     if (!req) return null;
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data: po, error } = await (supabase as any).from("purchase_orders").insert({
@@ -285,7 +285,7 @@ export function usePurchaseOrders() {
     const { lines: calcLines } = calcPurchaseTotals(payload.lines as PurchaseLine[]);
     const gd = payload.globalDiscount || { type: "percentage" as const, value: 0 };
     const totals = calcTotalsWithGlobalDiscount(calcLines, gd.type, gd.value);
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data, error } = await (supabase as any).from("purchase_orders").insert({

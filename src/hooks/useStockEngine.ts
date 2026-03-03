@@ -265,19 +265,19 @@ export function useStockEngine() {
     lines: { product_id: string; quantity: number }[],
     notes?: string
   ) => {
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "TRF" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "TRF", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data: transfer, error } = await (supabase as any)
       .from("stock_transfers")
-      .insert({ transfer_number: num, from_warehouse_id: fromWarehouseId, to_warehouse_id: toWarehouseId, notes, created_by: userId })
+      .insert({ transfer_number: num, from_warehouse_id: fromWarehouseId, to_warehouse_id: toWarehouseId, notes, created_by: userId, company_id: companyId })
       .select()
       .single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
     for (const line of lines) {
-      await (supabase as any).from("stock_transfer_lines").insert({ transfer_id: transfer.id, product_id: line.product_id, quantity: line.quantity });
+      await (supabase as any).from("stock_transfer_lines").insert({ transfer_id: transfer.id, product_id: line.product_id, quantity: line.quantity, company_id: companyId });
     }
     toast({ title: "Transfert créé", description: num as string });
     await fetchAll();
@@ -320,12 +320,12 @@ export function useStockEngine() {
     lines: { product_id: string; system_qty: number; counted_qty: number }[],
     notes?: string
   ) => {
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "INV" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "INV", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data: adj, error } = await (supabase as any)
       .from("inventory_adjustments")
-      .insert({ adjustment_number: num, warehouse_id: warehouseId, notes, created_by: userId })
+      .insert({ adjustment_number: num, warehouse_id: warehouseId, notes, created_by: userId, company_id: companyId })
       .select()
       .single();
 
@@ -338,6 +338,7 @@ export function useStockEngine() {
         system_qty: line.system_qty,
         counted_qty: line.counted_qty,
         difference: line.counted_qty - line.system_qty,
+        company_id: companyId,
       });
     }
     toast({ title: "Inventaire créé", description: num as string });

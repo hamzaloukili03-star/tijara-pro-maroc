@@ -32,7 +32,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
 
   const generateNumber = async () => {
     const prefix = invoiceType === "client" ? "FAC" : "FACF";
-    const { data, error } = await supabase.rpc("next_document_number", { p_type: prefix });
+    const { data, error } = await supabase.rpc("next_document_number", { p_type: prefix, p_company_id: companyId } as any);
     if (error) {
       toast({ title: "Erreur numérotation", description: error.message, variant: "destructive" });
       return null;

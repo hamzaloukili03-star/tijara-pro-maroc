@@ -125,7 +125,7 @@ export function useExpenses() {
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
   const create = async (values: Partial<Expense>) => {
-    const { data: num, error: nErr } = await supabase.rpc("next_document_number", { p_type: "DEP" });
+    const { data: num, error: nErr } = await supabase.rpc("next_document_number", { p_type: "DEP", p_company_id: companyId } as any);
     if (nErr) {
       toast({ title: "Erreur numérotation", description: nErr.message, variant: "destructive" });
       return null;

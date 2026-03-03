@@ -30,6 +30,7 @@ export async function uploadAttachment(
 
   const { data: urlData } = supabase.storage.from("invoice-attachments").getPublicUrl(path);
 
+  // Note: company_id should be passed by the caller in a multi-tenant context
   const { data, error } = await (supabase as any)
     .from("invoice_attachments")
     .insert({

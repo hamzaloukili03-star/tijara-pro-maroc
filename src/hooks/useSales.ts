@@ -178,7 +178,7 @@ export function useQuotations() {
     validityDate?: string;
     globalDiscount?: GlobalDiscount;
   }) => {
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "DEV" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "DEV", p_company_id: companyId } as any);
     const { lines: calcLines } = calcTotals(params.lines);
     const gd = params.globalDiscount || { type: "percentage" as const, value: 0 };
     const totals = calcTotalsWithGlobalDiscount(calcLines, gd.type, gd.value);
@@ -310,7 +310,7 @@ export function useQuotations() {
     const { data: qLines } = await (supabase as any).from("quotation_lines").select("*").eq("quotation_id", quotationId).order("sort_order");
     if (!q || !qLines) return null;
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BC" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BC", p_company_id: companyId } as any);
     const userId = await getUserId();
 
     const { data: so, error } = await (supabase as any).from("sales_orders").insert({
@@ -476,7 +476,7 @@ export function useSalesOrders() {
     const { data: so } = await (supabase as any).from("sales_orders").select("customer_id, warehouse_id").eq("id", orderId).single();
     if (!so) return null;
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL", p_company_id: companyId } as any);
     const userId = await getUserId();
 
     const { data: del, error } = await (supabase as any).from("deliveries").insert({
@@ -537,7 +537,7 @@ export function useSalesOrders() {
     const { data: so } = await (supabase as any).from("sales_orders").select("customer_id, warehouse_id").eq("id", orderId).single();
     if (!so) return null;
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "BL", p_company_id: companyId } as any);
     const userId = await getUserId();
 
     const { data: del, error } = await (supabase as any).from("deliveries").insert({
@@ -631,7 +631,7 @@ export function useSalesOrders() {
     }
 
     const { data: so } = await (supabase as any).from("sales_orders").select("customer_id, payment_terms").eq("id", orderId).single();
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "FAC" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "FAC", p_company_id: companyId } as any);
     const userId = await getUserId();
 
     const subtotal_ht = allLines.reduce((s: number, l: any) => s + Number(l.total_ht), 0);

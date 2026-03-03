@@ -81,7 +81,7 @@ export function usePayments(paymentType: "client" | "supplier") {
     allocations: { invoice_id: string; amount: number }[]
   ) => {
     const prefix = paymentType === "client" ? "ENC" : "DEC";
-    const { data: number, error: nErr } = await supabase.rpc("next_document_number", { p_type: prefix });
+    const { data: number, error: nErr } = await supabase.rpc("next_document_number", { p_type: prefix, p_company_id: companyId } as any);
     if (nErr) {
       toast({ title: "Erreur numérotation", description: nErr.message, variant: "destructive" });
       return null;
@@ -109,6 +109,7 @@ export function usePayments(paymentType: "client" | "supplier") {
         payment_id: pmt.id,
         invoice_id: alloc.invoice_id,
         amount: alloc.amount,
+        company_id: companyId,
       });
 
       const { data: inv } = await (supabase as any)
