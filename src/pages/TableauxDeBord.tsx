@@ -25,7 +25,7 @@ import { fr } from "date-fns/locale";
 const MONTH_LABELS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 const MONTH_FULL_LABELS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
-type QuickFilter = "today" | "week" | "month" | "custom";
+type QuickFilter = "today" | "week" | "month" | "custom" | "year";
 
 /* ─── types ─── */
 interface KPI {
@@ -161,8 +161,14 @@ const TableauxDeBord = () => {
   // Month drill-down state for the evolution chart — default to current month since quickFilter defaults to "month"
   const [drillMonth, setDrillMonth] = useState<number | null>(currentMonth);
 
-  // Compute effective date range
+  // Compute effective date range — single source of truth
   const effectiveRange = useMemo(() => {
+    if (quickFilter === "year") {
+      return {
+        from: `${selectedYear}-01-01`,
+        to: `${selectedYear}-12-31`,
+      };
+    }
     if (quickFilter === "custom") {
       return {
         from: customFrom || `${selectedYear}-01-01`,
@@ -193,6 +199,10 @@ const TableauxDeBord = () => {
   );
 
   const handleQuickFilter = (f: QuickFilter) => {
+    if (f === "today" || f === "week" || f === "month") {
+      // Reset selectedYear to current year so chart aligns with KPIs
+      setSelectedYear(currentYear);
+    }
     setQuickFilter(f);
     if (f !== "custom") {
       setCustomFrom("");
@@ -206,6 +216,14 @@ const TableauxDeBord = () => {
     }
   };
 
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+    setQuickFilter("year");
+    setCustomFrom("");
+    setCustomTo("");
+    setDrillMonth(null);
+  };
+
   const handleCustomDateChange = (field: "from" | "to", value: string) => {
     setQuickFilter("custom");
     if (field === "from") setCustomFrom(value);
@@ -213,7 +231,7 @@ const TableauxDeBord = () => {
   };
 
   /* ─── data fetching ─── */
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
 
     const scopeInv = (q: any) => companyId ? q.eq("company_id", companyId) : q;
@@ -221,9 +239,15 @@ const TableauxDeBord = () => {
     const scopeBank = (q: any) => companyId ? q.eq("company_id", companyId) : q;
     const scopePay = (q: any) => companyId ? q.eq("company_id", companyId) : q;
 
-    // Fetch full year data for chart + KPIs (not restricted to quick filter)
-    const yearFrom = `${selectedYear}-01-01`;
-    const yearTo = `${selectedYear}-12-31`;
+    // Use effective date range as single source of truth
+    // For chart: derive year from selectedYear for 12-month breakdown
+    const chartYear = selectedYear;
+    const chartFrom = `${chartYear}-01-01`;
+    const chartTo = `${chartYear}-12-31`;
+
+    // Fetch data spanning the union of chart range + KPI range
+    const fetchFrom = dateFrom < chartFrom ? dateFrom : chartFrom;
+    const fetchTo = dateTo > chartTo ? dateTo : chartTo;
 
     const [clientInvRes, suppInvRes, banksRes, paymentsRes, lowStockRes, invoiceLinesRes, catRes] = await Promise.all([
       scopeInv((supabase as any)
@@ -231,15 +255,15 @@ const TableauxDeBord = () => {
         .select("total_ttc, remaining_balance, status, invoice_date, customer:customers(name)")
         .eq("invoice_type", "client")
         .in("status", ["validated", "paid"])
-        .gte("invoice_date", yearFrom)
-        .lte("invoice_date", yearTo)),
+        .gte("invoice_date", fetchFrom)
+        .lte("invoice_date", fetchTo)),
       scopeInv((supabase as any)
         .from("invoices")
         .select("remaining_balance, total_ttc, invoice_date")
         .eq("invoice_type", "supplier")
         .in("status", ["validated", "paid"])
-        .gte("invoice_date", yearFrom)
-        .lte("invoice_date", yearTo)),
+        .gte("invoice_date", fetchFrom)
+        .lte("invoice_date", fetchTo)),
       scopeBank((supabase as any).from("bank_accounts").select("current_balance").eq("is_active", true)),
       scopePay((supabase as any)
         .from("payments")
@@ -253,15 +277,15 @@ const TableauxDeBord = () => {
       scopeLines((supabase as any)
         .from("invoice_lines")
         .select("total_ttc, total_ht, unit_price, quantity, product:products(name, category_id, category:product_categories(name, parent_id, parent:product_categories!product_categories_parent_id_fkey(name)))")
-        .gte("created_at", yearFrom + "T00:00:00")
-        .lte("created_at", yearTo + "T23:59:59")),
+        .gte("created_at", fetchFrom + "T00:00:00")
+        .lte("created_at", fetchTo + "T23:59:59")),
       (supabase as any).from("product_categories").select("id, name, parent_id"),
     ]);
 
     const clientInv = clientInvRes.data || [];
     const suppInv = suppInvRes.data || [];
 
-    // Filter by quick filter range for KPIs
+    // Filter by effective date range for KPIs
     const filteredClientInv = clientInv.filter((i: any) => i.invoice_date >= dateFrom && i.invoice_date <= dateTo);
     const filteredSuppInv = suppInv.filter((i: any) => i.invoice_date >= dateFrom && i.invoice_date <= dateTo);
 
@@ -400,16 +424,16 @@ const TableauxDeBord = () => {
     setStockAlerts(alerts);
 
     setLoading(false);
-  };
+  }, [companyId, dateFrom, dateTo, selectedYear, drillMonth]);
 
-  useEffect(() => { fetchData(); }, [selectedYear, dateFrom, dateTo, companyId, drillMonth]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Listen for data mutations from other pages (invoices, payments, etc.)
   useEffect(() => {
     const handler = () => { fetchData(); };
     window.addEventListener("dashboard-refresh", handler);
     return () => window.removeEventListener("dashboard-refresh", handler);
-  }, [selectedYear, dateFrom, dateTo, companyId, drillMonth]);
+  }, [fetchData]);
 
   const exportCSV = () => {
     const header = "Mois,Ventes,Achats\n";
@@ -462,7 +486,7 @@ const TableauxDeBord = () => {
             {/* Year selector */}
             <div className="flex items-center gap-2 bg-card rounded-xl border border-border px-3 py-2 shadow-card">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Select value={String(selectedYear)} onValueChange={(v) => { setSelectedYear(Number(v)); if (quickFilter !== "custom") handleQuickFilter(quickFilter); }}>
+              <Select value={String(selectedYear)} onValueChange={(v) => handleYearChange(Number(v))}>
                 <SelectTrigger className="border-0 bg-transparent p-0 h-auto text-sm w-[80px] focus:ring-0 shadow-none">
                   <SelectValue />
                 </SelectTrigger>
