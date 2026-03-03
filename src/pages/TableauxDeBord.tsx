@@ -154,12 +154,12 @@ const TableauxDeBord = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
   // Quick filter state
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>("today");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
-  // Month drill-down state for the evolution chart
-  const [drillMonth, setDrillMonth] = useState<number | null>(null); // 0-indexed month, null = show yearly
+  // Month drill-down state for the evolution chart — default to current month since quickFilter defaults to "month"
+  const [drillMonth, setDrillMonth] = useState<number | null>(currentMonth);
 
   // Compute effective date range
   const effectiveRange = useMemo(() => {
@@ -221,21 +221,25 @@ const TableauxDeBord = () => {
     const scopeBank = (q: any) => companyId ? q.eq("company_id", companyId) : q;
     const scopePay = (q: any) => companyId ? q.eq("company_id", companyId) : q;
 
+    // Fetch full year data for chart + KPIs (not restricted to quick filter)
+    const yearFrom = `${selectedYear}-01-01`;
+    const yearTo = `${selectedYear}-12-31`;
+
     const [clientInvRes, suppInvRes, banksRes, paymentsRes, lowStockRes, invoiceLinesRes, catRes] = await Promise.all([
       scopeInv((supabase as any)
         .from("invoices")
         .select("total_ttc, remaining_balance, status, invoice_date, customer:customers(name)")
         .eq("invoice_type", "client")
         .in("status", ["validated", "paid"])
-        .gte("invoice_date", dateFrom)
-        .lte("invoice_date", dateTo)),
+        .gte("invoice_date", yearFrom)
+        .lte("invoice_date", yearTo)),
       scopeInv((supabase as any)
         .from("invoices")
         .select("remaining_balance, total_ttc, invoice_date")
         .eq("invoice_type", "supplier")
         .in("status", ["validated", "paid"])
-        .gte("invoice_date", dateFrom)
-        .lte("invoice_date", dateTo)),
+        .gte("invoice_date", yearFrom)
+        .lte("invoice_date", yearTo)),
       scopeBank((supabase as any).from("bank_accounts").select("current_balance").eq("is_active", true)),
       scopePay((supabase as any)
         .from("payments")
@@ -249,20 +253,24 @@ const TableauxDeBord = () => {
       scopeLines((supabase as any)
         .from("invoice_lines")
         .select("total_ttc, total_ht, unit_price, quantity, product:products(name, category_id, category:product_categories(name, parent_id, parent:product_categories!product_categories_parent_id_fkey(name)))")
-        .gte("created_at", dateFrom + "T00:00:00")
-        .lte("created_at", dateTo + "T23:59:59")),
+        .gte("created_at", yearFrom + "T00:00:00")
+        .lte("created_at", yearTo + "T23:59:59")),
       (supabase as any).from("product_categories").select("id, name, parent_id"),
     ]);
 
     const clientInv = clientInvRes.data || [];
     const suppInv = suppInvRes.data || [];
 
-    const revenue = clientInv.reduce((s: number, i: any) => s + Number(i.total_ttc), 0);
-    const customerUnpaid = clientInv.reduce((s: number, i: any) => s + Number(i.remaining_balance), 0);
-    const paidInvoices = clientInv.filter((i: any) => i.status === "paid").length;
-    const pendingInvoices = clientInv.filter((i: any) => i.status === "validated").length;
-    const supplierDebt = suppInv.reduce((s: number, i: any) => s + Number(i.remaining_balance), 0);
-    const totalPurchases = suppInv.reduce((s: number, i: any) => s + Number(i.total_ttc), 0);
+    // Filter by quick filter range for KPIs
+    const filteredClientInv = clientInv.filter((i: any) => i.invoice_date >= dateFrom && i.invoice_date <= dateTo);
+    const filteredSuppInv = suppInv.filter((i: any) => i.invoice_date >= dateFrom && i.invoice_date <= dateTo);
+
+    const revenue = filteredClientInv.reduce((s: number, i: any) => s + Number(i.total_ttc), 0);
+    const customerUnpaid = clientInv.reduce((s: number, i: any) => s + Number(i.remaining_balance), 0); // unpaid = always full year
+    const paidInvoices = filteredClientInv.filter((i: any) => i.status === "paid").length;
+    const pendingInvoices = filteredClientInv.filter((i: any) => i.status === "validated").length;
+    const supplierDebt = suppInv.reduce((s: number, i: any) => s + Number(i.remaining_balance), 0); // debt = always full year
+    const totalPurchases = filteredSuppInv.reduce((s: number, i: any) => s + Number(i.total_ttc), 0);
     const cashPosition = (banksRes.data || []).reduce((s: number, b: any) => s + Number(b.current_balance), 0);
     const grossMargin = revenue - totalPurchases;
     const profit = grossMargin * 0.6;
