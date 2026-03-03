@@ -103,13 +103,14 @@ export default function TemplateEditorPage() {
     if (from === to) return;
 
     setConfig((prev) => {
-      const sorted = [...prev.blocks].sort((a, b) => a.order - b.order);
-      const [moved] = sorted.splice(from, 1);
-      sorted.splice(to, 0, moved);
-      return {
-        ...prev,
-        blocks: sorted.map((b, i) => ({ ...b, order: i })),
-      };
+      // Only reorder non-footer blocks; footer stays last
+      const nonFooter = [...prev.blocks].filter(b => b.type !== "footer").sort((a, b) => a.order - b.order);
+      const footerBlock = prev.blocks.find(b => b.type === "footer");
+      const [moved] = nonFooter.splice(from, 1);
+      nonFooter.splice(to, 0, moved);
+      const reordered = nonFooter.map((b, i) => ({ ...b, order: i }));
+      if (footerBlock) reordered.push({ ...footerBlock, order: reordered.length });
+      return { ...prev, blocks: reordered };
     });
   }, []);
 
@@ -145,12 +146,15 @@ export default function TemplateEditorPage() {
   }, []);
 
   const removeBlock = useCallback((blockId: string) => {
+    // Prevent deleting footer block
+    const block = config.blocks.find(b => b.id === blockId);
+    if (block?.type === "footer") return;
     setConfig((prev) => ({
       ...prev,
       blocks: prev.blocks.filter(b => b.id !== blockId).map((b, i) => ({ ...b, order: i })),
     }));
     if (selectedBlockId === blockId) setSelectedBlockId(null);
-  }, [selectedBlockId]);
+  }, [selectedBlockId, config.blocks]);
 
   const handleSave = async () => {
     const result = await saveTemplate(docType, config, existingId, "draft");
@@ -195,6 +199,8 @@ export default function TemplateEditorPage() {
   }
 
   const sortedBlocks = [...config.blocks].sort((a, b) => a.order - b.order);
+  const draggableBlocks = sortedBlocks.filter(b => b.type !== "footer");
+  const footerBlock = sortedBlocks.find(b => b.type === "footer");
 
   const FIELD_LABELS: Record<string, string> = {
     logo: "Logo", company_name: "Raison sociale", forme_juridique: "Forme juridique",
@@ -208,6 +214,7 @@ export default function TemplateEditorPage() {
     amount_paid: "Montant payé", remaining: "Solde restant",
     bank_name: "Banque", account_name: "Titulaire", rib: "RIB", swift: "SWIFT",
     patente: "Patente", capital: "Capital", cnss: "CNSS",
+    bank: "Coordonnées bancaires", page_numbers: "Numérotation pages",
   };
 
   return (
@@ -263,7 +270,7 @@ export default function TemplateEditorPage() {
                 <Droppable droppableId="blocks">
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1">
-                      {sortedBlocks.map((block, idx) => (
+                      {draggableBlocks.map((block, idx) => (
                         <Draggable key={block.id} draggableId={block.id} index={idx}>
                           {(provided, snapshot) => (
                             <div
@@ -297,6 +304,23 @@ export default function TemplateEditorPage() {
                   )}
                 </Droppable>
               </DragDropContext>
+              {/* Locked footer block */}
+              {footerBlock && (
+                <div
+                  className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors mt-1 border border-dashed border-muted-foreground/40 ${
+                    selectedBlockId === footerBlock.id
+                      ? "bg-primary/10 text-primary border-primary/30"
+                      : "hover:bg-muted text-foreground"
+                  }`}
+                  onClick={() => setSelectedBlockId(footerBlock.id)}
+                >
+                  <div className="text-muted-foreground/40" title="Bloc verrouillé">
+                    <GripVertical className="h-3 w-3 shrink-0" />
+                  </div>
+                  <span className="flex-1 truncate">{footerBlock.label}</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0">🔒</Badge>
+                </div>
+              )}
             </Card>
           </div>
 
@@ -308,114 +332,132 @@ export default function TemplateEditorPage() {
                 className="mx-auto bg-background border border-border rounded shadow-sm overflow-hidden"
                 style={{ width: "100%", maxWidth: 380, aspectRatio: "210/297" }}
               >
-                <div className="p-3 space-y-1.5 text-[6px] text-muted-foreground">
-                  {sortedBlocks.filter((b) => b.visible).map((block) => (
+                <div
+                  className="p-3 text-[6px] text-muted-foreground"
+                  style={{ display: "flex", flexDirection: "column", height: "100%" }}
+                >
+                  <div className="space-y-1.5 flex-1">
+                    {sortedBlocks.filter((b) => b.visible && b.type !== "footer").map((block) => (
+                      <div
+                        key={block.id}
+                        className={`rounded px-1.5 py-1 border transition-colors cursor-pointer ${
+                          selectedBlockId === block.id
+                            ? "border-primary bg-primary/5"
+                            : "border-transparent hover:border-border"
+                        }`}
+                        onClick={() => setSelectedBlockId(block.id)}
+                      >
+                        {block.type === "logo" && (
+                          <div className="flex justify-between">
+                            <div>
+                              <div className="w-12 h-3 bg-primary/20 rounded mb-0.5" />
+                              <div className="font-bold text-[7px]" style={{ color: config.globalStyles.secondaryColor }}>
+                                {"{{company.name}}"}
+                              </div>
+                            </div>
+                            <div className="w-10 h-6 bg-muted rounded" />
+                          </div>
+                        )}
+                        {block.type === "title" && (
+                          <div
+                            className="rounded px-1.5 py-0.5 text-center font-bold text-[8px]"
+                            style={{
+                              backgroundColor: block.styles.backgroundColor || config.globalStyles.secondaryColor,
+                              color: block.styles.color || "#fff",
+                            }}
+                          >
+                            {TEMPLATE_DOC_LABELS[docType]}
+                          </div>
+                        )}
+                        {block.type === "doc_info" && (
+                          <div className="flex gap-1">
+                            {["Date", "Échéance", "Conditions"].map((l) => (
+                              <div key={l} className="flex-1 bg-muted/50 rounded px-1 py-0.5 border-l-2 border-primary/40">
+                                <div className="text-[5px] font-semibold uppercase">{l}</div>
+                                <div className="text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {block.type === "party" && (
+                          <div className="flex gap-1">
+                            {["CLIENT", "ÉMETTEUR"].map((l) => (
+                              <div key={l} className="flex-1 border border-border rounded overflow-hidden">
+                                <div className="text-[5px] font-bold px-1 py-0.5" style={{ backgroundColor: config.globalStyles.secondaryColor, color: "#fff" }}>{l}</div>
+                                <div className="px-1 py-0.5 text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {block.type === "lines_table" && (
+                          <div>
+                            <div className="flex gap-0.5 rounded px-0.5 py-0.5 text-[5px] font-bold text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>
+                              {["Réf", "Désignation", "Qté", "PU", "HT"].map((h) => (
+                                <div key={h} className="flex-1 text-center">{h}</div>
+                              ))}
+                            </div>
+                            {[0, 1, 2].map((i) => (
+                              <div key={i} className={`flex gap-0.5 px-0.5 py-0.5 text-[5px] italic text-muted-foreground ${i % 2 === 1 ? "bg-muted/30" : ""}`}>
+                                {[1, 2, 3, 4, 5].map((j) => (
+                                  <div key={j} className="flex-1 text-center">---</div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {block.type === "totals" && (
+                          <div className="flex justify-end">
+                            <div className="w-1/2 border border-border rounded overflow-hidden">
+                              <div className="flex justify-between px-1 py-0.5 text-[5px] border-b border-border">
+                                <span>Total HT</span><span className="italic">{"{{...}}"}</span>
+                              </div>
+                              <div className="flex justify-between px-1 py-0.5 text-[5px] font-bold text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>
+                                <span>Total TTC</span><span className="italic" style={{ color: config.globalStyles.primaryColor }}>{"{{...}}"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {block.type === "notes" && (
+                          <div className="border-l-2 pl-1 py-0.5 text-[5px] italic" style={{ borderColor: config.globalStyles.primaryColor, backgroundColor: `${config.globalStyles.primaryColor}10` }}>
+                            {"{{notes}}"}
+                          </div>
+                        )}
+                        {block.type === "bank" && (
+                          <div className="bg-muted/30 rounded px-1 py-0.5 text-[5px] italic">
+                            {"{{bank...}}"}
+                          </div>
+                        )}
+                        {block.type === "custom_text" && (
+                          <div className="text-[5px] italic text-muted-foreground px-1 py-0.5 bg-muted/20 rounded">
+                            {block.customContent || "Texte personnalisé..."}
+                          </div>
+                        )}
+                        {block.type === "empty" && (
+                          <div className="py-2 border border-dashed border-muted-foreground/30 rounded text-center text-[5px] text-muted-foreground italic">
+                            Bloc vide
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Locked footer at bottom of A4 mini preview */}
+                  {footerBlock && footerBlock.visible && (
                     <div
-                      key={block.id}
-                      className={`rounded px-1.5 py-1 border transition-colors cursor-pointer ${
-                        selectedBlockId === block.id
+                      className={`rounded px-1.5 py-1 border transition-colors cursor-pointer mt-auto ${
+                        selectedBlockId === footerBlock.id
                           ? "border-primary bg-primary/5"
                           : "border-transparent hover:border-border"
                       }`}
-                      onClick={() => setSelectedBlockId(block.id)}
+                      onClick={() => setSelectedBlockId(footerBlock.id)}
                     >
-                      {block.type === "logo" && (
-                        <div className="flex justify-between">
-                          <div>
-                            <div className="w-12 h-3 bg-primary/20 rounded mb-0.5" />
-                            <div className="font-bold text-[7px]" style={{ color: config.globalStyles.secondaryColor }}>
-                              {"{{company.name}}"}
-                            </div>
-                          </div>
-                          <div className="w-10 h-6 bg-muted rounded" />
-                        </div>
-                      )}
-                      {block.type === "title" && (
-                        <div
-                          className="rounded px-1.5 py-0.5 text-center font-bold text-[8px]"
-                          style={{
-                            backgroundColor: block.styles.backgroundColor || config.globalStyles.secondaryColor,
-                            color: block.styles.color || "#fff",
-                          }}
-                        >
-                          {TEMPLATE_DOC_LABELS[docType]}
-                        </div>
-                      )}
-                      {block.type === "doc_info" && (
-                        <div className="flex gap-1">
-                          {["Date", "Échéance", "Conditions"].map((l) => (
-                            <div key={l} className="flex-1 bg-muted/50 rounded px-1 py-0.5 border-l-2 border-primary/40">
-                              <div className="text-[5px] font-semibold uppercase">{l}</div>
-                              <div className="text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {block.type === "party" && (
-                        <div className="flex gap-1">
-                          {["CLIENT", "ÉMETTEUR"].map((l) => (
-                            <div key={l} className="flex-1 border border-border rounded overflow-hidden">
-                              <div className="text-[5px] font-bold px-1 py-0.5" style={{ backgroundColor: config.globalStyles.secondaryColor, color: "#fff" }}>{l}</div>
-                              <div className="px-1 py-0.5 text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {block.type === "lines_table" && (
-                        <div>
-                          <div className="flex gap-0.5 rounded px-0.5 py-0.5 text-[5px] font-bold text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>
-                            {["Réf", "Désignation", "Qté", "PU", "HT"].map((h) => (
-                              <div key={h} className="flex-1 text-center">{h}</div>
-                            ))}
-                          </div>
-                          {[0, 1, 2].map((i) => (
-                            <div key={i} className={`flex gap-0.5 px-0.5 py-0.5 text-[5px] italic text-muted-foreground ${i % 2 === 1 ? "bg-muted/30" : ""}`}>
-                              {[1, 2, 3, 4, 5].map((j) => (
-                                <div key={j} className="flex-1 text-center">---</div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {block.type === "totals" && (
-                        <div className="flex justify-end">
-                          <div className="w-1/2 border border-border rounded overflow-hidden">
-                            <div className="flex justify-between px-1 py-0.5 text-[5px] border-b border-border">
-                              <span>Total HT</span><span className="italic">{"{{...}}"}</span>
-                            </div>
-                            <div className="flex justify-between px-1 py-0.5 text-[5px] font-bold text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>
-                              <span>Total TTC</span><span className="italic" style={{ color: config.globalStyles.primaryColor }}>{"{{...}}"}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {block.type === "notes" && (
-                        <div className="border-l-2 pl-1 py-0.5 text-[5px] italic" style={{ borderColor: config.globalStyles.primaryColor, backgroundColor: `${config.globalStyles.primaryColor}10` }}>
-                          {"{{notes}}"}
-                        </div>
-                      )}
-                      {block.type === "bank" && (
-                        <div className="bg-muted/30 rounded px-1 py-0.5 text-[5px] italic">
-                          {"{{bank...}}"}
-                        </div>
-                      )}
-                      {block.type === "footer" && (
-                        <div className="text-center text-[4px] border-t pt-0.5 italic" style={{ borderColor: config.globalStyles.primaryColor }}>
-                          Pied de page — {"{{company...}}"}
-                        </div>
-                      )}
-                      {block.type === "custom_text" && (
-                        <div className="text-[5px] italic text-muted-foreground px-1 py-0.5 bg-muted/20 rounded">
-                          {block.customContent || "Texte personnalisé..."}
-                        </div>
-                      )}
-                      {block.type === "empty" && (
-                        <div className="py-2 border border-dashed border-muted-foreground/30 rounded text-center text-[5px] text-muted-foreground italic">
-                          Bloc vide
-                        </div>
-                      )}
+                      <div className="text-center text-[4px] border-t pt-1 italic" style={{ borderColor: config.globalStyles.primaryColor, color: "#7A919E" }}>
+                        <div>{"{{company.name}}"} — {"{{forme_juridique}}"} au capital de {"{{capital}}"} MAD</div>
+                        <div>Tél: {"{{phone}}"} | Email: {"{{email}}"}</div>
+                        <div>ICE: {"{{ice}}"} | IF: {"{{if}}"} | RC: {"{{rc}}"}</div>
+                        <div className="text-[3.5px]">Page X / Y</div>
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </Card>

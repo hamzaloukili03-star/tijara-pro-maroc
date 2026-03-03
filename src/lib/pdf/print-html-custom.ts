@@ -75,9 +75,12 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
   const g = tpl.globalStyles;
   const sorted = [...tpl.blocks].sort((a, b) => a.order - b.order).filter((b) => b.visible);
 
+  const footerBlock = sorted.find(b => b.type === "footer");
+  const contentBlocks = sorted.filter(b => b.type !== "footer");
+
   let bodyHtml = "";
 
-  for (const block of sorted) {
+  for (const block of contentBlocks) {
     const mb = block.styles.spacing || 10;
 
     if (block.type === "logo") {
@@ -203,12 +206,39 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
       bodyHtml += `<div style="margin-bottom:${mb}px;font-size:${block.styles.fontSize || 8}px;text-align:${block.styles.alignment || "left"};color:${block.styles.color || "#1A2B3C"}">${(block as any).customContent}</div>`;
     }
 
-    if (block.type === "footer") {
-      bodyHtml += `<div style="border-top:1.5px solid ${g.primaryColor};padding-top:6px;margin-top:${mb}px;text-align:center;font-size:6.5px;color:#7A919E;line-height:1.7">
-        ${c.raison_sociale} — ${c.forme_juridique || ""} au capital de ${c.capital ? Number(c.capital).toLocaleString("fr-FR") : "—"} MAD<br/>
-        ICE: ${c.ice || "—"} | IF: ${c.if_number || "—"} | RC: ${c.rc || "—"} | Patente: ${c.patente || "—"}
-      </div>`;
+    // empty blocks just add spacing
+    if (block.type === "empty") {
+      bodyHtml += `<div style="margin-bottom:${mb}px;min-height:${block.styles.spacing || 40}px"></div>`;
     }
+  }
+
+  // Build footer HTML separately for fixed positioning
+  let footerHtml = "";
+  if (footerBlock) {
+    const ff = footerBlock.fields || {};
+    const ba = data.bankAccount;
+    footerHtml = `<div id="page-footer">
+      <div style="border-top:1.5px solid ${g.primaryColor};padding-top:6px;font-size:${footerBlock.styles.fontSize || 6.5}px;color:#7A919E;line-height:1.7;display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;text-align:left">
+          <div style="font-weight:700;color:${g.secondaryColor};font-size:${(footerBlock.styles.fontSize || 6.5) + 0.5}px">${c.raison_sociale}${c.forme_juridique ? ` — ${c.forme_juridique}` : ""}</div>
+          ${ff.phone !== false && c.phone ? `<div>Tél: ${c.phone}</div>` : ""}
+          ${ff.email !== false && c.email ? `<div>${c.email}</div>` : ""}
+        </div>
+        <div style="flex:1;text-align:center">
+          ${ff.ice !== false && c.ice ? `<div>ICE: ${c.ice}</div>` : ""}
+          ${ff.if_number !== false && c.if_number ? `<div>IF: ${c.if_number}</div>` : ""}
+          ${ff.rc !== false && c.rc ? `<div>RC: ${c.rc}</div>` : ""}
+          ${ff.patente !== false && c.patente ? `<div>Patente: ${c.patente}</div>` : ""}
+          ${ff.capital !== false && c.capital ? `<div>Capital: ${Number(c.capital).toLocaleString("fr-FR")} MAD</div>` : ""}
+        </div>
+        <div style="flex:1;text-align:right">
+          ${ff.bank !== false && ba ? `
+            ${ba.bank_name ? `<div style="font-weight:600">${ba.bank_name}</div>` : ""}
+            ${ba.rib ? `<div>RIB: ${ba.rib}</div>` : ""}
+          ` : ""}
+        </div>
+      </div>
+    </div>`;
   }
 
   const html = `<!DOCTYPE html>
@@ -217,18 +247,34 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
 <meta charset="UTF-8"/>
 <title>${DOC_TITLES[data.type]} ${data.number}</title>
 <style>
-@page { size: A4; margin: 12mm 15mm; }
+@page { size: A4; margin: 12mm 15mm 18mm 15mm; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:${g.fontFamily};font-size:${g.bodyFontSize}px;color:#1A2B3C;line-height:1.45;background:#fff}
 .logo{max-height:55px;max-width:160px;object-fit:contain;margin-bottom:4px}
 .info-box{flex:1;background:#EBF8FD;border-radius:4px;padding:6px 8px;border-left:3px solid ${g.primaryColor}}
 .info-l{font-size:7px;font-weight:700;color:#4A6070;text-transform:uppercase;margin-bottom:2px}
 .info-v{font-size:8.5px;font-weight:700;color:#1A2B3C}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+#page-footer{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  padding:0 15mm 2mm 15mm;
+  background:#fff;
+}
+#page-content{
+  padding-bottom:${footerBlock ? "50" : "0"}px;
+}
+@media print{
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #page-footer{position:fixed;bottom:0}
+  @page{margin-bottom:${footerBlock ? "22mm" : "12mm"}}
+}
 </style>
 </head>
 <body>
-${bodyHtml}
+<div id="page-content">${bodyHtml}</div>
+${footerHtml}
 <script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>
 </body>
 </html>`;
