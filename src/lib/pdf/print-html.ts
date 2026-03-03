@@ -9,7 +9,7 @@ const fmt = (n: number) =>
  * and automatically triggers the native print dialog (Ctrl+P).
  */
 export function openPrintHtml(data: PdfDocumentData) {
-  const printWindow = window.open("", "_blank");
+  const printWindow = window.open("about:blank", "_blank");
   if (!printWindow) {
     alert("Le navigateur a bloqué l'ouverture de la fenêtre. Veuillez autoriser les pop-ups.");
     return;
@@ -146,16 +146,29 @@ table.totals tr.balance td{color:${BRAND.primary};font-weight:700}
 .bank-l{color:${BRAND.textMid};display:inline-block;width:55px}
 
 /* ── Footer ── */
-.footer{border-top:1.5px solid ${BRAND.primary};padding-top:6px;margin-top:20px;text-align:center;font-size:6.5px;color:${BRAND.textLight};line-height:1.7}
+#page-footer{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  padding:0 15mm 1mm 15mm;
+  background:#fff;
+}
+#page-content{
+  padding-bottom:55px;
+}
 
 @media print{
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .no-print{display:none!important}
+  #page-footer{position:fixed;bottom:0}
+  @page{margin-bottom:24mm}
 }
 </style>
 </head>
 <body>
 
+<div id="page-content">
 <div class="header">
   <div>
     ${logoHtml}
@@ -228,10 +241,29 @@ ${infoBoxes.length ? `<div class="info-row">${infoBoxes.join("")}</div>` : ""}
 ${data.notes ? `<div class="notes-box"><div class="notes-label">Notes</div><div class="notes-text">${data.notes}</div></div>` : ""}
 
 ${bankHtml}
+</div>
 
-<div class="footer">
-  ${c.raison_sociale} — ${c.forme_juridique || ""} au capital de ${c.capital ? Number(c.capital).toLocaleString("fr-FR") : "—"} MAD<br/>
-  ICE: ${c.ice || "—"} | IF: ${c.if_number || "—"} | RC: ${c.rc || "—"} | Patente: ${c.patente || "—"}
+<div id="page-footer">
+  <div style="border-top:1.5px solid ${BRAND.primary};padding-top:6px;font-size:6.5px;color:${BRAND.textLight};line-height:1.7;display:flex;justify-content:space-between;align-items:flex-start">
+    <div style="flex:1;text-align:left">
+      <div style="font-weight:700;color:${BRAND.navy};font-size:7px">${c.raison_sociale}${c.forme_juridique ? ` — ${c.forme_juridique}` : ""}</div>
+      ${c.phone ? `<div>Tél: ${c.phone}</div>` : ""}
+      ${c.email ? `<div>${c.email}</div>` : ""}
+    </div>
+    <div style="flex:1;text-align:center">
+      ${c.ice ? `<div>ICE: ${c.ice}</div>` : ""}
+      ${c.if_number ? `<div>IF: ${c.if_number}</div>` : ""}
+      ${c.rc ? `<div>RC: ${c.rc}</div>` : ""}
+      ${c.patente ? `<div>Patente: ${c.patente}</div>` : ""}
+      ${c.capital ? `<div>Capital: ${Number(c.capital).toLocaleString("fr-FR")} MAD</div>` : ""}
+    </div>
+    <div style="flex:1;text-align:right">
+      ${data.bankAccount ? `
+        ${data.bankAccount.bank_name ? `<div style="font-weight:600">${data.bankAccount.bank_name}</div>` : ""}
+        ${data.bankAccount.rib ? `<div>RIB: ${data.bankAccount.rib}</div>` : ""}
+      ` : ""}
+    </div>
+  </div>
 </div>
 
 <script>
