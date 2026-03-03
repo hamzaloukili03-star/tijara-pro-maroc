@@ -151,7 +151,7 @@ table.totals tr.balance td{color:${BRAND.primary};font-weight:700}
   bottom:0;
   left:0;
   right:0;
-  padding:0 15mm 1mm 15mm;
+  padding:0 15mm 0 15mm;
   background:#fff;
 }
 #page-content{
@@ -162,7 +162,7 @@ table.totals tr.balance td{color:${BRAND.primary};font-weight:700}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .no-print{display:none!important}
   #page-footer{position:fixed;bottom:0}
-  @page{margin-bottom:24mm}
+  @page{margin-bottom:20mm}
 }
 </style>
 </head>
@@ -268,7 +268,8 @@ ${bankHtml}
 
 <script>
 window.onload = function() {
-  // Small delay to ensure images (logo) are loaded
+  document.title = "${DOC_TITLES[data.type]} ${data.number}";
+  try { history.replaceState(null, "", "${DOC_TITLES[data.type]} ${data.number}"); } catch(e) {}
   setTimeout(function() { window.print(); }, 400);
 };
 </script>
