@@ -21,7 +21,7 @@ const fields: FieldConfig[] = [
 ];
 
 export default function WarehousesPage() {
-  const { data, loading, create, update, remove } = useCrud<WarehouseData>({ table: "warehouses", orderBy: "code", ascending: true });
+  const { data, loading, create, update, remove } = useCrud<WarehouseData>({ table: "warehouses", orderBy: "code", ascending: true, companyScoped: true });
 
   return (
     <AppLayout title="Liste des Dépôts">

@@ -48,15 +48,17 @@ export function useExpenseCategories() {
   const { activeCompany } = useCompany();
 
   const fetch = useCallback(async () => {
+    if (!activeCompany?.id) { setCategories([]); setLoading(false); return; }
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("expense_categories")
       .select("*")
       .eq("is_active", true)
+      .eq("company_id", activeCompany.id)
       .order("name");
     if (!error) setCategories((data || []) as ExpenseCategory[]);
     setLoading(false);
-  }, []);
+  }, [activeCompany?.id]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

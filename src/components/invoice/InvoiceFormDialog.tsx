@@ -10,6 +10,7 @@ import { InvoiceLineEditor } from "./InvoiceLineEditor";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { calcLineTotals, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { Loader2 } from "lucide-react";
 import { GlobalDiscountSection, type GlobalDiscount, calcTotalsWithGlobalDiscount } from "@/components/GlobalDiscountSection";
 import { DocumentTotalsBlock } from "@/components/DocumentTotalsBlock";
@@ -49,17 +50,19 @@ export function InvoiceFormDialog({ open, onClose, invoiceType, onSubmit, editIn
   const [lines, setLines] = useState<Partial<InvoiceLine>[]>([]);
   const [globalDiscount, setGlobalDiscount] = useState<GlobalDiscount>({ type: "percentage", value: 0 });
   const [saving, setSaving] = useState(false);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !companyId) return;
     const table = invoiceType === "client" ? "customers" : "suppliers";
-    (supabase as any).from(table).select("id, code, name, payment_terms").eq("is_active", true).order("name").then(({ data }: any) => {
+    (supabase as any).from(table).select("id, code, name, payment_terms").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => {
       setPartners(data || []);
     });
-    supabase.from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }) => {
+    (supabase as any).from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => {
       setProducts(data || []);
     });
-  }, [open, invoiceType]);
+  }, [open, invoiceType, companyId]);
 
   useEffect(() => {
     if (editInvoice) {

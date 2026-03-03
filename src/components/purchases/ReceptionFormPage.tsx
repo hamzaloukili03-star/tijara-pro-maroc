@@ -126,15 +126,16 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
 
   // ── Load ref data ────────────────────────────────────────────────────────
   const loadRefs = useCallback(async () => {
+    if (!companyId) return;
     const [{ data: sups }, { data: whs }, { data: prods }] = await Promise.all([
-      (supabase as any).from("suppliers").select("id, name, code").order("name"),
-      (supabase as any).from("warehouses").select("id, name, code").order("name"),
-      (supabase as any).from("products").select("id, name, code, purchase_price, unit").eq("can_be_purchased", true).order("name"),
+      (supabase as any).from("suppliers").select("id, name, code").eq("company_id", companyId).order("name"),
+      (supabase as any).from("warehouses").select("id, name, code").eq("company_id", companyId).order("name"),
+      (supabase as any).from("products").select("id, name, code, purchase_price, unit").eq("can_be_purchased", true).eq("company_id", companyId).order("name"),
     ]);
     setSuppliers(sups || []);
     setWarehouses(whs || []);
     setProducts(prods || []);
-  }, []);
+  }, [companyId]);
 
   // ── Load lines for existing reception ────────────────────────────────────
   const loadLines = useCallback(async () => {

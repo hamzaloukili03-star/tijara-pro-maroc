@@ -66,11 +66,10 @@ export function ExpenseFormDialog({ open, onOpenChange, expense, onSave }: Props
   useEffect(() => {
     if (!open) return;
     const companyId = activeCompany?.id;
+    if (!companyId) return;
     Promise.all([
-      (supabase as any).from("suppliers").select("id, name").eq("is_active", true).order("name"),
-      companyId
-        ? (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("company_id", companyId).eq("is_active", true)
-        : (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true),
+      (supabase as any).from("suppliers").select("id, name").eq("is_active", true).eq("company_id", companyId).order("name"),
+      (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("company_id", companyId).eq("is_active", true),
     ]).then(([s, b]) => {
       setSuppliers(s.data || []);
       setBankAccounts(b.data || []);

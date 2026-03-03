@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Payment } from "@/hooks/usePayments";
@@ -21,6 +22,8 @@ interface Props {
 
 export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, checkCashLimit }: Props) {
   const { isAdmin } = useAuth();
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [method, setMethod] = useState("transfer");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState("");
@@ -40,24 +43,25 @@ export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, c
   const [allocations, setAllocations] = useState<{ invoice_id: string; amount: number }[]>([]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !companyId) return;
     const table = paymentType === "client" ? "customers" : "suppliers";
-    (supabase as any).from(table).select("id, name").eq("is_active", true).order("name").then(({ data }: any) => setEntities(data || []));
-    (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true).then(({ data }: any) => setBankAccounts(data || []));
-  }, [open, paymentType]);
+    (supabase as any).from(table).select("id, name").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setEntities(data || []));
+    (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => setBankAccounts(data || []));
+  }, [open, paymentType, companyId]);
 
   useEffect(() => {
-    if (!entityId) { setOpenInvoices([]); return; }
+    if (!entityId || !companyId) { setOpenInvoices([]); return; }
     const col = paymentType === "client" ? "customer_id" : "supplier_id";
     (supabase as any).from("invoices")
       .select("id, invoice_number, remaining_balance")
       .eq("invoice_type", paymentType)
       .eq(col, entityId)
+      .eq("company_id", companyId)
       .gt("remaining_balance", 0)
       .in("status", ["validated"])
       .order("invoice_date")
       .then(({ data }: any) => setOpenInvoices(data || []));
-  }, [entityId, paymentType]);
+  }, [entityId, paymentType, companyId]);
 
   const addAllocation = () => setAllocations([...allocations, { invoice_id: "", amount: 0 }]);
   const removeAllocation = (idx: number) => setAllocations(allocations.filter((_, i) => i !== idx));

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { SalesDocLine, calcTotals } from "@/hooks/useSales";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Plus, Trash2 } from "lucide-react";
@@ -17,6 +18,8 @@ interface Props {
 }
 
 export function PurchaseFormDialog({ type, onClose, onSubmit }: Props) {
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -29,10 +32,11 @@ export function PurchaseFormDialog({ type, onClose, onSubmit }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
-    (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
-    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (data?.length) setWarehouseId(data[0].id); });
-  }, []);
+    if (!companyId) return;
+    (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setSuppliers(data || []));
+    (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setProducts(data || []));
+    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => { setWarehouses(data || []); if (data?.length) setWarehouseId(data[0].id); });
+  }, [companyId]);
 
   const supplierOptions = suppliers.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` }));
   const productOptions = products.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }));
