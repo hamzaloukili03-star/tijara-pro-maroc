@@ -404,6 +404,13 @@ const TableauxDeBord = () => {
 
   useEffect(() => { fetchData(); }, [selectedYear, dateFrom, dateTo, companyId, drillMonth]);
 
+  // Listen for data mutations from other pages (invoices, payments, etc.)
+  useEffect(() => {
+    const handler = () => { fetchData(); };
+    window.addEventListener("dashboard-refresh", handler);
+    return () => window.removeEventListener("dashboard-refresh", handler);
+  }, [selectedYear, dateFrom, dateTo, companyId, drillMonth]);
+
   const exportCSV = () => {
     const header = "Mois,Ventes,Achats\n";
     const rows = monthlyData.map((r) => `${r.month},${r.ventes.toFixed(2)},${r.achats.toFixed(2)}`).join("\n");
