@@ -2598,6 +2598,7 @@ export type Database = {
       }
       purchase_request_lines: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string
           estimated_cost: number | null
@@ -2610,6 +2611,7 @@ export type Database = {
           unit: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string
           estimated_cost?: number | null
@@ -2622,6 +2624,7 @@ export type Database = {
           unit?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string
           estimated_cost?: number | null
@@ -2634,6 +2637,13 @@ export type Database = {
           unit?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_request_lines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_request_lines_product_id_fkey"
             columns: ["product_id"]
@@ -3681,6 +3691,65 @@ export type Database = {
             columns: ["to_warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_invoice_lines: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          discount_percent: number
+          id: string
+          product_id: string | null
+          quantity: number
+          supplier_invoice_id: string
+          total_ht: number
+          total_ttc: number
+          unit: string | null
+          unit_price_ht: number
+          updated_at: string
+          vat_rate: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          supplier_invoice_id: string
+          total_ht?: number
+          total_ttc?: number
+          unit?: string | null
+          unit_price_ht?: number
+          updated_at?: string
+          vat_rate?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          supplier_invoice_id?: string
+          total_ht?: number
+          total_ttc?: number
+          unit?: string | null
+          unit_price_ht?: number
+          updated_at?: string
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_invoice_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
