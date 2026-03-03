@@ -52,10 +52,15 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
             {block.fields?.phone && <div style={{ fontSize: 7.5, color: "#4A6070" }}>Tél: {PH.phone}</div>}
             {block.fields?.email && <div style={{ fontSize: 7.5, color: "#4A6070" }}>{PH.email}</div>}
           </div>
-          <div style={{ background: "#EBF8FD", borderRadius: 4, padding: "7px 9px", fontSize: 7 }}>
-            {block.fields?.ice !== false && <div><strong>ICE</strong> {PH.ice}</div>}
-            {block.fields?.if_number !== false && <div><strong>IF</strong> {PH.if_number}</div>}
-            {block.fields?.rc !== false && <div><strong>RC</strong> {PH.rc}</div>}
+          <div style={{ border: "1px solid #D4E2E9", borderRadius: 5, overflow: "hidden", minWidth: 180 }}>
+            <div style={{ background: g.secondaryColor, padding: "5px 10px" }}>
+              <span style={{ fontSize: 7.5, color: "#fff", fontWeight: 700, letterSpacing: 0.8 }}>CLIENT / FOURNISSEUR</span>
+            </div>
+            <div style={{ padding: "9px 10px", minHeight: 55 }}>
+              {block.fields?.client_name !== false && <div style={{ fontSize: 9.5, fontWeight: 700, color: g.secondaryColor, fontStyle: "italic" }}>{PH.clientName}</div>}
+              {block.fields?.client_address !== false && <div style={{ fontSize: 7.5, color: "#4A6070", fontStyle: "italic" }}>{PH.clientAddress}</div>}
+              {block.fields?.client_ice !== false && <div style={{ fontSize: 7.5, color: g.primaryColor, fontWeight: 700, fontStyle: "italic" }}>ICE: {PH.clientIce}</div>}
+            </div>
           </div>
         </div>
       );
@@ -68,10 +73,9 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
           borderRadius: 4, padding: "9px 16px", display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <span style={{ fontSize: block.styles.fontSize || 16, fontWeight: 700, color: block.styles.color || "#fff", letterSpacing: 1.5 }}>
-            {TEMPLATE_DOC_LABELS[docType].toUpperCase()}
+            {TEMPLATE_DOC_LABELS[docType].toUpperCase()} — N° {PH.number}
           </span>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 9, color: g.primaryColor, fontWeight: 700 }}>N° {PH.number}</div>
             <div style={{ fontSize: 8, color: "#B0C8D8" }}>Date: {PH.date}</div>
           </div>
         </div>
@@ -96,32 +100,7 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
       );
     }
 
-    if (block.type === "party") {
-      return (
-        <div key={block.id} style={{ marginBottom: mb, ...positionStyle, display: "flex", gap: 10 }}>
-          <div style={{ flex: 1, border: "1px solid #D4E2E9", borderRadius: 5, overflow: "hidden" }}>
-            <div style={{ background: g.secondaryColor, padding: "5px 10px" }}>
-              <span style={{ fontSize: 7.5, color: "#fff", fontWeight: 700, letterSpacing: 0.8 }}>CLIENT / FOURNISSEUR</span>
-            </div>
-            <div style={{ padding: "9px 10px", minHeight: 65 }}>
-              {block.fields?.name !== false && <div style={{ fontSize: 9.5, fontWeight: 700, color: g.secondaryColor, fontStyle: "italic" }}>{PH.clientName}</div>}
-              {block.fields?.address !== false && <div style={{ fontSize: 7.5, color: "#4A6070", fontStyle: "italic" }}>{PH.clientAddress}</div>}
-              {block.fields?.ice !== false && <div style={{ fontSize: 7.5, color: g.primaryColor, fontWeight: 700, fontStyle: "italic" }}>ICE: {PH.clientIce}</div>}
-            </div>
-          </div>
-          <div style={{ flex: 1, border: "1px solid #D4E2E9", borderRadius: 5, overflow: "hidden" }}>
-            <div style={{ background: g.secondaryColor, padding: "5px 10px" }}>
-              <span style={{ fontSize: 7.5, color: "#fff", fontWeight: 700, letterSpacing: 0.8 }}>ÉMETTEUR</span>
-            </div>
-            <div style={{ padding: "9px 10px", minHeight: 65 }}>
-              <div style={{ fontSize: 9.5, fontWeight: 700, color: g.secondaryColor, fontStyle: "italic" }}>{PH.company}</div>
-              <div style={{ fontSize: 7.5, color: "#4A6070", fontStyle: "italic" }}>{PH.address}</div>
-              <div style={{ fontSize: 7.5, color: g.primaryColor, fontWeight: 700, fontStyle: "italic" }}>ICE: {PH.ice}</div>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    // party block type removed — client info is now in logo block
 
     if (block.type === "lines_table") {
       const f = block.fields || {};

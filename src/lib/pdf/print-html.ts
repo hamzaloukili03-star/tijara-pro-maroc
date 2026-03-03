@@ -178,23 +178,7 @@ table.totals tr.balance td{color:${BRAND.primary};font-weight:700}
     ${c.phone || c.fax ? `<div class="company-line">${c.phone ? `Tél: ${c.phone}` : ""}${c.phone && c.fax ? " | " : ""}${c.fax ? `Fax: ${c.fax}` : ""}</div>` : ""}
     ${c.email ? `<div class="company-line">${c.email}${c.website ? ` | ${c.website}` : ""}</div>` : ""}
   </div>
-  <div>
-    <div class="reg-box"><table>${regRows}</table></div>
-  </div>
-</div>
-
-<div class="title-band">
-  <h1>${DOC_TITLES[data.type]}</h1>
-  <div class="title-meta">
-    <div class="title-num">N° ${data.number}</div>
-    <div class="title-date">Date: ${data.date}</div>
-  </div>
-</div>
-
-${infoBoxes.length ? `<div class="info-row">${infoBoxes.join("")}</div>` : ""}
-
-<div class="parties">
-  <div class="party-box">
+  <div class="party-box" style="min-width:200px">
     <div class="party-head"><span>${partyLabel}</span></div>
     <div class="party-body">
       <div class="party-name">${party.name}</div>
@@ -205,14 +189,12 @@ ${infoBoxes.length ? `<div class="info-row">${infoBoxes.join("")}</div>` : ""}
       ${party.rc ? `<div class="party-line">RC: ${party.rc}</div>` : ""}
     </div>
   </div>
-  <div class="party-box">
-    <div class="party-head"><span>ÉMETTEUR</span></div>
-    <div class="party-body">
-      <div class="party-name">${c.raison_sociale}</div>
-      <div class="party-line">${[c.address, c.city].filter(Boolean).join(", ")}</div>
-      ${c.phone ? `<div class="party-line">Tél: ${c.phone}</div>` : ""}
-      ${c.ice ? `<div class="party-hl">ICE: ${c.ice}</div>` : ""}
-    </div>
+</div>
+
+<div class="title-band">
+  <h1>${DOC_TITLES[data.type]} — N° ${data.number}</h1>
+  <div class="title-meta">
+    <div class="title-date">Date: ${data.date}</div>
   </div>
 </div>
 
