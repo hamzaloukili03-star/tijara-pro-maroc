@@ -94,21 +94,24 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
           ${block.fields?.phone !== false && c.phone ? `<div style="font-size:7.5px;color:#4A6070">Tél: ${c.phone}${c.fax ? ` | Fax: ${c.fax}` : ""}</div>` : ""}
           ${block.fields?.email !== false && c.email ? `<div style="font-size:7.5px;color:#4A6070">${c.email}</div>` : ""}
         </div>
-        <div style="background:#EBF8FD;border-radius:4px;padding:7px 9px;font-size:7px">
-          ${c.ice ? `<div><strong>ICE</strong> ${c.ice}</div>` : ""}
-          ${c.if_number ? `<div><strong>IF</strong> ${c.if_number}</div>` : ""}
-          ${c.rc ? `<div><strong>RC</strong> ${c.rc}</div>` : ""}
-          ${c.patente ? `<div><strong>Patente</strong> ${c.patente}</div>` : ""}
-          ${c.cnss ? `<div><strong>CNSS</strong> ${c.cnss}</div>` : ""}
+        <div style="border:1px solid #D4E2E9;border-radius:5px;overflow:hidden;min-width:200px">
+          <div style="background:${g.secondaryColor};padding:5px 10px"><span style="font-size:7.5px;color:#fff;font-weight:700;letter-spacing:.8px">${partyLabel}</span></div>
+          <div style="padding:9px 10px;min-height:55px">
+            ${block.fields?.client_name !== false ? `<div style="font-size:9.5px;font-weight:700;color:${g.secondaryColor}">${party.name}</div>` : ""}
+            ${block.fields?.client_address !== false && party.address ? `<div style="font-size:7.5px;color:#4A6070">${party.address}${party.city ? `, ${party.city}` : ""}</div>` : ""}
+            ${block.fields?.client_phone !== false && party.phone ? `<div style="font-size:7.5px;color:#4A6070">Tél: ${party.phone}</div>` : ""}
+            ${block.fields?.client_email !== false && party.email ? `<div style="font-size:7.5px;color:#4A6070">${party.email}</div>` : ""}
+            ${block.fields?.client_ice !== false && party.ice ? `<div style="font-size:7.5px;color:${g.primaryColor};font-weight:700">ICE: ${party.ice}</div>` : ""}
+            ${block.fields?.client_rc !== false && party.rc ? `<div style="font-size:7.5px;color:#4A6070">RC: ${party.rc}</div>` : ""}
+          </div>
         </div>
       </div>`;
     }
 
     if (block.type === "title") {
       bodyHtml += `<div style="margin-bottom:${mb}px;background:${block.styles.backgroundColor || g.secondaryColor};border-radius:4px;padding:9px 16px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:${block.styles.fontSize || 16}px;font-weight:700;color:${block.styles.color || "#fff"};letter-spacing:1.5px">${DOC_TITLES[data.type]}</span>
+        <span style="font-size:${block.styles.fontSize || 16}px;font-weight:700;color:${block.styles.color || "#fff"};letter-spacing:1.5px">${DOC_TITLES[data.type]} — N° ${data.number}</span>
         <div style="text-align:right">
-          <div style="font-size:9px;color:${g.primaryColor};font-weight:700">N° ${data.number}</div>
           <div style="font-size:8px;color:#B0C8D8">Date: ${data.date}</div>
         </div>
       </div>`;
@@ -123,29 +126,7 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
       if (items.length) bodyHtml += `<div style="margin-bottom:${mb}px;display:flex;gap:8px">${items.join("")}</div>`;
     }
 
-    if (block.type === "party") {
-      bodyHtml += `<div style="margin-bottom:${mb}px;display:flex;gap:10px">
-        <div style="flex:1;border:1px solid #D4E2E9;border-radius:5px;overflow:hidden">
-          <div style="background:${g.secondaryColor};padding:5px 10px"><span style="font-size:7.5px;color:#fff;font-weight:700;letter-spacing:.8px">${partyLabel}</span></div>
-          <div style="padding:9px 10px;min-height:65px">
-            ${block.fields?.name !== false ? `<div style="font-size:9.5px;font-weight:700;color:${g.secondaryColor}">${party.name}</div>` : ""}
-            ${block.fields?.address !== false && party.address ? `<div style="font-size:7.5px;color:#4A6070">${party.address}${party.city ? `, ${party.city}` : ""}</div>` : ""}
-            ${block.fields?.phone !== false && party.phone ? `<div style="font-size:7.5px;color:#4A6070">Tél: ${party.phone}</div>` : ""}
-            ${block.fields?.email !== false && party.email ? `<div style="font-size:7.5px;color:#4A6070">${party.email}</div>` : ""}
-            ${block.fields?.ice !== false && party.ice ? `<div style="font-size:7.5px;color:${g.primaryColor};font-weight:700">ICE: ${party.ice}</div>` : ""}
-            ${block.fields?.rc !== false && party.rc ? `<div style="font-size:7.5px;color:#4A6070">RC: ${party.rc}</div>` : ""}
-          </div>
-        </div>
-        <div style="flex:1;border:1px solid #D4E2E9;border-radius:5px;overflow:hidden">
-          <div style="background:${g.secondaryColor};padding:5px 10px"><span style="font-size:7.5px;color:#fff;font-weight:700;letter-spacing:.8px">ÉMETTEUR</span></div>
-          <div style="padding:9px 10px;min-height:65px">
-            <div style="font-size:9.5px;font-weight:700;color:${g.secondaryColor}">${c.raison_sociale}</div>
-            <div style="font-size:7.5px;color:#4A6070">${[c.address, c.city].filter(Boolean).join(", ")}</div>
-            ${c.ice ? `<div style="font-size:7.5px;color:${g.primaryColor};font-weight:700">ICE: ${c.ice}</div>` : ""}
-          </div>
-        </div>
-      </div>`;
-    }
+    // party block type removed — client info is now rendered inside the logo block
 
     if (block.type === "lines_table") {
       const f = block.fields || {};

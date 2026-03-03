@@ -208,6 +208,7 @@ export default function TemplateEditorPage() {
     date: "Date", due_date: "Date d'échéance", payment_terms: "Conditions de paiement",
     origin_ref: "Réf. origine",
     name: "Nom", ice: "ICE", rc: "RC", if_number: "IF",
+    client_name: "Nom client", client_address: "Adresse client", client_ice: "ICE client", client_rc: "RC client", client_phone: "Tél. client", client_email: "Email client",
     ref: "Référence", description: "Désignation", qty: "Quantité", unit: "Unité",
     unit_price: "Prix unitaire", discount: "Remise", tva: "TVA",
     total_ht: "Total HT", total_ttc: "Total TTC", total_tva: "Total TVA",
@@ -348,25 +349,29 @@ export default function TemplateEditorPage() {
                         onClick={() => setSelectedBlockId(block.id)}
                       >
                         {block.type === "logo" && (
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-1">
                             <div>
-                              <div className="w-12 h-3 bg-primary/20 rounded mb-0.5" />
-                              <div className="font-bold text-[7px]" style={{ color: config.globalStyles.secondaryColor }}>
+                              <div className="w-10 h-2.5 bg-primary/20 rounded mb-0.5" />
+                              <div className="font-bold text-[6px]" style={{ color: config.globalStyles.secondaryColor }}>
                                 {"{{company.name}}"}
                               </div>
+                              <div className="text-[4px] text-muted-foreground">{"{{adresse...}}"}</div>
                             </div>
-                            <div className="w-10 h-6 bg-muted rounded" />
+                            <div className="border border-border rounded overflow-hidden" style={{ minWidth: 55 }}>
+                              <div className="text-[4px] font-bold px-0.5 py-0.5 text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>CLIENT</div>
+                              <div className="px-0.5 py-0.5 text-[4px] italic text-muted-foreground">{"{{client...}}"}</div>
+                            </div>
                           </div>
                         )}
                         {block.type === "title" && (
                           <div
-                            className="rounded px-1.5 py-0.5 text-center font-bold text-[8px]"
+                            className="rounded px-1.5 py-0.5 text-center font-bold text-[7px]"
                             style={{
                               backgroundColor: block.styles.backgroundColor || config.globalStyles.secondaryColor,
                               color: block.styles.color || "#fff",
                             }}
                           >
-                            {TEMPLATE_DOC_LABELS[docType]}
+                            {TEMPLATE_DOC_LABELS[docType]} — N° {"{{doc.number}}"}
                           </div>
                         )}
                         {block.type === "doc_info" && (
@@ -379,16 +384,7 @@ export default function TemplateEditorPage() {
                             ))}
                           </div>
                         )}
-                        {block.type === "party" && (
-                          <div className="flex gap-1">
-                            {["CLIENT", "ÉMETTEUR"].map((l) => (
-                              <div key={l} className="flex-1 border border-border rounded overflow-hidden">
-                                <div className="text-[5px] font-bold px-1 py-0.5" style={{ backgroundColor: config.globalStyles.secondaryColor, color: "#fff" }}>{l}</div>
-                                <div className="px-1 py-0.5 text-[5px] italic text-muted-foreground">{"{{...}}"}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* party block type removed — client info is now in logo block */}
                         {block.type === "lines_table" && (
                           <div>
                             <div className="flex gap-0.5 rounded px-0.5 py-0.5 text-[5px] font-bold text-white" style={{ backgroundColor: config.globalStyles.secondaryColor }}>
