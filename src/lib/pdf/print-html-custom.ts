@@ -259,7 +259,7 @@ body{font-family:${g.fontFamily};font-size:${g.bodyFontSize}px;color:#1A2B3C;lin
   bottom:0;
   left:0;
   right:0;
-  padding:0 15mm 1mm 15mm;
+  padding:0 15mm 0 15mm;
   background:#fff;
 }
 #page-content{
@@ -268,14 +268,14 @@ body{font-family:${g.fontFamily};font-size:${g.bodyFontSize}px;color:#1A2B3C;lin
 @media print{
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #page-footer{position:fixed;bottom:0}
-  @page{margin-bottom:${footerBlock ? "24mm" : "12mm"}}
+  @page{margin-bottom:${footerBlock ? "20mm" : "12mm"}}
 }
 </style>
 </head>
 <body>
 <div id="page-content">${bodyHtml}</div>
 ${footerHtml}
-<script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>
+<script>window.onload=function(){document.title="${DOC_TITLES[data.type]} ${data.number}";try{history.replaceState(null,"","${DOC_TITLES[data.type]} ${data.number}")}catch(e){}setTimeout(function(){window.print()},400)}</script>
 </body>
 </html>`;
 
