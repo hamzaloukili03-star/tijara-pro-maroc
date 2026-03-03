@@ -148,7 +148,7 @@ export const DEFAULT_BLOCKS: TemplateBlock[] = [
     visible: true,
     order: 8,
     styles: { fontSize: 7, spacing: 6 },
-    fields: { ice: true, if_number: true, rc: true, patente: true, capital: true },
+    fields: { ice: true, if_number: true, rc: true, patente: true, capital: true, phone: true, email: true, bank: true, page_numbers: true },
   },
 ];
 

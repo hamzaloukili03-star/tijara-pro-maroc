@@ -212,10 +212,36 @@ export function TemplatePreview({ config, docType }: TemplatePreviewProps) {
     }
 
     if (block.type === "footer") {
+      const f = block.fields || {};
       return (
-        <div key={block.id} style={{ ...positionStyle, borderTop: `1.5px solid ${g.primaryColor}`, paddingTop: 6, textAlign: "center", fontSize: 6.5, color: "#7A919E", fontStyle: "italic" }}>
-          {PH.company} — {"{{forme_juridique}}"} au capital de {"{{capital}}"} MAD<br />
-          ICE: {PH.ice} | IF: {PH.if_number} | RC: {PH.rc}
+        <div key={block.id} style={{ borderTop: `1.5px solid ${g.primaryColor}`, paddingTop: 8, fontSize: block.styles.fontSize || 6.5, color: "#7A919E", lineHeight: 1.7 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ flex: 1, textAlign: "left" }}>
+              <div style={{ fontWeight: 700, color: g.secondaryColor, fontSize: (block.styles.fontSize || 6.5) + 0.5 }}>
+                {PH.company} — {"{{forme_juridique}}"}
+              </div>
+              {f.phone !== false && <div>Tél: {PH.phone}</div>}
+              {f.email !== false && <div>{PH.email}</div>}
+            </div>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              {f.ice !== false && <div>ICE: {PH.ice}</div>}
+              {f.if_number !== false && <div>IF: {PH.if_number}</div>}
+              {f.rc !== false && <div>RC: {PH.rc}</div>}
+              {f.patente !== false && <div>Patente: {"{{patente}}"}</div>}
+              {f.capital !== false && <div>Capital: {"{{capital}}"} MAD</div>}
+            </div>
+            <div style={{ flex: 1, textAlign: "right" }}>
+              {f.bank !== false && (
+                <>
+                  <div style={{ fontWeight: 600 }}>{"{{bank.name}}"}</div>
+                  <div>RIB: {"{{bank.rib}}"}</div>
+                </>
+              )}
+              {f.page_numbers !== false && (
+                <div style={{ marginTop: 2, fontStyle: "italic" }}>Page X / Y</div>
+              )}
+            </div>
+          </div>
         </div>
       );
     }
