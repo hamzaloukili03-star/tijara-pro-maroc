@@ -4224,6 +4224,10 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      validate_same_company_ref: {
+        Args: { _company_id: string; _ref_id: string; _ref_table: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:

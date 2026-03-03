@@ -125,6 +125,7 @@ export function usePurchaseRequests() {
         estimated_cost: l.estimated_cost || 0,
         tva_rate: l.tva_rate || 0,
         sort_order: i,
+        company_id: companyId,
       });
       if (lineError) {
         console.error("Erreur insertion ligne DA:", lineError);
@@ -145,7 +146,7 @@ export function usePurchaseRequests() {
         const l = lines[i];
         await (supabase as any).from("purchase_request_lines").insert({
           request_id: id, product_id: l.product_id || null, description: l.description || "", quantity: l.quantity || 1,
-          unit: l.unit || "Unité", estimated_cost: l.estimated_cost || 0, tva_rate: l.tva_rate || 0, sort_order: i,
+          unit: l.unit || "Unité", estimated_cost: l.estimated_cost || 0, tva_rate: l.tva_rate || 0, sort_order: i, company_id: companyId,
         });
       }
     }
@@ -394,7 +395,7 @@ export function usePurchaseOrders() {
         description: rl.description, quantity: rl.quantity, unit_price: rl.unit_price,
         discount_percent: rl.discount_percent, tva_rate: rl.tva_rate,
         total_ht: Math.round(ht * 100) / 100, total_tva: Math.round(tvaAmt * 100) / 100,
-        total_ttc: Math.round((ht + tvaAmt) * 100) / 100, sort_order: i,
+        total_ttc: Math.round((ht + tvaAmt) * 100) / 100, sort_order: i, company_id: companyId,
       });
 
       const { data: polData } = await (supabase as any).from("purchase_order_lines").select("received_qty").eq("id", rl.purchase_order_line_id).single();
