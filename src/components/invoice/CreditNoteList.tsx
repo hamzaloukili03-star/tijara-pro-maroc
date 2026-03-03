@@ -45,9 +45,12 @@ export function CreditNoteList({ linkedInvoice, onClearLinked }: CreditNoteListP
   const [lines, setLines] = useState<Partial<CreditNoteLine>[]>([]);
   const [saving, setSaving] = useState(false);
 
+  const companyId = activeCompany?.id ?? null;
+
   useEffect(() => {
-    supabase.from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).then(({ data }) => setProducts(data || []));
-  }, []);
+    if (!companyId) return;
+    (supabase as any).from("products").select("id, code, name, sale_price, purchase_price, tva_rate").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => setProducts(data || []));
+  }, [companyId]);
 
   // When linked invoice is provided, auto-open form
   useEffect(() => {

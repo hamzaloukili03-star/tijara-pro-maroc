@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { Plus, Trash2, Loader2, Lock } from "lucide-react";
 import { calcPurchaseTotals, type PurchaseLine } from "@/hooks/usePurchases";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,8 @@ const SYSTEM_DEFAULT_PAYMENT_TERMS = "30j";
 
 export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const { roles } = useAuth();
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const canEditPaymentTerms = roles.some(r => ["super_admin", "admin", "manager"].includes(r));
 
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -46,9 +49,10 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const [loading, setLoading] = useState(!!editItem);
 
   useEffect(() => {
-    (supabase as any).from("suppliers").select("id, name, code, payment_terms").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
-    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => { setWarehouses(data || []); if (!editItem && data?.length) setWarehouseId(data[0].id); });
-    (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
+    if (!companyId) return;
+    (supabase as any).from("suppliers").select("id, name, code, payment_terms").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setSuppliers(data || []));
+    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => { setWarehouses(data || []); if (!editItem && data?.length) setWarehouseId(data[0].id); });
+    (supabase as any).from("products").select("id, name, code, purchase_price, tva_rate").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setProducts(data || []));
     (supabase as any).from("payment_terms").select("id, name, days").eq("is_active", true).order("sort_order").then(({ data }: any) => {
       if (data?.length) {
         const opts = data.map((pt: any) => ({

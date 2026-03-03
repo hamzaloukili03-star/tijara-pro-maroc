@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { SalesDocLine, calcTotals } from "@/hooks/useSales";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Plus, Trash2 } from "lucide-react";
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState("");
@@ -32,9 +35,10 @@ export function SalesFormDialog({ type, onClose, onSubmit }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    (supabase as any).from("customers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setCustomers(data || []));
-    (supabase as any).from("products").select("id, name, code, sale_price, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
-  }, []);
+    if (!companyId) return;
+    (supabase as any).from("customers").select("id, name, code").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setCustomers(data || []));
+    (supabase as any).from("products").select("id, name, code, sale_price, tva_rate").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setProducts(data || []));
+  }, [companyId]);
 
   const customerOptions = customers.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }));
   const productOptions = products.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }));

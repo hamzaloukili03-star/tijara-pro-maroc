@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useBankTransactions, type BankTransaction } from "@/hooks/useBankTransactions";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { Button } from "@/components/ui/button";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +13,8 @@ import { Upload, Link2, CheckCircle2 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export function BankReconciliation() {
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [bankAccountId, setBankAccountId] = useState<string | null>(null);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; account_name: string; bank_name: string }[]>([]);
   const { transactions, loading, fetchTransactions, importTransactions, reconcile } = useBankTransactions(bankAccountId);
@@ -19,8 +22,9 @@ export function BankReconciliation() {
   const [matchingPaymentId, setMatchingPaymentId] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true).then(({ data }: any) => setBankAccounts(data || []));
-  }, []);
+    if (!companyId) return;
+    (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => setBankAccounts(data || []));
+  }, [companyId]);
 
   useEffect(() => {
     if (bankAccountId) {

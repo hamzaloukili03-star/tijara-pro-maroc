@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { PurchaseLine } from "@/hooks/usePurchases";
@@ -22,6 +23,8 @@ const emptyLine = (): Partial<PurchaseLine> => ({
 });
 
 export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -36,7 +39,8 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
   const [supplierError, setSupplierError] = useState(false);
 
   useEffect(() => {
-    (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).order("name").then(({ data }: any) => setSuppliers(data || []));
+    if (!companyId) return;
+    (supabase as any).from("suppliers").select("id, name, code").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setSuppliers(data || []));
     (supabase as any).from("currencies").select("id, code, symbol, name").eq("is_active", true).order("sort_order").then(({ data }: any) => {
       setCurrencies(data || []);
       if (!editItem && data?.length) {
@@ -45,7 +49,7 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
         else setCurrencyId(data[0].id);
       }
     });
-    (supabase as any).from("products").select("id, name, code, tva_rate").eq("is_active", true).order("name").then(({ data }: any) => setProducts(data || []));
+    (supabase as any).from("products").select("id, name, code, tva_rate").eq("is_active", true).eq("company_id", companyId).order("name").then(({ data }: any) => setProducts(data || []));
 
     if (editItem) {
       setLoading(true);

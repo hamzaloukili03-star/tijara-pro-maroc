@@ -128,15 +128,16 @@ export function DeliveryFormPage({ delivery, salesOrderId, onBack, onSaved, stoc
 
   // ── Load ref data ────────────────────────────────────────────────────────
   const loadRefs = useCallback(async () => {
+    if (!companyId) return;
     const [{ data: custs }, { data: whs }, { data: prods }] = await Promise.all([
-      (supabase as any).from("customers").select("id, name, code, address, city").order("name"),
-      (supabase as any).from("warehouses").select("id, name, code").order("name"),
-      (supabase as any).from("products").select("id, name, code, sale_price, unit, tva_rate").eq("can_be_sold", true).order("name"),
+      (supabase as any).from("customers").select("id, name, code, address, city").eq("company_id", companyId).order("name"),
+      (supabase as any).from("warehouses").select("id, name, code").eq("company_id", companyId).order("name"),
+      (supabase as any).from("products").select("id, name, code, sale_price, unit, tva_rate").eq("can_be_sold", true).eq("company_id", companyId).order("name"),
     ]);
     setCustomers(custs || []);
     setWarehouses(whs || []);
     setProducts(prods || []);
-  }, []);
+  }, [companyId]);
 
   // ── Load lines for existing delivery ─────────────────────────────────────
   const loadLines = useCallback(async () => {

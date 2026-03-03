@@ -58,11 +58,14 @@ export function QuotationDetailPage({ quotation, hook, onBack, onConvertedToOrde
   const isEditable = ["draft", "sent"].includes(quotation.status);
   const isLocked = ["cancelled", "expired", "converted"].includes(quotation.status);
 
+  const companyId = activeCompany?.id ?? null;
+
   useEffect(() => {
+    if (!companyId) return;
     Promise.all([
-      (supabase as any).from("customers").select("id, name, code").eq("is_active", true).order("name"),
-      (supabase as any).from("products").select("id, name, code, sale_price, tva_rate").eq("is_active", true).order("name"),
-      (supabase as any).from("warehouses").select("id, name").eq("is_active", true),
+      (supabase as any).from("customers").select("id, name, code").eq("is_active", true).eq("company_id", companyId).order("name"),
+      (supabase as any).from("products").select("id, name, code, sale_price, tva_rate").eq("is_active", true).eq("company_id", companyId).order("name"),
+      (supabase as any).from("warehouses").select("id, name").eq("is_active", true).eq("company_id", companyId),
       hook.getLines(quotation.id),
     ]).then(([custRes, prodRes, whRes, linesData]) => {
       setCustomers(custRes.data || []);
@@ -72,7 +75,7 @@ export function QuotationDetailPage({ quotation, hook, onBack, onConvertedToOrde
       setLines(linesData || []);
       setLoading(false);
     });
-  }, [quotation.id]);
+  }, [quotation.id, companyId]);
 
   const customerOptions = customers.map(c => ({ value: c.id, label: `${c.code} — ${c.name}` }));
   const productOptions = products.map(p => ({ value: p.id, label: `${p.code} — ${p.name}` }));

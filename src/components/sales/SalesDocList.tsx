@@ -61,11 +61,12 @@ export function SalesDocList({
   }>({ query: "", operator: "contains", activeFilters: {} });
 
   useEffect(() => {
-    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).then(({ data }: any) => {
+    if (!activeCompany?.id) return;
+    (supabase as any).from("warehouses").select("id, name").eq("is_active", true).eq("company_id", activeCompany.id).then(({ data }: any) => {
       setWarehouses(data || []);
       if (data?.length) setSelectedWh(data[0].id);
     });
-  }, []);
+  }, [activeCompany?.id]);
 
   const handlePrint = async (item: any, download = false) => {
     const { data: lines } = await (supabase as any)
