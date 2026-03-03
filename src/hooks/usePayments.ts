@@ -135,6 +135,7 @@ export function usePayments(paymentType: "client" | "supplier") {
 
     toast({ title: "Paiement enregistré", description: number as string });
     await fetchPayments();
+    window.dispatchEvent(new Event("dashboard-refresh"));
     return pmt;
   };
 
@@ -165,6 +166,7 @@ export function usePayments(paymentType: "client" | "supplier") {
     }
     toast({ title: "Paiement supprimé" });
     await fetchPayments();
+    window.dispatchEvent(new Event("dashboard-refresh"));
     return true;
   };
 

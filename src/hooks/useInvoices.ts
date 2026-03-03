@@ -115,6 +115,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
         user_id: (await supabase.auth.getUser()).data.user?.id,
       });
       toast({ title: "Facture validée" });
+      window.dispatchEvent(new Event("dashboard-refresh"));
     }
     return ok;
   };
@@ -130,13 +131,17 @@ export function useInvoices(invoiceType: "client" | "supplier") {
         user_id: (await supabase.auth.getUser()).data.user?.id,
       });
       toast({ title: "Facture annulée" });
+      window.dispatchEvent(new Event("dashboard-refresh"));
     }
     return ok;
   };
 
   const markPaid = async (id: string) => {
     const ok = await updateInvoice(id, { status: "paid", remaining_balance: 0 });
-    if (ok) toast({ title: "Facture marquée comme payée" });
+    if (ok) {
+      toast({ title: "Facture marquée comme payée" });
+      window.dispatchEvent(new Event("dashboard-refresh"));
+    }
     return ok;
   };
 
