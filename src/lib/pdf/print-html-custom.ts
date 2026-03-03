@@ -63,7 +63,7 @@ export async function openPrintHtmlWithTemplate(data: PdfDocumentData) {
 }
 
 function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
-  const printWindow = window.open("", "_blank");
+  const printWindow = window.open("about:blank", "_blank");
   if (!printWindow) {
     alert("Le navigateur a bloqué l'ouverture de la fenêtre. Veuillez autoriser les pop-ups.");
     return;
@@ -247,7 +247,7 @@ function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
 <meta charset="UTF-8"/>
 <title>${DOC_TITLES[data.type]} ${data.number}</title>
 <style>
-@page { size: A4; margin: 12mm 15mm 18mm 15mm; }
+@page { size: A4; margin: 12mm 15mm 24mm 15mm; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:${g.fontFamily};font-size:${g.bodyFontSize}px;color:#1A2B3C;line-height:1.45;background:#fff}
 .logo{max-height:55px;max-width:160px;object-fit:contain;margin-bottom:4px}
@@ -259,16 +259,16 @@ body{font-family:${g.fontFamily};font-size:${g.bodyFontSize}px;color:#1A2B3C;lin
   bottom:0;
   left:0;
   right:0;
-  padding:0 15mm 2mm 15mm;
+  padding:0 15mm 1mm 15mm;
   background:#fff;
 }
 #page-content{
-  padding-bottom:${footerBlock ? "50" : "0"}px;
+  padding-bottom:${footerBlock ? "55" : "0"}px;
 }
 @media print{
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #page-footer{position:fixed;bottom:0}
-  @page{margin-bottom:${footerBlock ? "22mm" : "12mm"}}
+  @page{margin-bottom:${footerBlock ? "24mm" : "12mm"}}
 }
 </style>
 </head>
