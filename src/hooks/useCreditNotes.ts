@@ -11,13 +11,13 @@ export function useCreditNotes() {
   const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
+    if (!companyId) { setCreditNotes([]); setLoading(false); return; }
     setLoading(true);
-    let query = (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("credit_notes")
       .select("*, customer:customers(name), supplier:suppliers(name), invoice:invoices(invoice_number)")
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-    if (companyId) query = query.eq("company_id", companyId);
-    const { data, error } = await query;
     setLoading(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });

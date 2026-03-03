@@ -36,10 +36,13 @@ export function useCashRegisters() {
   const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
+    if (!companyId) { setRegisters([]); setLoading(false); return; }
     setLoading(true);
-    let query = (supabase as any).from("cash_registers").select("*, warehouse:warehouses(name)").order("created_at", { ascending: false });
-    if (companyId) query = query.eq("company_id", companyId);
-    const { data } = await query;
+    const { data } = await (supabase as any)
+      .from("cash_registers")
+      .select("*, warehouse:warehouses(name)")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false });
     setRegisters(data || []);
     setLoading(false);
   }, [companyId]);
@@ -99,7 +102,7 @@ export function useCashRegisters() {
   const addMovement = async (registerId: string, type: string, amount: number, reference?: string, notes?: string, paymentId?: string) => {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     await (supabase as any).from("cash_register_movements").insert({
-      cash_register_id: registerId, movement_type: type, amount, reference, notes, payment_id: paymentId || null, created_by: userId,
+      cash_register_id: registerId, movement_type: type, amount, reference, notes, payment_id: paymentId || null, created_by: userId, company_id: companyId,
     });
     const { data: reg } = await (supabase as any).from("cash_registers").select("current_balance").eq("id", registerId).single();
     if (reg) {

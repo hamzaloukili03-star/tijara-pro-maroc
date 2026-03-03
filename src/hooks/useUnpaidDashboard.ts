@@ -30,17 +30,16 @@ export function useUnpaidDashboard() {
   const companyId = activeCompany?.id ?? null;
 
   const fetch = useCallback(async () => {
+    if (!companyId) { setInvoices([]); setBuckets([]); setTotalUnpaid(0); setLoading(false); return; }
     setLoading(true);
-    let query = (supabase as any)
+    const { data } = await (supabase as any)
       .from("invoices")
       .select("id, invoice_number, total_ttc, remaining_balance, due_date, invoice_date, customer:customers(id, name)")
       .eq("invoice_type", "client")
+      .eq("company_id", companyId)
       .in("status", ["validated", "paid"])
       .gt("remaining_balance", 0)
       .order("due_date", { ascending: true });
-    if (companyId) query = query.eq("company_id", companyId);
-
-    const { data } = await query;
 
     const now = new Date();
     const mapped: UnpaidInvoice[] = (data || []).map((inv: any) => {

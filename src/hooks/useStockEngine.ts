@@ -85,12 +85,12 @@ export function useStockEngine() {
   const companyId = activeCompany?.id ?? null;
 
   const fetchStockLevels = useCallback(async () => {
-    let query = (supabase as any)
+    if (!companyId) { setStockLevels([]); return; }
+    const { data, error } = await (supabase as any)
       .from("stock_levels")
       .select("*, product:products(name, code, sale_price, purchase_price), warehouse:warehouses(name, code)")
+      .eq("company_id", companyId)
       .order("updated_at", { ascending: false });
-    if (companyId) query = query.eq("company_id", companyId);
-    const { data, error } = await query;
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
     setStockLevels((data || []).map((d: any) => ({
       ...d,
@@ -99,35 +99,35 @@ export function useStockEngine() {
   }, [companyId]);
 
   const fetchMovements = useCallback(async () => {
-    let query = (supabase as any)
+    if (!companyId) { setMovements([]); return; }
+    const { data, error } = await (supabase as any)
       .from("stock_movements")
       .select("*, product:products(name, code), warehouse:warehouses(name)")
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false })
       .limit(200);
-    if (companyId) query = query.eq("company_id", companyId);
-    const { data, error } = await query;
     if (error) return;
     setMovements(data || []);
   }, [companyId]);
 
   const fetchTransfers = useCallback(async () => {
-    let query = (supabase as any)
+    if (!companyId) { setTransfers([]); return; }
+    const { data, error } = await (supabase as any)
       .from("stock_transfers")
       .select("*, from_warehouse:warehouses!stock_transfers_from_warehouse_id_fkey(name), to_warehouse:warehouses!stock_transfers_to_warehouse_id_fkey(name)")
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-    if (companyId) query = query.eq("company_id", companyId);
-    const { data, error } = await query;
     if (error) return;
     setTransfers(data || []);
   }, [companyId]);
 
   const fetchAdjustments = useCallback(async () => {
-    let query = (supabase as any)
+    if (!companyId) { setAdjustments([]); return; }
+    const { data, error } = await (supabase as any)
       .from("inventory_adjustments")
       .select("*, warehouse:warehouses(name)")
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-    if (companyId) query = query.eq("company_id", companyId);
-    const { data, error } = await query;
     if (error) return;
     setAdjustments(data || []);
   }, [companyId]);
@@ -149,7 +149,7 @@ export function useStockEngine() {
       .eq("warehouse_id", warehouseId)
       .maybeSingle();
     if (!data) {
-      await (supabase as any).from("stock_levels").insert({ product_id: productId, warehouse_id: warehouseId });
+      await (supabase as any).from("stock_levels").insert({ product_id: productId, warehouse_id: warehouseId, company_id: companyId });
     }
   };
 
@@ -184,6 +184,7 @@ export function useStockEngine() {
       reference_type: refType,
       reference_id: refId || null,
       created_by: (await supabase.auth.getUser()).data.user?.id,
+      company_id: companyId,
     });
   };
 
@@ -215,6 +216,7 @@ export function useStockEngine() {
       reference_type: refType,
       reference_id: refId || null,
       created_by: (await supabase.auth.getUser()).data.user?.id,
+      company_id: companyId,
     });
     return true;
   };

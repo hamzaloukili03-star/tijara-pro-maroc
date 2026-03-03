@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 export interface BankTransaction {
   id: string;
@@ -21,6 +22,8 @@ export interface BankTransaction {
 export function useBankTransactions(bankAccountId: string | null) {
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetchTransactions = useCallback(async () => {
     if (!bankAccountId) return;
@@ -47,6 +50,7 @@ export function useBankTransactions(bankAccountId: string | null) {
       reference: r.reference || null,
       debit: r.debit || 0,
       credit: r.credit || 0,
+      company_id: companyId,
     }));
     const { error } = await (supabase as any).from("bank_transactions").insert(toInsert);
     if (error) {
