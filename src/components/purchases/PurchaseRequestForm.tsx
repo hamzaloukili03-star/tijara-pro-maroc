@@ -58,7 +58,7 @@ export function PurchaseRequestForm({ editItem, hook, onClose }: Props) {
         setLoading(false);
       });
     }
-  }, []);
+  }, [companyId]);
 
   const updateLine = (idx: number, field: string, value: any) => {
     const updated = [...lines];

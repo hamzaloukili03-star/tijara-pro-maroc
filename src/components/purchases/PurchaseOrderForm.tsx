@@ -75,7 +75,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
         setLoading(false);
       });
     }
-  }, []);
+  }, [companyId]);
 
   const handleSupplierChange = (id: string) => {
     setSupplierId(id);

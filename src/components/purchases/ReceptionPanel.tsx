@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +7,7 @@ import { Loader2, Package, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useCompany } from "@/hooks/useCompany";
 
 interface Props {
   orders: any;
@@ -14,23 +15,27 @@ interface Props {
 }
 
 export function ReceptionPanel({ orders, stock }: Props) {
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
   const [receptions, setReceptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [receptionDialog, setReceptionDialog] = useState<string | null>(null);
   const [orderLines, setOrderLines] = useState<any[]>([]);
   const [receptionQtys, setReceptionQtys] = useState<Record<string, number>>({});
 
-  const fetchReceptions = async () => {
+  const fetchReceptions = useCallback(async () => {
+    if (!companyId) { setReceptions([]); setLoading(false); return; }
     setLoading(true);
     const { data } = await (supabase as any)
       .from("receptions")
       .select("*, supplier:suppliers(name)")
+      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setReceptions(data || []);
     setLoading(false);
-  };
+  }, [companyId]);
 
-  useEffect(() => { fetchReceptions(); }, []);
+  useEffect(() => { fetchReceptions(); }, [fetchReceptions]);
 
   const openReceptionDialog = async (orderId: string) => {
     const lines = await orders.getLines(orderId);
