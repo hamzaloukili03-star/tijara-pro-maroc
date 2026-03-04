@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -127,6 +128,7 @@ const App = () => (
             <Route path="/config/devises" element={<ProtectedRoute><CurrenciesPage /></ProtectedRoute>} />
 
             {/* Achats */}
+            <Route path="/achats" element={<Navigate to="/achats/demandes" replace />} />
             <Route path="/achats/demandes" element={<ProtectedRoute><DemandesAchat /></ProtectedRoute>} />
             <Route path="/achats/commandes" element={<ProtectedRoute><CommandesFournisseurs /></ProtectedRoute>} />
             <Route path="/achats/depenses" element={<ProtectedRoute><Depenses /></ProtectedRoute>} />

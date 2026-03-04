@@ -304,6 +304,74 @@ export async function printPurchaseOrderPdf(
   else await generateAndOpenPdf(data);
 }
 
+// ─── Purchase Request PDF ─────────────────────────────────────────────────
+
+export async function printPurchaseRequestPdf(
+  request: any,
+  companyId?: string | null,
+  download = false
+) {
+  const [company, bank] = await Promise.all([
+    fetchCompany(companyId),
+    fetchDefaultBank(companyId),
+  ]);
+  if (!company) return;
+
+  // Fetch lines
+  const { data: lines } = await (supabase as any)
+    .from("purchase_request_lines")
+    .select("*, product:products(code,name,unit,tva_rate,purchase_price)")
+    .eq("request_id", request.id)
+    .order("sort_order");
+
+  const requestLines = (lines || []).map((l: any, i: number) => {
+    const qty = Number(l.quantity || 0);
+    const price = Number(l.estimated_cost || l.product?.purchase_price || 0);
+    const tva = Number(l.tva_rate || l.product?.tva_rate || 0);
+    const ht = qty * price;
+    const ttc = ht * (1 + tva / 100);
+    return {
+      ref: l.product?.code || String(i + 1).padStart(3, "0"),
+      description: l.description || l.product?.name || "—",
+      quantity: qty,
+      unit: l.unit || l.product?.unit || "Unité",
+      unit_price: price,
+      discount_percent: 0,
+      tva_rate: tva,
+      total_ht: Math.round(ht * 100) / 100,
+      total_ttc: Math.round(ttc * 100) / 100,
+    };
+  });
+
+  const subtotalHt = requestLines.reduce((s: number, l: any) => s + l.total_ht, 0);
+  const totalTtc = requestLines.reduce((s: number, l: any) => s + l.total_ttc, 0);
+
+  const data: PdfDocumentData = {
+    type: "commande_fournisseur",
+    number: request.number || request.request_number || "DA",
+    date: request.date || request.request_date || new Date().toISOString().split("T")[0],
+    party: {
+      name: request.supplier?.name || "—",
+      ice: request.supplier?.ice,
+      address: request.supplier?.address,
+      city: request.supplier?.city,
+      phone: request.supplier?.phone,
+      email: request.supplier?.email,
+      rc: request.supplier?.rc,
+    },
+    lines: requestLines,
+    subtotalHt,
+    totalTva: totalTtc - subtotalHt,
+    totalTtc,
+    notes: request.notes,
+    company,
+    bankAccount: bank,
+  };
+
+  if (download) await generateAndDownloadPdf(data);
+  else await generateAndOpenPdf(data);
+}
+
 // ─── Reception PDF ────────────────────────────────────────────────────────────
 
 export async function printReceptionPdf(
