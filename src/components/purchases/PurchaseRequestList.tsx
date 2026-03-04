@@ -1,13 +1,37 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Loader2, Eye, Edit, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { Plus, Loader2, Eye, Edit, Trash2, X, Paperclip } from "lucide-react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { PurchaseRequestDetail } from "@/components/purchases/PurchaseRequestDetail";
 import { PURCHASE_REQUEST_STATUS, getStatus } from "@/lib/status-config";
+import { AdvancedSearch, applyAdvancedSearch, type SearchOperator, type SearchableField, type FilterOption } from "@/components/AdvancedSearch";
+import { DocAttachmentsDialog } from "@/components/DocAttachmentsDialog";
+import { useCompany } from "@/hooks/useCompany";
+import { PrintButton } from "@/components/PrintButton";
+import { printPurchaseRequestPdf } from "@/lib/pdf";
+
+const SEARCH_FIELDS: SearchableField[] = [
+  { key: "number", label: "Référence" },
+  { key: "_supplier_name", label: "Fournisseur" },
+];
+
+const FILTERS: FilterOption[] = [
+  {
+    key: "status", label: "Statut", type: "select",
+    options: [
+      { value: "draft", label: "Brouillon" },
+      { value: "submitted", label: "Soumise" },
+      { value: "approved", label: "Approuvée" },
+      { value: "confirmed", label: "Confirmée" },
+      { value: "refused", label: "Refusée" },
+      { value: "cancelled", label: "Annulée" },
+    ],
+  },
+];
 
 interface Props {
   items: any[];
@@ -24,11 +48,19 @@ interface Props {
 
 export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, onCancel, onCreatePO, onSubmit, onApprove, onRefuse }: Props) {
   const { roles } = useAuth();
+  const { activeCompany } = useCompany();
   const isAdmin = roles.some(r => ["super_admin", "admin"].includes(r));
   const [detail, setDetail] = useState<any>(null);
   const [actionDialog, setActionDialog] = useState<{ id: string; action: "refuse" | "cancel" | "delete" } | null>(null);
   const [reason, setReason] = useState("");
   const [creatingPO, setCreatingPO] = useState<string | null>(null);
+  const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
+
+  const [searchState, setSearchState] = useState<{
+    query: string; operator: SearchOperator; activeFilters: Record<string, string>;
+  }>({ query: "", operator: "contains", activeFilters: {} });
+
+  const handleSearch = useCallback((state: typeof searchState) => { setSearchState(state); }, []);
 
   const handleCreatePO = async (id: string) => {
     setCreatingPO(id);
@@ -45,6 +77,21 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
     setReason("");
   };
 
+  const handlePrint = async (item: any, download = false) => {
+    await printPurchaseRequestPdf(item, activeCompany?.id, download);
+  };
+
+  // Augment items with searchable supplier name
+  const augmented = items.map((item) => ({ ...item, _supplier_name: item.supplier?.name || "" }));
+
+  const filtered = applyAdvancedSearch(
+    augmented,
+    SEARCH_FIELDS.map((f) => f.key),
+    searchState.query,
+    searchState.operator,
+    searchState.activeFilters,
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -52,9 +99,16 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
         <Button onClick={onNew} size="sm"><Plus className="h-4 w-4 mr-1" /> Nouvelle demande</Button>
       </div>
 
+      <AdvancedSearch
+        searchFields={SEARCH_FIELDS}
+        filters={FILTERS}
+        onSearch={handleSearch}
+        placeholder="Rechercher par référence, fournisseur..."
+      />
+
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">Aucune demande d'achat</div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -71,7 +125,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => {
+              {filtered.map((item) => {
                 const cfg = getStatus(PURCHASE_REQUEST_STATUS, item.status);
                 const isDraft = item.status === "draft";
                 const isSubmitted = item.status === "submitted";
@@ -89,6 +143,15 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
                       <div className="flex items-center justify-end gap-1 flex-wrap">
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Voir" onClick={() => setDetail(item)}>
                           <Eye className="h-3.5 w-3.5" />
+                        </Button>
+
+                        <PrintButton iconOnly onPrint={() => handlePrint(item)} onDownload={() => handlePrint(item, true)} />
+
+                        <Button
+                          size="sm" variant="ghost" className="h-8 w-8 p-0" title="Pièces jointes"
+                          onClick={() => setAttachDialog({ id: item.id, number: item.number })}
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
                         </Button>
 
                         {isDraft && (
@@ -148,6 +211,17 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
           onClose={() => setDetail(null)}
           onCreatePO={onCreatePO}
           onEdit={onEdit}
+        />
+      )}
+
+      {attachDialog && (
+        <DocAttachmentsDialog
+          open={!!attachDialog}
+          onClose={() => setAttachDialog(null)}
+          docType="purchase_request"
+          docId={attachDialog.id}
+          docNumber={attachDialog.number}
+          companyId={activeCompany?.id}
         />
       )}
 

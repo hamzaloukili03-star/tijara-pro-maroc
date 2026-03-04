@@ -80,7 +80,7 @@ export const EXPENSE_STATUS: Record<string, StatusCfg> = {
 };
 
 /** Generic fallback */
-export const STATUS_FALLBACK: StatusCfg = { label: "Inconnu", className: "bg-muted text-muted-foreground" };
+export const STATUS_FALLBACK: StatusCfg = { label: "Brouillon", className: "bg-muted text-muted-foreground" };
 
 export function getStatus(map: Record<string, StatusCfg>, status: string): StatusCfg {
   return map[status] ?? STATUS_FALLBACK;
