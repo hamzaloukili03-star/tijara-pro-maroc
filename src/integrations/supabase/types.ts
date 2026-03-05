@@ -3135,6 +3135,7 @@ export type Database = {
       }
       reminder_logs: {
         Row: {
+          company_id: string | null
           created_at: string
           customer_id: string | null
           id: string
@@ -3145,6 +3146,7 @@ export type Database = {
           sent_by: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           customer_id?: string | null
           id?: string
@@ -3155,6 +3157,7 @@ export type Database = {
           sent_by?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           customer_id?: string | null
           id?: string
@@ -3165,6 +3168,13 @@ export type Database = {
           sent_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reminder_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reminder_logs_customer_id_fkey"
             columns: ["customer_id"]
