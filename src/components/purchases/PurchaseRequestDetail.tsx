@@ -18,6 +18,9 @@ interface Props {
   onClose: () => void;
   onCreatePO?: (id: string) => Promise<any>;
   onEdit?: (item: any) => void;
+  onSubmit?: (id: string) => void;
+  onApprove?: (id: string) => void;
+  onRefuse?: (id: string, reason?: string) => void;
 }
 
 export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Props) {
