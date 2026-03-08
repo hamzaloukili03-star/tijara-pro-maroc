@@ -496,7 +496,7 @@ export function usePurchaseOrders() {
     if (!rec) return null;
     if (rec.invoice_id) { toast({ title: "Déjà facturé", variant: "destructive" }); return null; }
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "FAF" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "FAF", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const lines = rec.reception_lines || [];
