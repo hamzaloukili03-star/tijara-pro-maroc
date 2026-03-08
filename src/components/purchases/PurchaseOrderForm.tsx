@@ -103,7 +103,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const totals = calcTotalsWithGlobalDiscount(calcedLines, globalDiscount.type, globalDiscount.value);
 
   const handleSave = async () => {
-    if (!supplierId || !warehouseId) return;
+    if (!supplierId) return;
     if (await isSupplierBlocked(supplierId)) return;
     setSaving(true);
     if (editItem) {
