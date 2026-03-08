@@ -584,7 +584,6 @@ export function usePurchaseOrders() {
     }
 
     await auditLog("create_supplier_invoice", "invoices", inv.id, `FAF: ${num}`);
-    toast({ title: "Facture fournisseur (brouillon) créée", description: num as string });
     return inv;
   };
 
