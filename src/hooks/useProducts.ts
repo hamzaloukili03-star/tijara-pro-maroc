@@ -202,6 +202,8 @@ export function useProductAttributes() {
 export function useProductVariants(productId: string | null) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(false);
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id ?? null;
 
   const fetchVariants = useCallback(async () => {
     if (!productId) { setVariants([]); return; }
@@ -212,21 +214,17 @@ export function useProductVariants(productId: string | null) {
       .eq("product_id", productId)
       .order("created_at");
 
-    if (!vars) { setLoading(false); return; }
+    if (!vars || vars.length === 0) { setVariants([]); setLoading(false); return; }
 
     const variantIds = vars.map((v: any) => v.id);
-    let attrValues: any[] = [];
-    if (variantIds.length > 0) {
-      const { data } = await (supabase as any)
-        .from("variant_attribute_values")
-        .select("*, product_attributes(name), product_attribute_values(value, color_hex)")
-        .in("variant_id", variantIds);
-      attrValues = data || [];
-    }
+    const { data: attrValues } = await (supabase as any)
+      .from("variant_attribute_values")
+      .select("*, product_attributes(name), product_attribute_values(value, color_hex)")
+      .in("variant_id", variantIds);
 
     const result: ProductVariant[] = vars.map((v: any) => ({
       ...v,
-      attribute_values: attrValues
+      attribute_values: (attrValues || [])
         .filter((av: any) => av.variant_id === v.id)
         .map((av: any) => ({
           attribute_name: av.product_attributes?.name || "",
@@ -241,10 +239,12 @@ export function useProductVariants(productId: string | null) {
   useEffect(() => { fetchVariants(); }, [fetchVariants]);
 
   const generateVariants = async (
-    productId: string,
+    pid: string,
     attributeLines: { attribute_id: string; value_ids: string[] }[]
   ) => {
     if (attributeLines.length === 0) return;
+
+    // Build all combinations (cartesian product)
     const combinations: { attribute_id: string; value_id: string }[][] = attributeLines.reduce(
       (acc: any[][], line) => {
         if (acc.length === 0) {
@@ -261,10 +261,35 @@ export function useProductVariants(productId: string | null) {
       [] as any[][]
     );
 
+    // Fetch existing variants to avoid duplicates
+    const { data: existingVars } = await (supabase as any)
+      .from("product_variants")
+      .select("id")
+      .eq("product_id", pid);
+    const existingIds = (existingVars || []).map((v: any) => v.id);
+    let existingCombos: string[] = [];
+    if (existingIds.length > 0) {
+      const { data: existingLinks } = await (supabase as any)
+        .from("variant_attribute_values")
+        .select("variant_id, value_id")
+        .in("variant_id", existingIds);
+      // Build a signature per variant: sorted value_ids joined
+      const variantSigs: Record<string, string[]> = {};
+      (existingLinks || []).forEach((l: any) => {
+        if (!variantSigs[l.variant_id]) variantSigs[l.variant_id] = [];
+        variantSigs[l.variant_id].push(l.value_id);
+      });
+      existingCombos = Object.values(variantSigs).map((ids) => [...ids].sort().join("|"));
+    }
+
+    let created = 0;
     for (const combo of combinations) {
+      const sig = combo.map((c) => c.value_id).sort().join("|");
+      if (existingCombos.includes(sig)) continue; // skip duplicate
+
       const { data: variant, error } = await (supabase as any)
         .from("product_variants")
-        .insert({ product_id: productId })
+        .insert({ product_id: pid, company_id: companyId })
         .select()
         .single();
       if (error || !variant) continue;
@@ -273,16 +298,23 @@ export function useProductVariants(productId: string | null) {
         variant_id: variant.id,
         attribute_id: c.attribute_id,
         value_id: c.value_id,
+        company_id: companyId,
       }));
       await (supabase as any).from("variant_attribute_values").insert(links);
+      created++;
     }
 
-    toast({ title: "Variantes générées" });
+    if (created > 0) {
+      toast({ title: `${created} variante(s) générée(s)` });
+    } else {
+      toast({ title: "Aucune nouvelle combinaison", description: "Toutes les variantes existent déjà." });
+    }
     await fetchVariants();
   };
 
   const updateVariant = async (id: string, record: Partial<ProductVariant>) => {
-    const { error } = await (supabase as any).from("product_variants").update(record).eq("id", id);
+    const { attribute_values, ...dbRecord } = record as any;
+    const { error } = await (supabase as any).from("product_variants").update(dbRecord).eq("id", id);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return false;
@@ -292,8 +324,13 @@ export function useProductVariants(productId: string | null) {
   };
 
   const deleteVariant = async (id: string) => {
+    // variant_attribute_values will cascade delete
     const { error } = await (supabase as any).from("product_variants").delete().eq("id", id);
     if (error) {
+      if (error.message?.includes("foreign key") || error.message?.includes("constraint")) {
+        toast({ title: "Suppression impossible", description: "Cette variante est liée à des transactions. Désactivez-la à la place.", variant: "destructive" });
+        return false;
+      }
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return false;
     }
