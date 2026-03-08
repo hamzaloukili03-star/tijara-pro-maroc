@@ -1,7 +1,23 @@
+/**
+ * usePayments.ts — Payment management for TIJARAPRO
+ *
+ * Handles both client payments (encaissements/ENC) and supplier payments (décaissements/DEC).
+ *
+ * Key business rules:
+ * - Cash payments are subject to a 5000 MAD daily limit per customer (Moroccan regulation)
+ * - Payments are allocated to specific invoices via payment_allocations
+ * - When an allocation is made, the invoice's remaining_balance is decreased
+ * - Deleting a payment reverses allocations and restores invoice balances
+ *
+ * Dispatches "dashboard-refresh" event to keep dashboard KPIs current.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Payment {
   id: string;
@@ -38,6 +54,8 @@ export interface PaymentAllocation {
   invoice?: { invoice_number: string; total_ttc: number; remaining_balance: number } | null;
 }
 
+// ─── Hook ───────────────────────────────────────────────────────────────────
+
 export function usePayments(paymentType: "client" | "supplier") {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +81,10 @@ export function usePayments(paymentType: "client" | "supplier") {
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
+  /**
+   * Moroccan regulation: cash payments to a single customer cannot exceed 5000 MAD/day.
+   * Returns whether the payment is allowed and the current daily total.
+   */
   const checkCashLimit = async (customerId: string, amount: number, date: string): Promise<{ allowed: boolean; totalToday: number }> => {
     if (!customerId) return { allowed: true, totalToday: 0 };
     const { data } = await (supabase as any)
@@ -76,6 +98,11 @@ export function usePayments(paymentType: "client" | "supplier") {
     return { allowed: (totalToday + amount) <= 4999.99, totalToday };
   };
 
+  /**
+   * Create payment + allocate to invoices.
+   * Each allocation reduces the target invoice's remaining_balance.
+   * Marks invoice as "paid" when balance reaches 0.
+   */
   const create = async (
     payment: Partial<Payment>,
     allocations: { invoice_id: string; amount: number }[]
@@ -104,20 +131,14 @@ export function usePayments(paymentType: "client" | "supplier") {
       return null;
     }
 
+    // Allocate payment to invoices and update remaining balances
     for (const alloc of allocations) {
       await (supabase as any).from("payment_allocations").insert({
-        payment_id: pmt.id,
-        invoice_id: alloc.invoice_id,
-        amount: alloc.amount,
-        company_id: companyId,
+        payment_id: pmt.id, invoice_id: alloc.invoice_id, amount: alloc.amount, company_id: companyId,
       });
 
       const { data: inv } = await (supabase as any)
-        .from("invoices")
-        .select("remaining_balance")
-        .eq("id", alloc.invoice_id)
-        .single();
-
+        .from("invoices").select("remaining_balance").eq("id", alloc.invoice_id).single();
       if (inv) {
         const newBalance = Math.max(0, Number(inv.remaining_balance) - alloc.amount);
         const updates: any = { remaining_balance: newBalance };
@@ -127,9 +148,7 @@ export function usePayments(paymentType: "client" | "supplier") {
     }
 
     await (supabase as any).from("audit_logs").insert({
-      action: "create_payment",
-      table_name: "payments",
-      record_id: pmt.id,
+      action: "create_payment", table_name: "payments", record_id: pmt.id,
       details: `Paiement ${number} de ${payment.amount} MAD`,
       user_id: (await supabase.auth.getUser()).data.user?.id,
     });
@@ -140,18 +159,18 @@ export function usePayments(paymentType: "client" | "supplier") {
     return pmt;
   };
 
+  /**
+   * Delete payment and reverse all its invoice allocations.
+   * Restores invoice remaining_balance and sets status back to "validated".
+   */
   const remove = async (id: string) => {
     const { data: allocs } = await (supabase as any)
-      .from("payment_allocations")
-      .select("invoice_id, amount")
-      .eq("payment_id", id);
+      .from("payment_allocations").select("invoice_id, amount").eq("payment_id", id);
 
+    // Reverse each allocation
     for (const alloc of (allocs || [])) {
       const { data: inv } = await (supabase as any)
-        .from("invoices")
-        .select("remaining_balance, status")
-        .eq("id", alloc.invoice_id)
-        .single();
+        .from("invoices").select("remaining_balance, status").eq("id", alloc.invoice_id).single();
       if (inv) {
         await (supabase as any).from("invoices").update({
           remaining_balance: Number(inv.remaining_balance) + Number(alloc.amount),

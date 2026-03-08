@@ -1,7 +1,27 @@
+/**
+ * useStockEngine.ts — Stock management engine for TIJARAPRO
+ *
+ * Manages the full stock lifecycle:
+ *   - Stock levels (on-hand, reserved, available per product × warehouse)
+ *   - Stock movements (in/out records with traceability)
+ *   - Stock transfers between warehouses
+ *   - Inventory adjustments (physical counts vs system counts)
+ *
+ * Key concepts:
+ *   - stock_available = stock_on_hand - stock_reserved
+ *   - CMUP (Coût Moyen Unitaire Pondéré): weighted average cost, recalculated on every stock-in
+ *   - Reservations: placed when a sales order is confirmed, released on delivery
+ *   - ensureStockLevel: auto-creates stock_levels row if it doesn't exist for a product × warehouse pair
+ *
+ * All operations are company-scoped via companyId.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface StockLevel {
   id: string;
@@ -9,7 +29,7 @@ export interface StockLevel {
   warehouse_id: string;
   stock_on_hand: number;
   stock_reserved: number;
-  stock_available: number;
+  stock_available: number; // Computed client-side: on_hand - reserved
   cmup: number;
   product?: { name: string; code: string; sale_price: number; purchase_price: number };
   warehouse?: { name: string; code: string };
@@ -19,10 +39,10 @@ export interface StockMovement {
   id: string;
   product_id: string;
   warehouse_id: string;
-  movement_type: string;
+  movement_type: string; // "in" | "out"
   quantity: number;
   unit_cost: number;
-  reference_type: string | null;
+  reference_type: string | null; // "reception" | "delivery" | "transfer" | "adjustment"
   reference_id: string | null;
   notes: string | null;
   created_by: string | null;
@@ -71,9 +91,11 @@ export interface InventoryAdjustmentLine {
   product_id: string;
   system_qty: number;
   counted_qty: number;
-  difference: number;
+  difference: number; // counted_qty - system_qty
   product?: { name: string; code: string };
 }
+
+// ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useStockEngine() {
   const [stockLevels, setStockLevels] = useState<StockLevel[]>([]);
@@ -83,6 +105,8 @@ export function useStockEngine() {
   const [loading, setLoading] = useState(true);
   const { activeCompany } = useCompany();
   const companyId = activeCompany?.id ?? null;
+
+  // ── Data fetching ──
 
   const fetchStockLevels = useCallback(async () => {
     if (!companyId) { setStockLevels([]); return; }
@@ -100,35 +124,32 @@ export function useStockEngine() {
 
   const fetchMovements = useCallback(async () => {
     if (!companyId) { setMovements([]); return; }
-    const { data, error } = await (supabase as any)
+    const { data } = await (supabase as any)
       .from("stock_movements")
       .select("*, product:products(name, code), warehouse:warehouses(name)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) return;
     setMovements(data || []);
   }, [companyId]);
 
   const fetchTransfers = useCallback(async () => {
     if (!companyId) { setTransfers([]); return; }
-    const { data, error } = await (supabase as any)
+    const { data } = await (supabase as any)
       .from("stock_transfers")
       .select("*, from_warehouse:warehouses!stock_transfers_from_warehouse_id_fkey(name), to_warehouse:warehouses!stock_transfers_to_warehouse_id_fkey(name)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-    if (error) return;
     setTransfers(data || []);
   }, [companyId]);
 
   const fetchAdjustments = useCallback(async () => {
     if (!companyId) { setAdjustments([]); return; }
-    const { data, error } = await (supabase as any)
+    const { data } = await (supabase as any)
       .from("inventory_adjustments")
       .select("*, warehouse:warehouses(name)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-    if (error) return;
     setAdjustments(data || []);
   }, [companyId]);
 
@@ -140,132 +161,102 @@ export function useStockEngine() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Ensure stock level record exists
+  // ── Core stock operations ──
+
+  /** Ensure a stock_levels row exists for a product × warehouse pair */
   const ensureStockLevel = async (productId: string, warehouseId: string) => {
     const { data } = await (supabase as any)
-      .from("stock_levels")
-      .select("id")
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId)
+      .from("stock_levels").select("id")
+      .eq("product_id", productId).eq("warehouse_id", warehouseId)
       .maybeSingle();
     if (!data) {
       await (supabase as any).from("stock_levels").insert({ product_id: productId, warehouse_id: warehouseId, company_id: companyId });
     }
   };
 
-  // Add stock (reception)
+  /**
+   * Add stock (e.g., reception).
+   * Recalculates CMUP using weighted average formula:
+   *   newCmup = (currentQty × currentCmup + addedQty × unitCost) / newTotalQty
+   */
   const addStock = async (productId: string, warehouseId: string, qty: number, unitCost: number, refType: string, refId?: string) => {
     await ensureStockLevel(productId, warehouseId);
-    // Get current level for CMUP calculation
     const { data: sl } = await (supabase as any)
-      .from("stock_levels")
-      .select("stock_on_hand, cmup")
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId)
-      .single();
+      .from("stock_levels").select("stock_on_hand, cmup")
+      .eq("product_id", productId).eq("warehouse_id", warehouseId).single();
 
     const currentQty = Number(sl?.stock_on_hand || 0);
     const currentCmup = Number(sl?.cmup || 0);
     const newQty = currentQty + qty;
     const newCmup = newQty > 0 ? ((currentQty * currentCmup) + (qty * unitCost)) / newQty : unitCost;
 
-    await (supabase as any)
-      .from("stock_levels")
+    await (supabase as any).from("stock_levels")
       .update({ stock_on_hand: newQty, cmup: Math.round(newCmup * 100) / 100 })
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId);
+      .eq("product_id", productId).eq("warehouse_id", warehouseId);
 
     await (supabase as any).from("stock_movements").insert({
-      product_id: productId,
-      warehouse_id: warehouseId,
-      movement_type: "in",
-      quantity: qty,
-      unit_cost: unitCost,
-      reference_type: refType,
-      reference_id: refId || null,
-      created_by: (await supabase.auth.getUser()).data.user?.id,
-      company_id: companyId,
+      product_id: productId, warehouse_id: warehouseId, movement_type: "in",
+      quantity: qty, unit_cost: unitCost, reference_type: refType, reference_id: refId || null,
+      created_by: (await supabase.auth.getUser()).data.user?.id, company_id: companyId,
     });
   };
 
-  // Deduct stock (delivery)
+  /** Deduct stock (e.g., delivery). Returns false if insufficient stock. */
   const deductStock = async (productId: string, warehouseId: string, qty: number, refType: string, refId?: string): Promise<boolean> => {
     await ensureStockLevel(productId, warehouseId);
     const { data: sl } = await (supabase as any)
-      .from("stock_levels")
-      .select("stock_on_hand, stock_reserved, cmup")
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId)
-      .single();
+      .from("stock_levels").select("stock_on_hand, stock_reserved, cmup")
+      .eq("product_id", productId).eq("warehouse_id", warehouseId).single();
 
     const onHand = Number(sl?.stock_on_hand || 0);
     if (qty > onHand) return false;
 
-    await (supabase as any)
-      .from("stock_levels")
+    await (supabase as any).from("stock_levels")
       .update({ stock_on_hand: onHand - qty })
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId);
+      .eq("product_id", productId).eq("warehouse_id", warehouseId);
 
     await (supabase as any).from("stock_movements").insert({
-      product_id: productId,
-      warehouse_id: warehouseId,
-      movement_type: "out",
-      quantity: qty,
-      unit_cost: Number(sl?.cmup || 0),
-      reference_type: refType,
-      reference_id: refId || null,
-      created_by: (await supabase.auth.getUser()).data.user?.id,
-      company_id: companyId,
+      product_id: productId, warehouse_id: warehouseId, movement_type: "out",
+      quantity: qty, unit_cost: Number(sl?.cmup || 0), reference_type: refType, reference_id: refId || null,
+      created_by: (await supabase.auth.getUser()).data.user?.id, company_id: companyId,
     });
     return true;
   };
 
-  // Reserve stock
+  /** Reserve stock for a confirmed sales order. Returns false if insufficient available stock. */
   const reserveStock = async (productId: string, warehouseId: string, qty: number): Promise<boolean> => {
     await ensureStockLevel(productId, warehouseId);
     const { data: sl } = await (supabase as any)
-      .from("stock_levels")
-      .select("stock_on_hand, stock_reserved")
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId)
-      .single();
+      .from("stock_levels").select("stock_on_hand, stock_reserved")
+      .eq("product_id", productId).eq("warehouse_id", warehouseId).single();
 
     const available = Number(sl?.stock_on_hand || 0) - Number(sl?.stock_reserved || 0);
     if (qty > available) return false;
 
-    await (supabase as any)
-      .from("stock_levels")
+    await (supabase as any).from("stock_levels")
       .update({ stock_reserved: Number(sl?.stock_reserved || 0) + qty })
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId);
+      .eq("product_id", productId).eq("warehouse_id", warehouseId);
     return true;
   };
 
-  // Release reservation
+  /** Release previously reserved stock (on delivery or order cancellation) */
   const releaseReservation = async (productId: string, warehouseId: string, qty: number) => {
     const { data: sl } = await (supabase as any)
-      .from("stock_levels")
-      .select("stock_reserved")
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId)
-      .single();
+      .from("stock_levels").select("stock_reserved")
+      .eq("product_id", productId).eq("warehouse_id", warehouseId).single();
     if (sl) {
       const newReserved = Math.max(0, Number(sl.stock_reserved) - qty);
-      await (supabase as any)
-        .from("stock_levels")
+      await (supabase as any).from("stock_levels")
         .update({ stock_reserved: newReserved })
-        .eq("product_id", productId)
-        .eq("warehouse_id", warehouseId);
+        .eq("product_id", productId).eq("warehouse_id", warehouseId);
     }
   };
 
-  // Transfer stock
+  // ── Stock Transfers ──
+
   const createTransfer = async (
-    fromWarehouseId: string,
-    toWarehouseId: string,
-    lines: { product_id: string; quantity: number }[],
-    notes?: string
+    fromWarehouseId: string, toWarehouseId: string,
+    lines: { product_id: string; quantity: number }[], notes?: string
   ) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "TRF", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -273,8 +264,7 @@ export function useStockEngine() {
     const { data: transfer, error } = await (supabase as any)
       .from("stock_transfers")
       .insert({ transfer_number: num, from_warehouse_id: fromWarehouseId, to_warehouse_id: toWarehouseId, notes, created_by: userId, company_id: companyId })
-      .select()
-      .single();
+      .select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
@@ -286,18 +276,10 @@ export function useStockEngine() {
     return transfer;
   };
 
+  /** Validate transfer: deduct from source warehouse, add to destination */
   const validateTransfer = async (transferId: string) => {
-    const { data: lines } = await (supabase as any)
-      .from("stock_transfer_lines")
-      .select("product_id, quantity")
-      .eq("transfer_id", transferId);
-
-    const { data: transfer } = await (supabase as any)
-      .from("stock_transfers")
-      .select("from_warehouse_id, to_warehouse_id")
-      .eq("id", transferId)
-      .single();
-
+    const { data: lines } = await (supabase as any).from("stock_transfer_lines").select("product_id, quantity").eq("transfer_id", transferId);
+    const { data: transfer } = await (supabase as any).from("stock_transfers").select("from_warehouse_id, to_warehouse_id").eq("id", transferId).single();
     if (!transfer || !lines) return false;
 
     for (const line of lines) {
@@ -316,7 +298,8 @@ export function useStockEngine() {
     return true;
   };
 
-  // Inventory adjustment
+  // ── Inventory Adjustments ──
+
   const createAdjustment = async (
     warehouseId: string,
     lines: { product_id: string; system_qty: number; counted_qty: number }[],
@@ -328,19 +311,15 @@ export function useStockEngine() {
     const { data: adj, error } = await (supabase as any)
       .from("inventory_adjustments")
       .insert({ adjustment_number: num, warehouse_id: warehouseId, notes, created_by: userId, company_id: companyId })
-      .select()
-      .single();
+      .select().single();
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
     for (const line of lines) {
       await (supabase as any).from("inventory_adjustment_lines").insert({
-        adjustment_id: adj.id,
-        product_id: line.product_id,
-        system_qty: line.system_qty,
-        counted_qty: line.counted_qty,
-        difference: line.counted_qty - line.system_qty,
-        company_id: companyId,
+        adjustment_id: adj.id, product_id: line.product_id,
+        system_qty: line.system_qty, counted_qty: line.counted_qty,
+        difference: line.counted_qty - line.system_qty, company_id: companyId,
       });
     }
     toast({ title: "Inventaire créé", description: num as string });
@@ -348,19 +327,12 @@ export function useStockEngine() {
     return adj;
   };
 
+  /** Validate adjustment: apply stock differences (positive = addStock, negative = deductStock) */
   const validateAdjustment = async (adjustmentId: string) => {
-    const { data: adj } = await (supabase as any)
-      .from("inventory_adjustments")
-      .select("warehouse_id")
-      .eq("id", adjustmentId)
-      .single();
-
-    const { data: lines } = await (supabase as any)
-      .from("inventory_adjustment_lines")
-      .select("product_id, difference")
-      .eq("adjustment_id", adjustmentId);
-
+    const { data: adj } = await (supabase as any).from("inventory_adjustments").select("warehouse_id").eq("id", adjustmentId).single();
+    const { data: lines } = await (supabase as any).from("inventory_adjustment_lines").select("product_id, difference").eq("adjustment_id", adjustmentId);
     if (!adj || !lines) return false;
+
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     for (const line of lines) {

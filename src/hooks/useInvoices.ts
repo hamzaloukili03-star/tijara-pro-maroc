@@ -1,3 +1,13 @@
+/**
+ * useInvoices.ts — Invoice management hook for TIJARAPRO
+ *
+ * Manages both client (FAC) and supplier (FAF/FACF) invoices.
+ * Lifecycle: draft → validated → paid | cancelled
+ *
+ * IMPORTANT — remaining_balance tracks unpaid amount for payment allocation.
+ * IMPORTANT — Dispatches "dashboard-refresh" event on status changes to keep KPIs in sync.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -19,7 +29,6 @@ export function useInvoices(invoiceType: "client" | "supplier") {
       .eq("invoice_type", invoiceType)
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-
     setLoading(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -30,6 +39,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
 
   useEffect(() => { fetch(); }, [fetch]);
 
+  /** Generate next invoice number via server-side RPC */
   const generateNumber = async () => {
     const prefix = invoiceType === "client" ? "FAC" : "FACF";
     const { data, error } = await supabase.rpc("next_document_number", { p_type: prefix, p_company_id: companyId } as any);
@@ -58,9 +68,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
     if (lines.length > 0) {
       const linesToInsert = lines.map((l, i) => ({ ...l, invoice_id: inv.id, sort_order: i, company_id: companyId }));
       const { error: lErr } = await (supabase as any).from("invoice_lines").insert(linesToInsert);
-      if (lErr) {
-        toast({ title: "Erreur lignes", description: lErr.message, variant: "destructive" });
-      }
+      if (lErr) toast({ title: "Erreur lignes", description: lErr.message, variant: "destructive" });
     }
 
     toast({ title: "Facture créée", description: number });
@@ -78,6 +86,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
     return true;
   };
 
+  /** Replace all lines for an invoice (delete + re-insert) */
   const updateLines = async (invoiceId: string, lines: Partial<InvoiceLine>[]) => {
     await (supabase as any).from("invoice_lines").delete().eq("invoice_id", invoiceId);
     if (lines.length > 0) {
@@ -104,13 +113,13 @@ export function useInvoices(invoiceType: "client" | "supplier") {
     return (data || []) as InvoiceLine[];
   };
 
+  // ── Status transitions ──
+
   const validateInvoice = async (id: string) => {
     const ok = await updateInvoice(id, { status: "validated" });
     if (ok) {
       await (supabase as any).from("audit_logs").insert({
-        action: "validate_invoice",
-        table_name: "invoices",
-        record_id: id,
+        action: "validate_invoice", table_name: "invoices", record_id: id,
         details: "Facture validée",
         user_id: (await supabase.auth.getUser()).data.user?.id,
       });
@@ -124,9 +133,7 @@ export function useInvoices(invoiceType: "client" | "supplier") {
     const ok = await updateInvoice(id, { status: "cancelled" });
     if (ok) {
       await (supabase as any).from("audit_logs").insert({
-        action: "cancel_invoice",
-        table_name: "invoices",
-        record_id: id,
+        action: "cancel_invoice", table_name: "invoices", record_id: id,
         details: "Facture annulée",
         user_id: (await supabase.auth.getUser()).data.user?.id,
       });
