@@ -23,7 +23,7 @@ interface Props {
   onRefuse?: (id: string, reason?: string) => void;
 }
 
-export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Props) {
+export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit, onSubmit, onApprove, onRefuse }: Props) {
   const [lines, setLines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingPO, setCreatingPO] = useState(false);
