@@ -18,9 +18,12 @@ interface Props {
   onClose: () => void;
   onCreatePO?: (id: string) => Promise<any>;
   onEdit?: (item: any) => void;
+  onSubmit?: (id: string) => void;
+  onApprove?: (id: string) => void;
+  onRefuse?: (id: string, reason?: string) => void;
 }
 
-export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Props) {
+export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit, onSubmit, onApprove, onRefuse }: Props) {
   const [lines, setLines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingPO, setCreatingPO] = useState(false);
@@ -39,6 +42,7 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
 
   const cfg = getStatus(PURCHASE_REQUEST_STATUS, item.status);
   const isDraft = item.status === "draft";
+  const isSubmitted = item.status === "submitted";
   const isApprovedOrValidated = ["approved", "validated"].includes(item.status);
 
   const handlePrint = () => {
@@ -122,6 +126,21 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit }: Pro
               {isDraft && onEdit && (
                 <Button size="sm" variant="outline" onClick={() => { onClose(); onEdit(item); }}>
                   <Edit className="h-3.5 w-3.5 mr-1" /> Modifier
+                </Button>
+              )}
+              {isDraft && onSubmit && (
+                <Button size="sm" variant="default" onClick={() => { onSubmit(item.id); onClose(); }}>
+                  Soumettre
+                </Button>
+              )}
+              {isSubmitted && isAdmin && onApprove && (
+                <Button size="sm" variant="default" onClick={() => { onApprove(item.id); onClose(); }}>
+                  Approuver
+                </Button>
+              )}
+              {isSubmitted && isAdmin && onRefuse && (
+                <Button size="sm" variant="destructive" onClick={() => { onRefuse(item.id); onClose(); }}>
+                  Refuser
                 </Button>
               )}
               {isApprovedOrValidated && onCreatePO && (

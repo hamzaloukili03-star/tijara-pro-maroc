@@ -211,6 +211,9 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
           onClose={() => setDetail(null)}
           onCreatePO={onCreatePO}
           onEdit={onEdit}
+          onSubmit={(id) => { onSubmit(id); setDetail(null); }}
+          onApprove={(id) => { onApprove(id); setDetail(null); }}
+          onRefuse={(id, reason) => { onRefuse(id, reason); setDetail(null); }}
         />
       )}
 
