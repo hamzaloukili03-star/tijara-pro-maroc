@@ -5,23 +5,24 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProductVariants } from "@/hooks/useProducts";
-import { Plus, Trash2, Wand2, X, Loader2, Pencil, Check, AlertTriangle } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Wand2, X, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
 
 interface VariantsTabProps {
   productId: string | null;
+  productName?: string;
+  productUnit?: string;
 }
 
 interface LocalAttribute {
-  id?: string; // DB id if persisted
+  id?: string;
   name: string;
   values: { id?: string; label: string }[];
 }
 
-export function VariantsTab({ productId }: VariantsTabProps) {
+export function VariantsTab({ productId, productName, productUnit }: VariantsTabProps) {
   const { variants, loading: variantsLoading, generateVariants, updateVariant, deleteVariant } = useProductVariants(productId);
   const { activeCompany } = useCompany();
   const companyId = activeCompany?.id ?? null;
@@ -30,11 +31,12 @@ export function VariantsTab({ productId }: VariantsTabProps) {
   const [newAttrName, setNewAttrName] = useState("");
   const [newValueMap, setNewValueMap] = useState<Record<number, string>>({});
   const [generating, setGenerating] = useState(false);
-  const [editingVariant, setEditingVariant] = useState<string | null>(null);
-  const [variantEdits, setVariantEdits] = useState<Record<string, any>>({});
   const [loaded, setLoaded] = useState(false);
 
-  // Load existing attributes linked to this product
+  // Inline edit state for the table
+  const [editCell, setEditCell] = useState<{ id: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState("");
+
   const loadExisting = useCallback(async () => {
     if (!productId) return;
     const { data: lines } = await (supabase as any)
@@ -116,107 +118,84 @@ export function VariantsTab({ productId }: VariantsTabProps) {
       toast({ title: "Ajoutez des valeurs", description: "Chaque attribut doit avoir au moins une valeur.", variant: "destructive" });
       return;
     }
-
     setGenerating(true);
     try {
-      // Persist attributes and values to DB, collect IDs
       const lines: { attribute_id: string; value_ids: string[] }[] = [];
-
       for (const attr of validAttrs) {
-        // Find or create attribute
         let attrId = attr.id;
         if (!attrId) {
-          const { data: existing } = await (supabase as any)
-            .from("product_attributes")
-            .select("id")
-            .ilike("name", attr.name)
-            .maybeSingle();
-          if (existing) {
-            attrId = existing.id;
-          } else {
-            const { data: created } = await (supabase as any)
-              .from("product_attributes")
-              .insert({ name: attr.name, display_type: "dropdown" })
-              .select("id")
-              .single();
+          const { data: existing } = await (supabase as any).from("product_attributes").select("id").ilike("name", attr.name).maybeSingle();
+          if (existing) { attrId = existing.id; }
+          else {
+            const { data: created } = await (supabase as any).from("product_attributes").insert({ name: attr.name, display_type: "dropdown" }).select("id").single();
             if (!created) continue;
             attrId = created.id;
           }
         }
-
-        // Find or create values
         const valueIds: string[] = [];
         for (const val of attr.values) {
           let valId = val.id;
           if (!valId) {
-            const { data: existingVal } = await (supabase as any)
-              .from("product_attribute_values")
-              .select("id")
-              .eq("attribute_id", attrId)
-              .ilike("value", val.label)
-              .maybeSingle();
-            if (existingVal) {
-              valId = existingVal.id;
-            } else {
-              const { data: createdVal } = await (supabase as any)
-                .from("product_attribute_values")
-                .insert({ attribute_id: attrId, value: val.label })
-                .select("id")
-                .single();
+            const { data: existingVal } = await (supabase as any).from("product_attribute_values").select("id").eq("attribute_id", attrId).ilike("value", val.label).maybeSingle();
+            if (existingVal) { valId = existingVal.id; }
+            else {
+              const { data: createdVal } = await (supabase as any).from("product_attribute_values").insert({ attribute_id: attrId, value: val.label }).select("id").single();
               if (!createdVal) continue;
               valId = createdVal.id;
             }
           }
           valueIds.push(valId!);
         }
-
-        // Save attribute line
         const { data: lineData } = await (supabase as any)
           .from("product_attribute_lines")
-          .upsert(
-            { product_id: productId, attribute_id: attrId, company_id: companyId },
-            { onConflict: "product_id,attribute_id" }
-          )
-          .select()
-          .single();
+          .upsert({ product_id: productId, attribute_id: attrId, company_id: companyId }, { onConflict: "product_id,attribute_id" })
+          .select().single();
         if (lineData) {
           for (const vid of valueIds) {
-            await (supabase as any)
-              .from("product_attribute_line_values")
-              .upsert(
-                { line_id: lineData.id, value_id: vid, company_id: companyId },
-                { onConflict: "line_id,value_id" }
-              );
+            await (supabase as any).from("product_attribute_line_values").upsert({ line_id: lineData.id, value_id: vid, company_id: companyId }, { onConflict: "line_id,value_id" });
           }
         }
-
         lines.push({ attribute_id: attrId!, value_ids: valueIds });
       }
-
       await generateVariants(productId, lines);
-      // Reload to get persisted IDs
       await loadExisting();
     } finally {
       setGenerating(false);
     }
   };
 
-  const handleVariantSave = async (variantId: string) => {
-    const edits = variantEdits[variantId];
-    if (!edits) return;
-    await updateVariant(variantId, edits);
-    setEditingVariant(null);
-    setVariantEdits((prev) => { const n = { ...prev }; delete n[variantId]; return n; });
+  // Inline cell edit handlers
+  const startEdit = (id: string, field: string, currentValue: any) => {
+    setEditCell({ id, field });
+    setEditValue(currentValue?.toString() ?? "");
   };
 
-  const combinationCount = localAttrs
-    .filter((a) => a.values.length > 0)
-    .reduce((acc, a) => acc * a.values.length, 1);
+  const commitEdit = async () => {
+    if (!editCell) return;
+    const { id, field } = editCell;
+    const numFields = ["sale_price", "purchase_price"];
+    const value = numFields.includes(field) ? (editValue ? Number(editValue) : null) : editValue;
+    await updateVariant(id, { [field]: value } as any);
+    setEditCell(null);
+    setEditValue("");
+  };
+
+  const cancelEdit = () => {
+    setEditCell(null);
+    setEditValue("");
+  };
+
+  const combinationCount = localAttrs.filter((a) => a.values.length > 0).reduce((acc, a) => acc * a.values.length, 1);
   const hasValues = localAttrs.some((a) => a.values.length > 0);
+
+  const fmt = (n: number | null | undefined) => {
+    if (n == null) return "0,00";
+    return Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   return (
     <div className="space-y-6">
-      {/* ── Add Attribute ── */}
+      {/* ── Attributes Builder ── */}
       <div>
         <Label className="text-base font-semibold mb-3 block">Attributs du produit</Label>
         <div className="flex items-center gap-3 mb-4">
@@ -232,34 +211,25 @@ export function VariantsTab({ productId }: VariantsTabProps) {
           </Button>
         </div>
 
-        {/* ── Attribute Cards ── */}
         <div className="space-y-3">
           {localAttrs.map((attr, attrIdx) => (
             <div key={attrIdx} className="bg-muted/30 rounded-lg p-4 border border-border">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-semibold text-sm uppercase tracking-wide">{attr.name}</span>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleRemoveAttribute(attrIdx)} title="Supprimer l'attribut">
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleRemoveAttribute(attrIdx)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2 mb-3">
                 {attr.values.map((v, vIdx) => (
-                  <span
-                    key={vIdx}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-background border border-border"
-                  >
+                  <span key={vIdx} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-background border border-border">
                     {v.label}
-                    <button
-                      onClick={() => handleRemoveValue(attrIdx, vIdx)}
-                      className="opacity-50 hover:opacity-100 transition-opacity"
-                    >
+                    <button onClick={() => handleRemoveValue(attrIdx, vIdx)} className="opacity-50 hover:opacity-100 transition-opacity">
                       <X className="h-3 w-3" />
                     </button>
                   </span>
                 ))}
-                {attr.values.length === 0 && (
-                  <span className="text-xs text-muted-foreground italic">Aucune valeur définie</span>
-                )}
+                {attr.values.length === 0 && <span className="text-xs text-muted-foreground italic">Aucune valeur définie</span>}
               </div>
               <div className="flex gap-2">
                 <Input
@@ -286,107 +256,157 @@ export function VariantsTab({ productId }: VariantsTabProps) {
             Générer les variantes
           </Button>
           <span className="text-sm text-muted-foreground">
-            {hasValues
-              ? `${combinationCount} combinaison(s) à générer`
-              : "Ajoutez des valeurs aux attributs"}
+            {hasValues ? `${combinationCount} combinaison(s) à générer` : "Ajoutez des valeurs aux attributs"}
           </span>
         </div>
       )}
 
-      {/* ── Variants Table ── */}
+      {/* ── Odoo-style Variants Table ── */}
       {variants.length > 0 && (
         <div>
           <h3 className="text-base font-semibold mb-3">Variantes ({variants.length})</h3>
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="rounded-lg border border-border overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Variante</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Code-barres</TableHead>
-                  <TableHead className="text-right">Prix vente</TableHead>
-                  <TableHead className="text-right">Coût d'achat</TableHead>
-                  <TableHead className="text-center">Actif</TableHead>
-                  <TableHead className="w-24 text-center">Actions</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="min-w-[140px]">Référence interne</TableHead>
+                  <TableHead className="min-w-[120px]">Nom</TableHead>
+                  <TableHead className="min-w-[200px]">Valeurs de la variante</TableHead>
+                  <TableHead className="text-right min-w-[110px]">Prix de vente</TableHead>
+                  <TableHead className="text-right min-w-[90px]">Coût</TableHead>
+                  <TableHead className="text-right min-w-[90px] text-primary">En stock</TableHead>
+                  <TableHead className="text-right min-w-[70px] text-primary">Prévu</TableHead>
+                  <TableHead className="min-w-[70px]">Unité</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {variantsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : variants.map((v) => {
-                  const isEditing = editingVariant === v.id;
-                  const edits = variantEdits[v.id] || {};
+                  const isEditingSku = editCell?.id === v.id && editCell?.field === "sku";
+                  const isEditingName = editCell?.id === v.id && editCell?.field === "name";
+                  const isEditingPrice = editCell?.id === v.id && editCell?.field === "sale_price";
+                  const isEditingCost = editCell?.id === v.id && editCell?.field === "purchase_price";
+
                   return (
                     <TableRow key={v.id} className={!v.is_active ? "opacity-50" : ""}>
-                      <TableCell>
+                      {/* Référence interne */}
+                      <TableCell className="py-2.5">
+                        {isEditingSku ? (
+                          <Input
+                            autoFocus
+                            className="h-8 text-sm"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={commitEdit}
+                            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
+                          />
+                        ) : (
+                          <span
+                            className="text-sm cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => startEdit(v.id, "sku", v.sku)}
+                          >
+                            {v.sku || "—"}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Nom */}
+                      <TableCell className="py-2.5">
+                        <span className="text-sm">{productName || "—"}</span>
+                      </TableCell>
+
+                      {/* Valeurs de la variante (badges) */}
+                      <TableCell className="py-2.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {v.attribute_values.map((av, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs gap-1">
-                              {av.color_hex && <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: av.color_hex }} />}
-                              {av.value}
+                            <Badge
+                              key={i}
+                              variant="secondary"
+                              className="text-xs font-normal px-2.5 py-1 rounded bg-muted text-muted-foreground border-0"
+                            >
+                              {av.attribute_name}: {av.value}
                             </Badge>
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {isEditing ? (
-                          <Input className="h-8 w-28" value={edits.sku ?? v.sku ?? ""} onChange={(e) => setVariantEdits((p) => ({ ...p, [v.id]: { ...edits, sku: e.target.value } }))} />
+
+                      {/* Prix de vente */}
+                      <TableCell className="text-right py-2.5">
+                        {isEditingPrice ? (
+                          <Input
+                            autoFocus
+                            type="number"
+                            step="0.01"
+                            className="h-8 text-sm text-right w-24 ml-auto"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={commitEdit}
+                            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
+                          />
                         ) : (
-                          <span className="text-sm">{v.sku || "—"}</span>
+                          <span
+                            className="text-sm cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => startEdit(v.id, "sale_price", v.sale_price)}
+                          >
+                            {fmt(v.sale_price)}
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {isEditing ? (
-                          <Input className="h-8 w-32" value={edits.barcode ?? v.barcode ?? ""} onChange={(e) => setVariantEdits((p) => ({ ...p, [v.id]: { ...edits, barcode: e.target.value } }))} />
+
+                      {/* Coût */}
+                      <TableCell className="text-right py-2.5">
+                        {isEditingCost ? (
+                          <Input
+                            autoFocus
+                            type="number"
+                            step="0.01"
+                            className="h-8 text-sm text-right w-24 ml-auto"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={commitEdit}
+                            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
+                          />
                         ) : (
-                          <span className="text-sm">{v.barcode || "—"}</span>
+                          <span
+                            className="text-sm cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => startEdit(v.id, "purchase_price", v.purchase_price)}
+                          >
+                            {fmt(v.purchase_price)}
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {isEditing ? (
-                          <Input className="h-8 w-24 text-right" type="number" step="0.01" value={edits.sale_price ?? v.sale_price ?? ""} onChange={(e) => setVariantEdits((p) => ({ ...p, [v.id]: { ...edits, sale_price: e.target.value ? Number(e.target.value) : null } }))} />
-                        ) : (
-                          <span className="text-sm">{v.sale_price != null ? `${Number(v.sale_price).toLocaleString("fr-MA")} MAD` : <span className="text-muted-foreground">Parent</span>}</span>
-                        )}
+
+                      {/* En stock */}
+                      <TableCell className="text-right py-2.5">
+                        <span className="text-sm text-primary font-medium">0,00</span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        {isEditing ? (
-                          <Input className="h-8 w-24 text-right" type="number" step="0.01" value={edits.purchase_price ?? v.purchase_price ?? ""} onChange={(e) => setVariantEdits((p) => ({ ...p, [v.id]: { ...edits, purchase_price: e.target.value ? Number(e.target.value) : null } }))} />
-                        ) : (
-                          <span className="text-sm">{v.purchase_price != null ? `${Number(v.purchase_price).toLocaleString("fr-MA")} MAD` : <span className="text-muted-foreground">Parent</span>}</span>
-                        )}
+
+                      {/* Prévu */}
+                      <TableCell className="text-right py-2.5">
+                        <span className="text-sm text-primary font-medium">0,00</span>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Switch
-                          checked={isEditing ? (edits.is_active ?? v.is_active) : v.is_active}
-                          onCheckedChange={(val) => {
-                            if (isEditing) {
-                              setVariantEdits((p) => ({ ...p, [v.id]: { ...edits, is_active: val } }));
-                            } else {
-                              updateVariant(v.id, { is_active: val } as any);
-                            }
-                          }}
-                        />
+
+                      {/* Unité */}
+                      <TableCell className="py-2.5">
+                        <span className="text-sm text-muted-foreground">{productUnit || "Unité(s)"}</span>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          {isEditing ? (
-                            <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleVariantSave(v.id)}>
-                              <Check className="h-3 w-3" /> OK
-                            </Button>
-                          ) : (
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingVariant(v.id)} title="Modifier">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteVariant(v.id)} title="Supprimer">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+
+                      {/* Delete */}
+                      <TableCell className="py-2.5">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => deleteVariant(v.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
