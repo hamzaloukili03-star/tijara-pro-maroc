@@ -221,12 +221,16 @@ export function usePurchaseRequests() {
 
   const createPOFromRequest = async (requestId: string) => {
     const { data: req } = await (supabase as any).from("purchase_requests")
-      .select("*, purchase_request_lines(*), supplier:suppliers(payment_terms)")
+      .select("*, supplier:suppliers(payment_terms)")
       .eq("id", requestId).single();
     if (!req) return null;
 
-    // Validate: at least one line must have supplier_unit_price filled
-    const lines = req.purchase_request_lines || [];
+    // Fetch lines separately to avoid embedded query issues
+    const { data: linesData } = await (supabase as any).from("purchase_request_lines")
+      .select("*")
+      .eq("request_id", requestId)
+      .order("sort_order");
+    const lines = linesData || [];
     const hasSupplierPrices = lines.some((l: any) => Number(l.supplier_unit_price) > 0);
     if (!hasSupplierPrices) {
       toast({ title: "Prix manquants", description: "Veuillez renseigner les prix fournisseur avant de créer le bon de commande.", variant: "destructive" });
