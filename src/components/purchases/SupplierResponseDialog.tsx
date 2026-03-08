@@ -75,11 +75,24 @@ export function SupplierResponseDialog({ item, onClose, onSaved }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Update header
+      // Calculate totals from supplier prices
+      let totalHtCalc = 0, totalTvaCalc = 0, totalTtcCalc = 0;
+      for (const l of lines) {
+        const ht = calcLineHT(l);
+        const tvaAmt = ht * (l.supplier_tva_rate || 0) / 100;
+        totalHtCalc += ht;
+        totalTvaCalc += tvaAmt;
+        totalTtcCalc += ht + tvaAmt;
+      }
+
+      // Update header with supplier response AND recalculated totals
       const { error: hErr } = await (supabase as any).from("purchase_requests").update({
         supplier_reference: supplierReference || null,
         supplier_response_date: supplierResponseDate || null,
         supplier_notes: supplierNotes || null,
+        total_ht: Math.round(totalHtCalc * 100) / 100,
+        total_tva: Math.round(totalTvaCalc * 100) / 100,
+        total_ttc: Math.round(totalTtcCalc * 100) / 100,
       }).eq("id", item.id);
       if (hErr) throw hErr;
 
