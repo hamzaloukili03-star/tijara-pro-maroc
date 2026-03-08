@@ -191,11 +191,6 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
             </div>
           )}
 
-          <GlobalDiscountSection
-            discount={globalDiscount}
-            onChange={setGlobalDiscount}
-            maxAmount={totals.subtotalHtBrut}
-          />
 
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
 
