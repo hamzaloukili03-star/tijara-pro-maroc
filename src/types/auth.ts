@@ -26,6 +26,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   accountant: "Comptable",
   sales: "Commercial",
   stock_manager: "Gestionnaire Stock",
+  purchase: "Acheteur",
 };
 
 // Module access mapping
