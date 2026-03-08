@@ -42,6 +42,7 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit, onSub
 
   const cfg = getStatus(PURCHASE_REQUEST_STATUS, item.status);
   const isDraft = item.status === "draft";
+  const isSubmitted = item.status === "submitted";
   const isApprovedOrValidated = ["approved", "validated"].includes(item.status);
 
   const handlePrint = () => {
