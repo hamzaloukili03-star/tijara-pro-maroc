@@ -14,6 +14,7 @@ export const PURCHASE_REQUEST_STATUS: Record<string, StatusCfg> = {
   submitted: { label: "Soumise",    className: "bg-warning/15 text-warning-foreground border-warning/30" },
   approved:  { label: "Approuvée",  className: "bg-success/15 text-success border-success/30" },
   validated: { label: "Approuvée",  className: "bg-success/15 text-success border-success/30" },
+  confirmed: { label: "Confirmée", className: "bg-primary/15 text-primary border-primary/20" },
   refused:   { label: "Refusée",    className: "bg-destructive/15 text-destructive border-destructive/30" },
   cancelled: { label: "Annulée",    className: "bg-muted text-muted-foreground line-through" },
 };
