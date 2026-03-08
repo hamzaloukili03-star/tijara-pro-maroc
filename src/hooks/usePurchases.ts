@@ -576,7 +576,9 @@ export function usePurchaseOrders() {
 
     // Link reception ↔ invoice
     await (supabase as any).from("receptions").update({ invoice_id: inv.id }).eq("id", receptionId);
-    await (supabase as any).from("invoice_reception_links").insert({ invoice_id: inv.id, reception_id: receptionId }).onConflict("invoice_id,reception_id").ignore();
+    // Insert link (ignore duplicate errors gracefully)
+    const { error: linkErr } = await (supabase as any).from("invoice_reception_links").insert({ invoice_id: inv.id, reception_id: receptionId, company_id: companyId });
+    if (linkErr) console.warn("invoice_reception_links insert:", linkErr.message);
 
     // Update PO status to invoiced
     if (rec.purchase_order_id) {
