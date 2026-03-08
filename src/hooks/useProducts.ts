@@ -86,7 +86,7 @@ export function useProducts() {
       .from("products")
       .select("*")
       .eq("company_id", companyId)
-      .order("code", { ascending: true });
+      .order("created_at", { ascending: false });
     setLoading(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
