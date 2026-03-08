@@ -97,6 +97,19 @@ export function usePurchaseRequests() {
   }) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "DA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
+    // Calculate totals from lines
+    const calcLines = payload.lines.map(l => {
+      const qty = Number(l.quantity || 0);
+      const price = Number(l.estimated_cost || 0);
+      const tva = Number(l.tva_rate || 0);
+      const ht = qty * price;
+      const tvaAmt = ht * tva / 100;
+      return { ht, tvaAmt, ttc: ht + tvaAmt };
+    });
+    const total_ht = Math.round(calcLines.reduce((s, l) => s + l.ht, 0) * 100) / 100;
+    const total_tva = Math.round(calcLines.reduce((s, l) => s + l.tvaAmt, 0) * 100) / 100;
+    const total_ttc = Math.round(calcLines.reduce((s, l) => s + l.ttc, 0) * 100) / 100;
+
     const { data, error } = await (supabase as any).from("purchase_requests").insert({
       request_number: num,
       status: "draft",
@@ -107,6 +120,9 @@ export function usePurchaseRequests() {
       currency_id: payload.currencyId || null,
       requested_by: userId,
       company_id: companyId,
+      total_ht,
+      total_tva,
+      total_ttc,
     }).select().single();
     if (error) {
       console.error("Erreur insertion purchase_requests:", error);
