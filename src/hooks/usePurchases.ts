@@ -226,17 +226,12 @@ export function usePurchaseRequests() {
     if (!req) return null;
 
     // Fetch lines separately to avoid embedded query issues
-    const { data: linesData, error: linesError } = await (supabase as any).from("purchase_request_lines")
+    const { data: linesData } = await (supabase as any).from("purchase_request_lines")
       .select("*")
       .eq("request_id", requestId)
       .order("sort_order");
-    console.log("[createPOFromRequest] requestId:", requestId);
-    console.log("[createPOFromRequest] linesData:", JSON.stringify(linesData));
-    console.log("[createPOFromRequest] linesError:", linesError);
     const lines = linesData || [];
-    console.log("[createPOFromRequest] supplier_unit_prices:", lines.map((l: any) => ({ id: l.id, supplier_unit_price: l.supplier_unit_price, type: typeof l.supplier_unit_price })));
     const hasSupplierPrices = lines.some((l: any) => Number(l.supplier_unit_price) > 0);
-    console.log("[createPOFromRequest] hasSupplierPrices:", hasSupplierPrices);
     if (!hasSupplierPrices) {
       toast({ title: "Prix manquants", description: "Veuillez renseigner les prix fournisseur avant de créer le bon de commande.", variant: "destructive" });
       return null;
@@ -443,7 +438,7 @@ export function usePurchaseOrders() {
     const { data: po } = await (supabase as any).from("purchase_orders").select("supplier_id, warehouse_id, order_number").eq("id", orderId).single();
     if (!po) return null;
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "REC" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "REC", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data: rec, error } = await (supabase as any).from("receptions").insert({
