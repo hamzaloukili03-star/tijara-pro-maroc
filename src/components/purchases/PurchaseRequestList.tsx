@@ -55,6 +55,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
   const [reason, setReason] = useState("");
   const [creatingPO, setCreatingPO] = useState<string | null>(null);
   const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [searchState, setSearchState] = useState<{
     query: string; operator: SearchOperator; activeFilters: Record<string, string>;
@@ -180,7 +181,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
                         {isApprovedOrValidated && (
                           <Button size="sm" variant="outline" className="border-primary/50 text-primary text-xs" disabled={creatingPO === item.id} onClick={() => handleCreatePO(item.id)}>
                             {creatingPO === item.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                            Créer BC
+                            Créer BC Fournisseur
                           </Button>
                         )}
 
@@ -214,6 +215,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
           onSubmit={(id) => { onSubmit(id); setDetail(null); }}
           onApprove={(id) => { onApprove(id); setDetail(null); }}
           onRefuse={(id, reason) => { onRefuse(id, reason); setDetail(null); }}
+          onRefresh={() => setRefreshKey(k => k + 1)}
         />
       )}
 

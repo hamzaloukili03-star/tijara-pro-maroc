@@ -191,12 +191,38 @@ export function usePurchaseRequests() {
 
   const createPOFromRequest = async (requestId: string) => {
     const { data: req } = await (supabase as any).from("purchase_requests")
-      .select("*, purchase_request_lines(*)")
+      .select("*, purchase_request_lines(*), supplier:suppliers(payment_terms)")
       .eq("id", requestId).single();
     if (!req) return null;
 
+    // Validate: at least one line must have supplier_unit_price filled
+    const lines = req.purchase_request_lines || [];
+    const hasSupplierPrices = lines.some((l: any) => Number(l.supplier_unit_price) > 0);
+    if (!hasSupplierPrices) {
+      toast({ title: "Prix manquants", description: "Veuillez renseigner les prix fournisseur avant de créer le bon de commande.", variant: "destructive" });
+      return null;
+    }
+
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
+
+    // Calculate totals from supplier prices
+    let subtotalHt = 0, totalTva = 0, totalTtc = 0;
+    const calcLines = lines.map((l: any) => {
+      const price = Number(l.supplier_unit_price) || Number(l.estimated_cost) || 0;
+      const disc = Number(l.supplier_discount_percent) || 0;
+      const tva = l.supplier_tva_rate != null ? Number(l.supplier_tva_rate) : (Number(l.tva_rate) || 20);
+      const qty = Number(l.quantity) || 0;
+      const ht = qty * price * (1 - disc / 100);
+      const tvaAmt = ht * tva / 100;
+      subtotalHt += ht;
+      totalTva += tvaAmt;
+      totalTtc += ht + tvaAmt;
+      return { ...l, _price: price, _disc: disc, _tva: tva, _ht: Math.round(ht * 100) / 100, _tvaAmt: Math.round(tvaAmt * 100) / 100, _ttc: Math.round((ht + tvaAmt) * 100) / 100 };
+    });
+
+    // Payment terms from supplier master data
+    const supplierPaymentTerms = req.supplier?.payment_terms || "30j";
 
     const { data: po, error } = await (supabase as any).from("purchase_orders").insert({
       order_number: num,
@@ -204,21 +230,23 @@ export function usePurchaseRequests() {
       supplier_id: req.supplier_id || null,
       warehouse_id: null,
       purchase_request_id: requestId,
-      notes: req.notes,
+      notes: req.supplier_notes || req.notes,
+      payment_terms: supplierPaymentTerms,
       created_by: userId,
       company_id: companyId,
-      subtotal_ht: 0, total_tva: 0, total_ttc: 0,
+      subtotal_ht: Math.round(subtotalHt * 100) / 100,
+      total_tva: Math.round(totalTva * 100) / 100,
+      total_ttc: Math.round(totalTtc * 100) / 100,
     }).select().single();
 
     if (error) { toast({ title: "Erreur BC", description: error.message, variant: "destructive" }); return null; }
 
-    const lines = req.purchase_request_lines || [];
-    for (let i = 0; i < lines.length; i++) {
-      const l = lines[i];
+    for (let i = 0; i < calcLines.length; i++) {
+      const l = calcLines[i];
       await (supabase as any).from("purchase_order_lines").insert({
         purchase_order_id: po.id, product_id: l.product_id, description: l.description, quantity: l.quantity,
-        unit_price: l.estimated_cost || 0, discount_percent: 0, tva_rate: l.tva_rate || 20,
-        total_ht: 0, total_tva: 0, total_ttc: 0, sort_order: i, company_id: companyId,
+        unit_price: l._price, discount_percent: l._disc, tva_rate: l._tva,
+        total_ht: l._ht, total_tva: l._tvaAmt, total_ttc: l._ttc, sort_order: i, company_id: companyId,
       });
     }
     // Mark DA as confirmed so it can't be confirmed again
