@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format-currency";
 import { useState, useEffect } from "react";
 import { useCreditNotes } from "@/hooks/useCreditNotes";
 import { useAuth } from "@/hooks/useAuth";

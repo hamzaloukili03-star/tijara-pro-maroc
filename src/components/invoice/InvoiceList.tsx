@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format-currency";
 import { useState, useEffect, useCallback } from "react";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useAuth } from "@/hooks/useAuth";
