@@ -140,13 +140,6 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Fournisseur <span className="text-destructive">*</span></Label>
               <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={handleSupplierChange} placeholder="Sélectionner..." /></div>
-            <div><Label>Dépôt <span className="text-destructive">*</span></Label>
-              <SearchableSelect
-                options={warehouses.map((w: any) => ({ value: w.id, label: w.name }))}
-                value={warehouseId}
-                onValueChange={setWarehouseId}
-                placeholder="Sélectionner un dépôt..."
-              /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
