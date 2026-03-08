@@ -1,5 +1,5 @@
 // Local type definitions for auth until Supabase types regenerate
-export type AppRole = 'super_admin' | 'admin' | 'accountant' | 'sales' | 'stock_manager';
+export type AppRole = 'super_admin' | 'admin' | 'accountant' | 'sales' | 'stock_manager' | 'purchase';
 
 export interface Profile {
   id: string;
