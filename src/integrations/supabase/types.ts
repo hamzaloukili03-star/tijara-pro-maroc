@@ -2688,6 +2688,9 @@ export type Database = {
           supplier_notes: string | null
           supplier_reference: string | null
           supplier_response_date: string | null
+          total_ht: number
+          total_ttc: number
+          total_tva: number
           updated_at: string
           warehouse_id: string | null
         }
@@ -2706,6 +2709,9 @@ export type Database = {
           supplier_notes?: string | null
           supplier_reference?: string | null
           supplier_response_date?: string | null
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
           updated_at?: string
           warehouse_id?: string | null
         }
@@ -2724,6 +2730,9 @@ export type Database = {
           supplier_notes?: string | null
           supplier_reference?: string | null
           supplier_response_date?: string | null
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
           updated_at?: string
           warehouse_id?: string | null
         }
