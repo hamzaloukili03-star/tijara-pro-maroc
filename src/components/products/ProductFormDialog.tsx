@@ -102,7 +102,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSave }: Produ
               <GeneralTab form={form} updateField={updateField} productId={product?.id || null} />
             </TabsContent>
             <TabsContent value="variants" className="mt-0">
-              <VariantsTab productId={product?.id || null} />
+              <VariantsTab productId={product?.id || null} productName={form.name} productUnit={form.unit} />
             </TabsContent>
             <TabsContent value="sales" className="mt-0">
               <SalesTab form={form} updateField={updateField} />
