@@ -55,6 +55,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
   const [reason, setReason] = useState("");
   const [creatingPO, setCreatingPO] = useState<string | null>(null);
   const [attachDialog, setAttachDialog] = useState<{ id: string; number: string } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [searchState, setSearchState] = useState<{
     query: string; operator: SearchOperator; activeFilters: Record<string, string>;
