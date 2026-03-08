@@ -443,7 +443,7 @@ export function usePurchaseOrders() {
     const { data: po } = await (supabase as any).from("purchase_orders").select("supplier_id, warehouse_id, order_number").eq("id", orderId).single();
     if (!po) return null;
 
-    const { data: num } = await supabase.rpc("next_document_number", { p_type: "REC" });
+    const { data: num } = await supabase.rpc("next_document_number", { p_type: "REC", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
     const { data: rec, error } = await (supabase as any).from("receptions").insert({
