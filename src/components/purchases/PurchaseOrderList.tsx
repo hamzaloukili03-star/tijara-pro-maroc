@@ -93,6 +93,7 @@ export function PurchaseOrderList({ items, loading, onNew, onEdit, onConfirm, on
     if (data && data[0]) {
       const inv = await hook.createInvoiceFromReception(data[0].id);
       if (inv) {
+        toast({ title: "Facture générée", description: `La facture fournisseur N° ${inv.invoice_number} a été créée avec succès.` });
         navigate("/facturation/fournisseurs");
       }
     } else {
