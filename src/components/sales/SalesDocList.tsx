@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format-currency";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -135,7 +136,7 @@ export function SalesDocList({
                   <TableCell>{item.customer?.name || "—"}</TableCell>
                   <TableCell>{item.date}</TableCell>
                   <TableCell className="text-right font-medium">
-                    {Number(item.total_ttc).toLocaleString("fr-MA")} MAD
+                    {formatCurrency(Number(item.total_ttc || 0))}
                   </TableCell>
                   <TableCell>
                     <Badge className={`${statusColors[item.status] || "bg-muted text-muted-foreground"} border text-xs`}>
