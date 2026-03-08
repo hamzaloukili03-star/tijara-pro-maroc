@@ -181,7 +181,7 @@ export function PurchaseRequestList({ items, loading, onNew, onEdit, onDelete, o
                         {isApprovedOrValidated && (
                           <Button size="sm" variant="outline" className="border-primary/50 text-primary text-xs" disabled={creatingPO === item.id} onClick={() => handleCreatePO(item.id)}>
                             {creatingPO === item.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                            Créer BC
+                            Créer BC Fournisseur
                           </Button>
                         )}
 
