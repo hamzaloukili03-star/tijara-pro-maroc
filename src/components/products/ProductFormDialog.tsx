@@ -66,7 +66,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSave }: Produ
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[92vw] md:max-w-[80vw] lg:max-w-[72vw] max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-[96vw] md:max-w-[92vw] lg:max-w-[88vw] xl:max-w-[82vw] max-h-[92vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
           <DialogTitle className="text-xl font-semibold">
             {isEditing ? "Modifier le produit" : "Nouveau produit"}
