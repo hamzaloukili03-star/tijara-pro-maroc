@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useProductVariants } from "@/hooks/useProducts";
-import { Plus, Trash2, Wand2, X, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Wand2, X, Loader2, AlertTriangle, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
@@ -33,9 +35,15 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
   const [generating, setGenerating] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  // Inline edit state for the table
+  // Inline cell edit
   const [editCell, setEditCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  // Variant edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingVariant, setEditingVariant] = useState<any>(null);
+  const [variantForm, setVariantForm] = useState<Record<string, any>>({});
+  const [savingVariant, setSavingVariant] = useState(false);
 
   const loadExisting = useCallback(async () => {
     if (!productId) return;
@@ -74,6 +82,7 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
     );
   }
 
+  // ── Attribute handlers ──
   const handleAddAttribute = () => {
     const name = newAttrName.trim();
     if (!name) return;
@@ -164,7 +173,7 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
     }
   };
 
-  // Inline cell edit handlers
+  // ── Inline cell edit ──
   const startEdit = (id: string, field: string, currentValue: any) => {
     setEditCell({ id, field });
     setEditValue(currentValue?.toString() ?? "");
@@ -183,6 +192,37 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
   const cancelEdit = () => {
     setEditCell(null);
     setEditValue("");
+  };
+
+  // ── Variant edit dialog ──
+  const openVariantEdit = (v: any) => {
+    setEditingVariant(v);
+    setVariantForm({
+      sku: v.sku || "",
+      barcode: v.barcode || "",
+      sale_price: v.sale_price ?? "",
+      purchase_price: v.purchase_price ?? "",
+      weight: v.weight ?? 0,
+      is_active: v.is_active !== false,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleVariantFormSave = async () => {
+    if (!editingVariant) return;
+    setSavingVariant(true);
+    const payload: Record<string, any> = {
+      sku: variantForm.sku || null,
+      barcode: variantForm.barcode || null,
+      sale_price: variantForm.sale_price !== "" ? Number(variantForm.sale_price) : null,
+      purchase_price: variantForm.purchase_price !== "" ? Number(variantForm.purchase_price) : null,
+      weight: Number(variantForm.weight) || 0,
+      is_active: variantForm.is_active,
+    };
+    await updateVariant(editingVariant.id, payload as any);
+    setSavingVariant(false);
+    setEditDialogOpen(false);
+    toast({ title: "Variante mise à jour" });
   };
 
   const combinationCount = localAttrs.filter((a) => a.values.length > 0).reduce((acc, a) => acc * a.values.length, 1);
@@ -277,7 +317,7 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
                   <TableHead className="text-right min-w-[90px] text-primary">En stock</TableHead>
                   <TableHead className="text-right min-w-[70px] text-primary">Prévu</TableHead>
                   <TableHead className="min-w-[70px]">Unité</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                  <TableHead className="w-20 text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -289,7 +329,6 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
                   </TableRow>
                 ) : variants.map((v) => {
                   const isEditingSku = editCell?.id === v.id && editCell?.field === "sku";
-                  const isEditingName = editCell?.id === v.id && editCell?.field === "name";
                   const isEditingPrice = editCell?.id === v.id && editCell?.field === "sale_price";
                   const isEditingCost = editCell?.id === v.id && editCell?.field === "purchase_price";
 
@@ -298,21 +337,9 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
                       {/* Référence interne */}
                       <TableCell className="py-2.5">
                         {isEditingSku ? (
-                          <Input
-                            autoFocus
-                            className="h-8 text-sm"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={commitEdit}
-                            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
-                          />
+                          <Input autoFocus className="h-8 text-sm" value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }} />
                         ) : (
-                          <span
-                            className="text-sm cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => startEdit(v.id, "sku", v.sku)}
-                          >
-                            {v.sku || "—"}
-                          </span>
+                          <span className="text-sm cursor-pointer hover:text-primary transition-colors" onClick={() => startEdit(v.id, "sku", v.sku)}>{v.sku || "—"}</span>
                         )}
                       </TableCell>
 
@@ -321,15 +348,11 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
                         <span className="text-sm">{productName || "—"}</span>
                       </TableCell>
 
-                      {/* Valeurs de la variante (badges) */}
+                      {/* Valeurs de la variante */}
                       <TableCell className="py-2.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {v.attribute_values.map((av, i) => (
-                            <Badge
-                              key={i}
-                              variant="secondary"
-                              className="text-xs font-normal px-2.5 py-1 rounded bg-muted text-muted-foreground border-0"
-                            >
+                            <Badge key={i} variant="secondary" className="text-xs font-normal px-2.5 py-1 rounded bg-muted text-muted-foreground border-0">
                               {av.attribute_name}: {av.value}
                             </Badge>
                           ))}
@@ -339,46 +362,18 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
                       {/* Prix de vente */}
                       <TableCell className="text-right py-2.5">
                         {isEditingPrice ? (
-                          <Input
-                            autoFocus
-                            type="number"
-                            step="0.01"
-                            className="h-8 text-sm text-right w-24 ml-auto"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={commitEdit}
-                            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
-                          />
+                          <Input autoFocus type="number" step="0.01" className="h-8 text-sm text-right w-24 ml-auto" value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }} />
                         ) : (
-                          <span
-                            className="text-sm cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => startEdit(v.id, "sale_price", v.sale_price)}
-                          >
-                            {fmt(v.sale_price)}
-                          </span>
+                          <span className="text-sm cursor-pointer hover:text-primary transition-colors" onClick={() => startEdit(v.id, "sale_price", v.sale_price)}>{fmt(v.sale_price)}</span>
                         )}
                       </TableCell>
 
                       {/* Coût */}
                       <TableCell className="text-right py-2.5">
                         {isEditingCost ? (
-                          <Input
-                            autoFocus
-                            type="number"
-                            step="0.01"
-                            className="h-8 text-sm text-right w-24 ml-auto"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={commitEdit}
-                            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
-                          />
+                          <Input autoFocus type="number" step="0.01" className="h-8 text-sm text-right w-24 ml-auto" value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }} />
                         ) : (
-                          <span
-                            className="text-sm cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => startEdit(v.id, "purchase_price", v.purchase_price)}
-                          >
-                            {fmt(v.purchase_price)}
-                          </span>
+                          <span className="text-sm cursor-pointer hover:text-primary transition-colors" onClick={() => startEdit(v.id, "purchase_price", v.purchase_price)}>{fmt(v.purchase_price)}</span>
                         )}
                       </TableCell>
 
@@ -397,16 +392,16 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
                         <span className="text-sm text-muted-foreground">{productUnit || "Unité(s)"}</span>
                       </TableCell>
 
-                      {/* Delete */}
+                      {/* Actions */}
                       <TableCell className="py-2.5">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => deleteVariant(v.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openVariantEdit(v)} title="Modifier la variante">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteVariant(v.id)} title="Supprimer">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -416,6 +411,72 @@ export function VariantsTab({ productId, productName, productUnit }: VariantsTab
           </div>
         </div>
       )}
+
+      {/* ── Variant Edit Dialog ── */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              Modifier la variante
+              {editingVariant?.attribute_values?.length > 0 && (
+                <span className="text-muted-foreground font-normal ml-2">
+                  — {editingVariant.attribute_values.map((av: any) => av.value).join(" / ")}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {/* Attribute badges (read-only) */}
+            {editingVariant?.attribute_values?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {editingVariant.attribute_values.map((av: any, i: number) => (
+                  <Badge key={i} variant="secondary" className="text-xs px-2.5 py-1">
+                    {av.attribute_name}: {av.value}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Référence interne (SKU)</Label>
+                <Input value={variantForm.sku || ""} onChange={(e) => setVariantForm((p) => ({ ...p, sku: e.target.value }))} placeholder="REF-001" />
+              </div>
+              <div className="space-y-2">
+                <Label>Code-barres</Label>
+                <Input value={variantForm.barcode || ""} onChange={(e) => setVariantForm((p) => ({ ...p, barcode: e.target.value }))} placeholder="123456789" />
+              </div>
+              <div className="space-y-2">
+                <Label>Prix de vente</Label>
+                <Input type="number" step="0.01" value={variantForm.sale_price} onChange={(e) => setVariantForm((p) => ({ ...p, sale_price: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Coût d'achat</Label>
+                <Input type="number" step="0.01" value={variantForm.purchase_price} onChange={(e) => setVariantForm((p) => ({ ...p, purchase_price: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Poids</Label>
+                <Input type="number" step="0.01" value={variantForm.weight} onChange={(e) => setVariantForm((p) => ({ ...p, weight: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Statut</Label>
+                <div className="flex items-center gap-2 h-10">
+                  <Switch checked={variantForm.is_active} onCheckedChange={(val) => setVariantForm((p) => ({ ...p, is_active: val }))} />
+                  <span className="text-sm">{variantForm.is_active ? "Actif" : "Inactif"}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Annuler</Button>
+              <Button onClick={handleVariantFormSave} disabled={savingVariant}>
+                {savingVariant && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
