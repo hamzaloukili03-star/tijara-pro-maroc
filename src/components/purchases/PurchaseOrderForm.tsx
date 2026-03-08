@@ -103,7 +103,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
   const totals = calcTotalsWithGlobalDiscount(calcedLines, globalDiscount.type, globalDiscount.value);
 
   const handleSave = async () => {
-    if (!supplierId || !warehouseId) return;
+    if (!supplierId) return;
     if (await isSupplierBlocked(supplierId)) return;
     setSaving(true);
     if (editItem) {
@@ -140,13 +140,6 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Fournisseur <span className="text-destructive">*</span></Label>
               <SearchableSelect options={supplierOptions} value={supplierId} onValueChange={handleSupplierChange} placeholder="Sélectionner..." /></div>
-            <div><Label>Dépôt <span className="text-destructive">*</span></Label>
-              <SearchableSelect
-                options={warehouses.map((w: any) => ({ value: w.id, label: w.name }))}
-                value={warehouseId}
-                onValueChange={setWarehouseId}
-                placeholder="Sélectionner un dépôt..."
-              /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -187,8 +180,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
                     <div className="col-span-3"><Input className="h-8 text-xs" placeholder="Description" value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} /></div>
                     <div className="col-span-1"><Input className="h-8 text-xs" type="number" placeholder="Qté" min={0} value={line.quantity || ""} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} /></div>
                     <div className="col-span-2"><Input className="h-8 text-xs" type="number" placeholder="Prix unit." min={0} value={line.unit_price || ""} onChange={e => updateLine(idx, "unit_price", Number(e.target.value))} /></div>
-                    <div className="col-span-1"><Input className="h-8 text-xs" type="number" placeholder="Remise%" min={0} max={100} value={line.discount_percent || ""} onChange={e => updateLine(idx, "discount_percent", Number(e.target.value))} /></div>
-                    <div className="col-span-1"><Input className="h-8 text-xs" type="number" placeholder="TVA%" min={0} value={line.tva_rate ?? ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} /></div>
+                    <div className="col-span-2"><Input className="h-8 text-xs" type="number" placeholder="TVA%" min={0} value={line.tva_rate ?? ""} onChange={e => updateLine(idx, "tva_rate", Number(e.target.value))} /></div>
                     <div className="col-span-1 flex justify-end">
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setLines(lines.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                     </div>
@@ -199,11 +191,6 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
             </div>
           )}
 
-          <GlobalDiscountSection
-            discount={globalDiscount}
-            onChange={setGlobalDiscount}
-            maxAmount={totals.subtotalHtBrut}
-          />
 
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
 
@@ -219,7 +206,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSave} disabled={saving || !supplierId || !warehouseId}>
+          <Button onClick={handleSave} disabled={saving || !supplierId}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Enregistrer
           </Button>
         </DialogFooter>
