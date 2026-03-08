@@ -1,12 +1,26 @@
+/**
+ * usePurchases.ts — Purchase workflow hooks for TIJARAPRO
+ *
+ * Contains three hooks that manage the full purchase lifecycle:
+ *   1. usePurchaseRequests — Demandes d'Achat (DA)
+ *   2. usePurchaseOrders  — Bons de Commande Fournisseur (BCA)
+ *   3. useReceptions      — Réceptions (REC)
+ *
+ * Workflow: DA (draft → submitted → approved → confirmed) → BCA (draft → confirmed → received → invoiced) → REC → FAF
+ *
+ * IMPORTANT — All data is company-scoped via companyId filter.
+ * IMPORTANT — Document numbers are generated server-side via `next_document_number` RPC.
+ * IMPORTANT — Audit logs are written for every state transition.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCompany } from "@/hooks/useCompany";
 import { calcTotalsWithGlobalDiscount, type GlobalDiscount } from "@/components/GlobalDiscountSection";
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
+
 export interface PurchaseLine {
   id?: string;
   product_id: string | null;
@@ -23,6 +37,9 @@ export interface PurchaseLine {
   sort_order: number;
 }
 
+// ─── Line calculation helpers ───────────────────────────────────────────────
+
+/** Calculate HT / TVA / TTC for a single purchase line */
 export function calcPurchaseLine(l: Partial<PurchaseLine>): PurchaseLine {
   const qty = Number(l.quantity || 0);
   const price = Number(l.unit_price || 0);
@@ -44,6 +61,7 @@ export function calcPurchaseLine(l: Partial<PurchaseLine>): PurchaseLine {
   } as PurchaseLine;
 }
 
+/** Recalculate totals for an array of purchase lines */
 export function calcPurchaseTotals(lines: PurchaseLine[]) {
   const calc = lines.map(calcPurchaseLine);
   return {
@@ -54,6 +72,8 @@ export function calcPurchaseTotals(lines: PurchaseLine[]) {
   };
 }
 
+// ─── Shared audit helper ────────────────────────────────────────────────────
+
 async function auditLog(action: string, table: string, recordId: string, details?: string) {
   const userId = (await supabase.auth.getUser()).data.user?.id;
   await (supabase as any).from("audit_logs").insert({
@@ -61,9 +81,11 @@ async function auditLog(action: string, table: string, recordId: string, details
   });
 }
 
-// ─────────────────────────────────────────────
-// Purchase Requests
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// 1. Purchase Requests (Demandes d'Achat)
+// Lifecycle: draft → submitted → approved → confirmed (creates PO) | refused | cancelled
+// ═══════════════════════════════════════════════════════════════════════════
+
 export function usePurchaseRequests() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,14 +100,33 @@ export function usePurchaseRequests() {
       .select("*, supplier:suppliers(name, code), currency:currencies(code, symbol)")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Erreur fetch purchase_requests:", error);
-    }
+    if (error) console.error("Erreur fetch purchase_requests:", error);
     setLoading(false);
-    setItems((data || []).map((d: any) => ({ ...d, number: d.request_number, date: d.request_date || d.created_at?.split("T")[0] })));
+    setItems((data || []).map((d: any) => ({
+      ...d,
+      number: d.request_number,
+      date: d.request_date || d.created_at?.split("T")[0],
+    })));
   }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // ── Helper: compute totals from DA lines (uses estimated_cost, not unit_price) ──
+  const computeRequestTotals = (lines: Partial<PurchaseLine>[]) => {
+    const calcLines = lines.map(l => {
+      const qty = Number(l.quantity || 0);
+      const price = Number(l.estimated_cost || 0);
+      const tva = Number(l.tva_rate || 0);
+      const ht = qty * price;
+      const tvaAmt = ht * tva / 100;
+      return { ht, tvaAmt, ttc: ht + tvaAmt };
+    });
+    return {
+      total_ht: Math.round(calcLines.reduce((s, l) => s + l.ht, 0) * 100) / 100,
+      total_tva: Math.round(calcLines.reduce((s, l) => s + l.tvaAmt, 0) * 100) / 100,
+      total_ttc: Math.round(calcLines.reduce((s, l) => s + l.ttc, 0) * 100) / 100,
+    };
+  };
 
   const create = async (payload: {
     supplierId?: string;
@@ -97,18 +138,7 @@ export function usePurchaseRequests() {
   }) => {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "DA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
-    // Calculate totals from lines
-    const calcLines = payload.lines.map(l => {
-      const qty = Number(l.quantity || 0);
-      const price = Number(l.estimated_cost || 0);
-      const tva = Number(l.tva_rate || 0);
-      const ht = qty * price;
-      const tvaAmt = ht * tva / 100;
-      return { ht, tvaAmt, ttc: ht + tvaAmt };
-    });
-    const total_ht = Math.round(calcLines.reduce((s, l) => s + l.ht, 0) * 100) / 100;
-    const total_tva = Math.round(calcLines.reduce((s, l) => s + l.tvaAmt, 0) * 100) / 100;
-    const total_ttc = Math.round(calcLines.reduce((s, l) => s + l.ttc, 0) * 100) / 100;
+    const totals = computeRequestTotals(payload.lines);
 
     const { data, error } = await (supabase as any).from("purchase_requests").insert({
       request_number: num,
@@ -120,16 +150,16 @@ export function usePurchaseRequests() {
       currency_id: payload.currencyId || null,
       requested_by: userId,
       company_id: companyId,
-      total_ht,
-      total_tva,
-      total_ttc,
+      ...totals,
     }).select().single();
+
     if (error) {
       console.error("Erreur insertion purchase_requests:", error);
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       return null;
     }
 
+    // Insert DA lines
     for (let i = 0; i < payload.lines.length; i++) {
       const l = payload.lines[i];
       const { error: lineError } = await (supabase as any).from("purchase_request_lines").insert({
@@ -143,10 +173,9 @@ export function usePurchaseRequests() {
         sort_order: i,
         company_id: companyId,
       });
-      if (lineError) {
-        console.error("Erreur insertion ligne DA:", lineError);
-      }
+      if (lineError) console.error("Erreur insertion ligne DA:", lineError);
     }
+
     await auditLog("create_purchase_request", "purchase_requests", data.id, num as string);
     toast({ title: "Demande créée", description: num as string });
     await fetch();
@@ -155,34 +184,31 @@ export function usePurchaseRequests() {
 
   const update = async (id: string, payload: any, lines?: Partial<PurchaseLine>[]) => {
     if (lines) {
-      // Recalculate totals from lines
-      const calcLines = lines.map(l => {
-        const qty = Number(l.quantity || 0);
-        const price = Number(l.estimated_cost || 0);
-        const tva = Number(l.tva_rate || 0);
-        const ht = qty * price;
-        const tvaAmt = ht * tva / 100;
-        return { ht, tvaAmt, ttc: ht + tvaAmt };
-      });
-      payload.total_ht = Math.round(calcLines.reduce((s, l) => s + l.ht, 0) * 100) / 100;
-      payload.total_tva = Math.round(calcLines.reduce((s, l) => s + l.tvaAmt, 0) * 100) / 100;
-      payload.total_ttc = Math.round(calcLines.reduce((s, l) => s + l.ttc, 0) * 100) / 100;
+      const totals = computeRequestTotals(lines);
+      Object.assign(payload, totals);
     }
     const { error } = await (supabase as any).from("purchase_requests").update(payload).eq("id", id);
-    if (error) { console.error("Erreur mise à jour purchase_requests:", error); toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return false;
+    }
     if (lines) {
+      // Replace all lines atomically
       await (supabase as any).from("purchase_request_lines").delete().eq("request_id", id);
       for (let i = 0; i < lines.length; i++) {
         const l = lines[i];
         await (supabase as any).from("purchase_request_lines").insert({
-          request_id: id, product_id: l.product_id || null, description: l.description || "", quantity: l.quantity || 1,
-          unit: l.unit || "Unité", estimated_cost: l.estimated_cost || 0, tva_rate: l.tva_rate || 0, sort_order: i, company_id: companyId,
+          request_id: id, product_id: l.product_id || null, description: l.description || "",
+          quantity: l.quantity || 1, unit: l.unit || "Unité", estimated_cost: l.estimated_cost || 0,
+          tva_rate: l.tva_rate || 0, sort_order: i, company_id: companyId,
         });
       }
     }
     await fetch();
     return true;
   };
+
+  // ── Status transitions ──
 
   const submit = async (id: string) => {
     await (supabase as any).from("purchase_requests").update({ status: "submitted" }).eq("id", id);
@@ -219,18 +245,24 @@ export function usePurchaseRequests() {
     return data || [];
   };
 
+  /**
+   * Convert an approved DA into a draft PO (BCA).
+   * Uses supplier_unit_price from the SupplierResponseDialog.
+   * Will fail if no supplier prices have been entered.
+   */
   const createPOFromRequest = async (requestId: string) => {
     const { data: req } = await (supabase as any).from("purchase_requests")
       .select("*, supplier:suppliers(payment_terms)")
       .eq("id", requestId).single();
     if (!req) return null;
 
-    // Fetch lines separately to avoid embedded query issues
     const { data: linesData } = await (supabase as any).from("purchase_request_lines")
       .select("*")
       .eq("request_id", requestId)
       .order("sort_order");
     const lines = linesData || [];
+
+    // Verify supplier prices exist (set via SupplierResponseDialog)
     const hasSupplierPrices = lines.some((l: any) => Number(l.supplier_unit_price) > 0);
     if (!hasSupplierPrices) {
       toast({ title: "Prix manquants", description: "Veuillez renseigner les prix fournisseur avant de créer le bon de commande.", variant: "destructive" });
@@ -240,7 +272,7 @@ export function usePurchaseRequests() {
     const { data: num } = await supabase.rpc("next_document_number", { p_type: "BCA", p_company_id: companyId } as any);
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
-    // Calculate totals from supplier prices
+    // Calculate PO totals from supplier-provided prices
     let subtotalHt = 0, totalTva = 0, totalTtc = 0;
     const calcLines = lines.map((l: any) => {
       const price = Number(l.supplier_unit_price) || Number(l.estimated_cost) || 0;
@@ -255,7 +287,6 @@ export function usePurchaseRequests() {
       return { ...l, _price: price, _disc: disc, _tva: tva, _ht: Math.round(ht * 100) / 100, _tvaAmt: Math.round(tvaAmt * 100) / 100, _ttc: Math.round((ht + tvaAmt) * 100) / 100 };
     });
 
-    // Payment terms from supplier master data
     const supplierPaymentTerms = req.supplier?.payment_terms || "30j";
 
     const { data: po, error } = await (supabase as any).from("purchase_orders").insert({
@@ -283,7 +314,8 @@ export function usePurchaseRequests() {
         total_ht: l._ht, total_tva: l._tvaAmt, total_ttc: l._ttc, sort_order: i, company_id: companyId,
       });
     }
-    // Mark DA as confirmed so it can't be confirmed again
+
+    // Mark DA as confirmed so it can't be converted again
     await (supabase as any).from("purchase_requests").update({ status: "confirmed" }).eq("id", requestId);
     await auditLog("create_po_from_request", "purchase_orders", po.id, `From DA: ${req.request_number}`);
     toast({ title: "BC fournisseur (brouillon) créé", description: num as string });
@@ -292,7 +324,6 @@ export function usePurchaseRequests() {
   };
 
   const remove = async (id: string) => {
-    // Only allow deleting draft requests
     const item = items.find(i => i.id === id);
     if (item && item.status !== "draft") {
       toast({ title: "Suppression impossible", description: "Seules les demandes en brouillon peuvent être supprimées.", variant: "destructive" });
@@ -306,15 +337,17 @@ export function usePurchaseRequests() {
     await fetch();
   };
 
-  // legacy compat
+  /** @deprecated Use submit() instead */
   const validate = submit;
 
   return { items, loading, fetch, create, update, submit, approve, refuse, cancel, remove, getLines, createPOFromRequest, validate };
 }
 
-// ─────────────────────────────────────────────
-// Purchase Orders
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// 2. Purchase Orders (Bons de Commande Fournisseur)
+// Lifecycle: draft → confirmed → partially_received → received → invoiced | cancelled
+// ═══════════════════════════════════════════════════════════════════════════
+
 export function usePurchaseOrders() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -330,7 +363,11 @@ export function usePurchaseOrders() {
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
-    setItems((data || []).map((d: any) => ({ ...d, number: d.order_number, date: d.order_date || d.created_at?.split("T")[0] })));
+    setItems((data || []).map((d: any) => ({
+      ...d,
+      number: d.order_number,
+      date: d.order_date || d.created_at?.split("T")[0],
+    })));
   }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
@@ -406,7 +443,9 @@ export function usePurchaseOrders() {
 
   const confirm = async (id: string) => {
     const userId = (await supabase.auth.getUser()).data.user?.id;
-    await (supabase as any).from("purchase_orders").update({ status: "confirmed", confirmed_at: new Date().toISOString(), confirmed_by: userId }).eq("id", id);
+    await (supabase as any).from("purchase_orders").update({
+      status: "confirmed", confirmed_at: new Date().toISOString(), confirmed_by: userId,
+    }).eq("id", id);
     await auditLog("confirm_purchase_order", "purchase_orders", id);
     toast({ title: "BC fournisseur confirmé" });
     await fetch();
@@ -419,8 +458,9 @@ export function usePurchaseOrders() {
     await fetch();
   };
 
-  // legacy compat
+  /** @deprecated Use confirm() */
   const validate = confirm;
+  /** @deprecated Use confirm() */
   const adminValidate = confirm;
 
   const getLines = async (orderId: string) => {
@@ -430,6 +470,11 @@ export function usePurchaseOrders() {
     return data || [];
   };
 
+  /**
+   * Create a reception from a PO, add stock, and auto-validate.
+   * Also updates PO line received_qty and PO status accordingly.
+   * @param addStockFn — Stock engine addStock function (injected to avoid circular deps)
+   */
   const createReception = async (
     orderId: string,
     receptionLines: { purchase_order_line_id: string; product_id: string; description: string; quantity: number; unit_price: number; discount_percent: number; tva_rate: number }[],
@@ -448,6 +493,7 @@ export function usePurchaseOrders() {
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
+    // Insert reception lines + update PO line quantities + add stock
     for (let i = 0; i < receptionLines.length; i++) {
       const rl = receptionLines[i];
       const ht = rl.quantity * rl.unit_price * (1 - (rl.discount_percent || 0) / 100);
@@ -460,20 +506,22 @@ export function usePurchaseOrders() {
         total_ttc: Math.round((ht + tvaAmt) * 100) / 100, sort_order: i, company_id: companyId,
       });
 
+      // Increment received_qty on PO line
       const { data: polData } = await (supabase as any).from("purchase_order_lines").select("received_qty").eq("id", rl.purchase_order_line_id).single();
       if (polData) {
         await (supabase as any).from("purchase_order_lines").update({ received_qty: Number(polData.received_qty) + rl.quantity }).eq("id", rl.purchase_order_line_id);
       }
 
+      // Add stock via injected stock engine
       if (rl.product_id && po.warehouse_id) {
         await addStockFn(rl.product_id, po.warehouse_id, rl.quantity, rl.unit_price, "reception", rec.id);
       }
     }
 
-    // validate reception
+    // Auto-validate the reception
     await (supabase as any).from("receptions").update({ status: "validated" }).eq("id", rec.id);
 
-    // update PO status
+    // Update PO status based on reception completeness
     const { data: allLines } = await (supabase as any).from("purchase_order_lines").select("quantity, received_qty").eq("purchase_order_id", orderId);
     const fullyReceived = (allLines || []).every((l: any) => Number(l.received_qty) >= Number(l.quantity));
     const partiallyReceived = (allLines || []).some((l: any) => Number(l.received_qty) > 0);
@@ -489,6 +537,11 @@ export function usePurchaseOrders() {
     return rec;
   };
 
+  /**
+   * Create a supplier invoice (FAF) from a validated reception.
+   * Copies reception lines as invoice lines.
+   * Links invoice ↔ reception and updates PO status to "invoiced".
+   */
   const createInvoiceFromReception = async (receptionId: string) => {
     const { data: rec } = await (supabase as any).from("receptions")
       .select("*, reception_lines:reception_lines(*)")
@@ -521,10 +574,11 @@ export function usePurchaseOrders() {
       });
     }
 
+    // Link reception ↔ invoice
     await (supabase as any).from("receptions").update({ invoice_id: inv.id }).eq("id", receptionId);
     await (supabase as any).from("invoice_reception_links").insert({ invoice_id: inv.id, reception_id: receptionId }).onConflict("invoice_id,reception_id").ignore();
 
-    // update PO status to invoiced if all receptions are invoiced
+    // Update PO status to invoiced
     if (rec.purchase_order_id) {
       await (supabase as any).from("purchase_orders").update({ status: "invoiced" }).eq("id", rec.purchase_order_id);
     }
@@ -537,9 +591,11 @@ export function usePurchaseOrders() {
   return { items, loading, fetch, create, update, confirm, validate, adminValidate, cancel, getLines, createReception, createInvoiceFromReception };
 }
 
-// ─────────────────────────────────────────────
-// Receptions (standalone hook)
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// 3. Receptions (standalone read-only list)
+// Used on the Receptions page to display all receptions across POs.
+// ═══════════════════════════════════════════════════════════════════════════
+
 export function useReceptions() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -555,7 +611,11 @@ export function useReceptions() {
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     setLoading(false);
-    setItems((data || []).map((d: any) => ({ ...d, number: d.reception_number, date: d.reception_date || d.created_at?.split("T")[0] })));
+    setItems((data || []).map((d: any) => ({
+      ...d,
+      number: d.reception_number,
+      date: d.reception_date || d.created_at?.split("T")[0],
+    })));
   }, [companyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
