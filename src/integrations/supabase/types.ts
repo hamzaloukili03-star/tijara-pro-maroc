@@ -2607,6 +2607,10 @@ export type Database = {
           quantity: number
           request_id: string
           sort_order: number
+          supplier_discount_percent: number | null
+          supplier_line_total: number | null
+          supplier_tva_rate: number | null
+          supplier_unit_price: number | null
           tva_rate: number | null
           unit: string | null
         }
@@ -2620,6 +2624,10 @@ export type Database = {
           quantity?: number
           request_id: string
           sort_order?: number
+          supplier_discount_percent?: number | null
+          supplier_line_total?: number | null
+          supplier_tva_rate?: number | null
+          supplier_unit_price?: number | null
           tva_rate?: number | null
           unit?: string | null
         }
@@ -2633,6 +2641,10 @@ export type Database = {
           quantity?: number
           request_id?: string
           sort_order?: number
+          supplier_discount_percent?: number | null
+          supplier_line_total?: number | null
+          supplier_tva_rate?: number | null
+          supplier_unit_price?: number | null
           tva_rate?: number | null
           unit?: string | null
         }
@@ -2673,7 +2685,9 @@ export type Database = {
           requested_by: string | null
           status: string
           supplier_id: string | null
+          supplier_notes: string | null
           supplier_reference: string | null
+          supplier_response_date: string | null
           updated_at: string
           warehouse_id: string | null
         }
@@ -2689,7 +2703,9 @@ export type Database = {
           requested_by?: string | null
           status?: string
           supplier_id?: string | null
+          supplier_notes?: string | null
           supplier_reference?: string | null
+          supplier_response_date?: string | null
           updated_at?: string
           warehouse_id?: string | null
         }
@@ -2705,7 +2721,9 @@ export type Database = {
           requested_by?: string | null
           status?: string
           supplier_id?: string | null
+          supplier_notes?: string | null
           supplier_reference?: string | null
+          supplier_response_date?: string | null
           updated_at?: string
           warehouse_id?: string | null
         }
