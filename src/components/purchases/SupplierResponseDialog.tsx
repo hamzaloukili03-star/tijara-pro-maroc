@@ -99,12 +99,14 @@ export function SupplierResponseDialog({ item, onClose, onSaved }: Props) {
       // Update each line
       for (const l of lines) {
         const ht = calcLineHT(l);
-        const { error: lErr } = await (supabase as any).from("purchase_request_lines").update({
+        console.log("[SupplierResponse] Updating line:", l.id, "supplier_unit_price:", l.supplier_unit_price);
+        const { error: lErr, data: lData, count } = await (supabase as any).from("purchase_request_lines").update({
           supplier_unit_price: l.supplier_unit_price,
           supplier_discount_percent: l.supplier_discount_percent,
           supplier_tva_rate: l.supplier_tva_rate,
           supplier_line_total: Math.round(ht * 100) / 100,
-        }).eq("id", l.id);
+        }).eq("id", l.id).select();
+        console.log("[SupplierResponse] Update result:", { lErr, lData, count });
         if (lErr) throw lErr;
       }
 
