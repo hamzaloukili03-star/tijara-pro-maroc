@@ -128,6 +128,21 @@ export function PurchaseRequestDetail({ item, onClose, onCreatePO, onEdit, onSub
                   <Edit className="h-3.5 w-3.5 mr-1" /> Modifier
                 </Button>
               )}
+              {isDraft && onSubmit && (
+                <Button size="sm" variant="default" onClick={() => { onSubmit(item.id); onClose(); }}>
+                  Soumettre
+                </Button>
+              )}
+              {isSubmitted && isAdmin && onApprove && (
+                <Button size="sm" variant="default" onClick={() => { onApprove(item.id); onClose(); }}>
+                  Approuver
+                </Button>
+              )}
+              {isSubmitted && isAdmin && onRefuse && (
+                <Button size="sm" variant="destructive" onClick={() => { onRefuse(item.id); onClose(); }}>
+                  Refuser
+                </Button>
+              )}
               {isApprovedOrValidated && onCreatePO && (
                 <Button size="sm" variant="default" disabled={creatingPO} onClick={handleConfirmOrder}>
                   {creatingPO ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <FileText className="h-3.5 w-3.5 mr-1" />}
