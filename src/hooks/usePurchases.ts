@@ -154,6 +154,20 @@ export function usePurchaseRequests() {
   };
 
   const update = async (id: string, payload: any, lines?: Partial<PurchaseLine>[]) => {
+    if (lines) {
+      // Recalculate totals from lines
+      const calcLines = lines.map(l => {
+        const qty = Number(l.quantity || 0);
+        const price = Number(l.estimated_cost || 0);
+        const tva = Number(l.tva_rate || 0);
+        const ht = qty * price;
+        const tvaAmt = ht * tva / 100;
+        return { ht, tvaAmt, ttc: ht + tvaAmt };
+      });
+      payload.total_ht = Math.round(calcLines.reduce((s, l) => s + l.ht, 0) * 100) / 100;
+      payload.total_tva = Math.round(calcLines.reduce((s, l) => s + l.tvaAmt, 0) * 100) / 100;
+      payload.total_ttc = Math.round(calcLines.reduce((s, l) => s + l.ttc, 0) * 100) / 100;
+    }
     const { error } = await (supabase as any).from("purchase_requests").update(payload).eq("id", id);
     if (error) { console.error("Erreur mise à jour purchase_requests:", error); toast({ title: "Erreur", description: error.message, variant: "destructive" }); return false; }
     if (lines) {

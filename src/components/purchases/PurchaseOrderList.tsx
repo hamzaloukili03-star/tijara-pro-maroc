@@ -153,7 +153,7 @@ export function PurchaseOrderList({ items, loading, onNew, onEdit, onConfirm, on
                     <TableCell className="font-mono text-sm font-medium">{item.number}</TableCell>
                     <TableCell>{item.supplier?.name || "—"}</TableCell>
                     <TableCell>{item.warehouse?.name || "—"}</TableCell>
-                    <TableCell className="text-right font-medium">{Number(item.total_ttc || 0).toLocaleString("fr-MA")} MAD</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(Number(item.total_ttc || 0))}</TableCell>
                     <TableCell><Badge className={`${cfg.className} border-0`}>{cfg.label}</Badge></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1 flex-wrap">

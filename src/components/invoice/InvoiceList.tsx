@@ -159,8 +159,8 @@ export function InvoiceList({ invoiceType, onCreateCreditNote }: InvoiceListProp
                   <TableCell>{inv.customer?.name || inv.supplier?.name || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{inv.invoice_date}</TableCell>
                   <TableCell><Badge className={`${statusCfg(inv.status).className} border-0`}>{INVOICE_STATUS_LABELS[inv.status]}</Badge></TableCell>
-                  <TableCell className="text-right font-medium">{inv.total_ttc.toFixed(2)}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{inv.remaining_balance.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(inv.total_ttc)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{formatCurrency(inv.remaining_balance)}</TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir" onClick={() => openDetail(inv)}><Eye className="h-4 w-4" /></Button>

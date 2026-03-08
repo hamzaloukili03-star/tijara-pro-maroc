@@ -148,7 +148,7 @@ export function CreditNoteList({ linkedInvoice, onClearLinked }: CreditNoteListP
                   <TableCell>{cn.customer?.name || cn.supplier?.name || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{cn.invoice?.invoice_number || "—"}</TableCell>
                   <TableCell><Badge variant={statusVariant(cn.status)}>{CREDIT_NOTE_STATUS_LABELS[cn.status]}</Badge></TableCell>
-                  <TableCell className="text-right font-medium">{cn.total_ttc.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(cn.total_ttc)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <PrintButton
