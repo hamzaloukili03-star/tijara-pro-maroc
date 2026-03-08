@@ -108,7 +108,7 @@ export function PurchaseOrderForm({ editItem, hook, onClose }: Props) {
     setSaving(true);
     if (editItem) {
       await hook.update(editItem.id, {
-        supplier_id: supplierId, warehouse_id: warehouseId, payment_terms: paymentTerms,
+        supplier_id: supplierId, warehouse_id: warehouseId || null, payment_terms: paymentTerms,
         expected_delivery_date: expectedDate || null, notes,
         global_discount_type: globalDiscount.type,
         global_discount_value: globalDiscount.value,
