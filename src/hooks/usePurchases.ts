@@ -392,7 +392,7 @@ export function usePurchaseOrders() {
       order_number: num,
       status: "draft",
       supplier_id: payload.supplierId,
-      warehouse_id: payload.warehouseId,
+      warehouse_id: payload.warehouseId || null,
       purchase_request_id: payload.purchaseRequestId || null,
       subtotal_ht: totals.subtotalHt, total_tva: totals.totalTva, total_ttc: totals.totalTtc,
       global_discount_type: gd.type,
