@@ -37,6 +37,7 @@ export default function TemplateEditorPage() {
   const navigate = useNavigate();
   const docType = type as TemplateDocType;
   const { fetchTemplate, saveTemplate, publishTemplate, saveAsCopy, restoreDefault, loading } = useDocumentTemplates();
+  const { userRoles } = usePermissions();
 
   const [existingId, setExistingId] = useState<string | undefined>();
   const [config, setConfig] = useState<TemplateConfig>(getDefaultTemplate());
@@ -44,6 +45,10 @@ export default function TemplateEditorPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [templateStatus, setTemplateStatus] = useState<TemplateStatus>("draft");
+  const [viewMode, setViewMode] = useState<"visual" | "code">("visual");
+
+  // Check if user is admin/super_admin
+  const isAdmin = userRoles.some(ur => ur.role === "super_admin" || ur.role === "admin");
 
   useEffect(() => {
     (async () => {
