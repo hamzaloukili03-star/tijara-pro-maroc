@@ -238,24 +238,79 @@ export default function TemplateEditorPage() {
           {templateStatus === "published" ? "Publié" : "Brouillon"}
         </Badge>
         <div className="flex-1" />
-        <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)} className="gap-1.5">
-          <Eye className="h-4 w-4" /> {showPreview ? "Masquer aperçu" : "Aperçu"}
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleRestore} className="gap-1.5">
-          <RotateCcw className="h-4 w-4" /> Restaurer défaut
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleSaveAsCopy} disabled={loading} className="gap-1.5">
-          <Copy className="h-4 w-4" /> Copie
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleSave} disabled={loading} className="gap-1.5">
-          <Save className="h-4 w-4" /> Brouillon
-        </Button>
-        <Button size="sm" onClick={handlePublish} disabled={loading} className="gap-1.5">
-          <Send className="h-4 w-4" /> Publier
-        </Button>
+
+        {/* View mode toggle — Code source visible only for admin */}
+        {isAdmin && (
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <Button
+              variant={viewMode === "visual" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("visual")}
+              className="rounded-none gap-1.5 h-8"
+            >
+              <Eye className="h-3.5 w-3.5" /> Vue visuelle
+            </Button>
+            <Button
+              variant={viewMode === "code" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("code")}
+              className="rounded-none gap-1.5 h-8"
+            >
+              <Code className="h-3.5 w-3.5" /> Code source
+            </Button>
+          </div>
+        )}
+
+        {viewMode === "visual" && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)} className="gap-1.5">
+              <Eye className="h-4 w-4" /> {showPreview ? "Masquer aperçu" : "Aperçu"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleRestore} className="gap-1.5">
+              <RotateCcw className="h-4 w-4" /> Restaurer défaut
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSaveAsCopy} disabled={loading} className="gap-1.5">
+              <Copy className="h-4 w-4" /> Copie
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSave} disabled={loading} className="gap-1.5">
+              <Save className="h-4 w-4" /> Brouillon
+            </Button>
+            <Button size="sm" onClick={handlePublish} disabled={loading} className="gap-1.5">
+              <Send className="h-4 w-4" /> Publier
+            </Button>
+          </>
+        )}
       </div>
 
-      {showPreview ? (
+      {viewMode === "code" ? (
+        <SourceCodeEditor
+          config={config}
+          docType={docType}
+          onSaveDraft={async (updatedConfig) => {
+            const result = await saveTemplate(docType, updatedConfig, existingId, "draft");
+            if (result) {
+              setExistingId(result.id);
+              setConfig(updatedConfig);
+              setTemplateStatus("draft");
+            }
+          }}
+          onPublish={async (updatedConfig) => {
+            const result = await publishTemplate(docType, updatedConfig, existingId);
+            if (result) {
+              setExistingId(result.id);
+              setConfig(updatedConfig);
+              setTemplateStatus("published");
+            }
+          }}
+          onPreview={(updatedConfig) => {
+            setConfig(updatedConfig);
+            setShowPreview(true);
+            setViewMode("visual");
+          }}
+          loading={loading}
+          templateStatus={templateStatus}
+        />
+      ) : showPreview ? (
         <TemplatePreview config={config} docType={docType} />
       ) : (
         <div className="grid grid-cols-12 gap-4" style={{ minHeight: "70vh" }}>
