@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, Save, Copy, RotateCcw, Eye, GripVertical,
-  EyeOff, Upload, Plus, Trash2, Send,
+  EyeOff, Upload, Plus, Trash2, Send, Code,
 } from "lucide-react";
 import { toast } from "sonner";
 import {

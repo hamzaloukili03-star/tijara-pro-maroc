@@ -53,6 +53,10 @@ export interface TemplateConfig {
     headerFontSize: number;
     bodyFontSize: number;
   };
+  /** Custom code mode fields (used by Source Code editor) */
+  isCustomCode?: boolean;
+  customHtml?: string;
+  customCss?: string;
 }
 
 export type TemplateStatus = "draft" | "published";
