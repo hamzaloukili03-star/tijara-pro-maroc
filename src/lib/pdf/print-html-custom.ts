@@ -59,6 +59,12 @@ export async function openPrintHtmlWithTemplate(data: PdfDocumentData) {
     return;
   }
 
+  // If template uses custom HTML/CSS code, use that directly
+  if (tpl.isCustomCode && tpl.customHtml) {
+    openCustomCodePrintHtml(data, tpl);
+    return;
+  }
+
   openCustomPrintHtml(data, tpl);
 }
 
