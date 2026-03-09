@@ -30,7 +30,8 @@ import {
   type TemplateStatus,
 } from "@/hooks/useDocumentTemplates";
 import { TemplatePreview } from "@/components/conception/TemplatePreview";
-
+import { SourceCodeEditor } from "@/components/conception/SourceCodeEditor";
+import { usePermissions } from "@/hooks/usePermissions";
 export default function TemplateEditorPage() {
   const { type } = useParams<{ type: string }>();
   const navigate = useNavigate();
