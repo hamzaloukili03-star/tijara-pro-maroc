@@ -59,7 +59,104 @@ export async function openPrintHtmlWithTemplate(data: PdfDocumentData) {
     return;
   }
 
+  // If template uses custom HTML/CSS code, use that directly
+  if (tpl.isCustomCode && tpl.customHtml) {
+    openCustomCodePrintHtml(data, tpl);
+    return;
+  }
+
   openCustomPrintHtml(data, tpl);
+}
+
+/**
+ * Render using raw custom HTML/CSS code from the source code editor.
+ * Replaces placeholders with actual data.
+ */
+function openCustomCodePrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
+  const printWindow = window.open("about:blank", "_blank");
+  if (!printWindow) {
+    alert("Le navigateur a bloqué l'ouverture de la fenêtre. Veuillez autoriser les pop-ups.");
+    return;
+  }
+
+  const c = data.company;
+  const party = data.party;
+  const ba = data.bankAccount;
+
+  let htmlBody = tpl.customHtml || "";
+  const css = tpl.customCss || "";
+
+  // Replace company placeholders
+  htmlBody = htmlBody.replace(/\{\{company\.name\}\}/g, c.raison_sociale || "");
+  htmlBody = htmlBody.replace(/\{\{company\.ice\}\}/g, c.ice || "");
+  htmlBody = htmlBody.replace(/\{\{company\.rc\}\}/g, c.rc || "");
+  htmlBody = htmlBody.replace(/\{\{company\.if\}\}/g, c.if_number || "");
+  htmlBody = htmlBody.replace(/\{\{company\.address\}\}/g, [c.address, c.city, c.postal_code].filter(Boolean).join(", "));
+  htmlBody = htmlBody.replace(/\{\{company\.phone\}\}/g, c.phone || "");
+  htmlBody = htmlBody.replace(/\{\{company\.email\}\}/g, c.email || "");
+  htmlBody = htmlBody.replace(/\{\{company\.logo_url\}\}/g, c.logo_url || "");
+  htmlBody = htmlBody.replace(/\{\{forme_juridique\}\}/g, c.forme_juridique || "");
+  htmlBody = htmlBody.replace(/\{\{patente\}\}/g, c.patente || "");
+  htmlBody = htmlBody.replace(/\{\{capital\}\}/g, c.capital ? Number(c.capital).toLocaleString("fr-FR") : "");
+  htmlBody = htmlBody.replace(/\{\{cnss\}\}/g, (c as any).cnss || "");
+
+  // Replace partner placeholders
+  htmlBody = htmlBody.replace(/\{\{partner\.name\}\}/g, party.name || "");
+  htmlBody = htmlBody.replace(/\{\{partner\.address\}\}/g, (party.address || "") + (party.city ? `, ${party.city}` : ""));
+  htmlBody = htmlBody.replace(/\{\{partner\.ice\}\}/g, party.ice || "");
+
+  // Replace doc placeholders
+  htmlBody = htmlBody.replace(/\{\{doc\.number\}\}/g, data.number || "");
+  htmlBody = htmlBody.replace(/\{\{doc\.date\}\}/g, data.date || "");
+  htmlBody = htmlBody.replace(/\{\{doc\.due_date\}\}/g, data.dueDate || "");
+  htmlBody = htmlBody.replace(/\{\{doc\.payment_terms\}\}/g, data.paymentTerms || "");
+
+  // Replace totals
+  htmlBody = htmlBody.replace(/\{\{totals\.ht\}\}/g, fmt(data.subtotalHt));
+  htmlBody = htmlBody.replace(/\{\{totals\.tva\}\}/g, fmt(data.totalTva));
+  htmlBody = htmlBody.replace(/\{\{totals\.ttc\}\}/g, fmt(data.totalTtc));
+
+  // Replace bank
+  htmlBody = htmlBody.replace(/\{\{bank\.name\}\}/g, ba?.bank_name || "");
+  htmlBody = htmlBody.replace(/\{\{bank\.rib\}\}/g, ba?.rib || "");
+  htmlBody = htmlBody.replace(/\{\{bank\.swift\}\}/g, ba?.swift || "");
+
+  // Replace notes
+  htmlBody = htmlBody.replace(/\{\{notes\}\}/g, data.notes || "");
+
+  // Handle lines loop
+  const linesLoopRegex = /<!--\s*\{\{#each lines\}\}\s*-->([\s\S]*?)<!--\s*\{\{\/each\}\}\s*-->/g;
+  htmlBody = htmlBody.replace(linesLoopRegex, (_match, lineTemplate: string) => {
+    return data.lines.map((l, i) => {
+      let row = lineTemplate;
+      row = row.replace(/\{\{line\.ref\}\}/g, l.ref || String(i + 1));
+      row = row.replace(/\{\{line\.description\}\}/g, l.description || "");
+      row = row.replace(/\{\{line\.quantity\}\}/g, String(l.quantity));
+      row = row.replace(/\{\{line\.unit\}\}/g, l.unit || "Unité");
+      row = row.replace(/\{\{line\.unit_price\}\}/g, fmt(l.unit_price));
+      row = row.replace(/\{\{line\.discount_percent\}\}/g, String(l.discount_percent || 0));
+      row = row.replace(/\{\{line\.tva_rate\}\}/g, String(l.tva_rate));
+      row = row.replace(/\{\{line\.total_ht\}\}/g, fmt(l.total_ht));
+      row = row.replace(/\{\{line\.total_ttc\}\}/g, fmt(l.total_ttc));
+      return row;
+    }).join("");
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>${DOC_TITLES[data.type]} ${data.number}</title>
+<style>${css}</style>
+</head>
+<body>
+${htmlBody}
+<script>window.onload=function(){document.title="${DOC_TITLES[data.type]} ${data.number}";setTimeout(function(){window.print()},400)}</script>
+</body>
+</html>`;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
 }
 
 function openCustomPrintHtml(data: PdfDocumentData, tpl: TemplateConfig) {
