@@ -10,10 +10,10 @@ interface PermissionsContextType {
 }
 
 const PermissionsContext = createContext<PermissionsContextType>({
-  can: () => true,
+  can: () => false,
   isValidator: () => false,
-  canAccessModule: () => true,
-  loading: false,
+  canAccessModule: () => false,
+  loading: true,
 });
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
