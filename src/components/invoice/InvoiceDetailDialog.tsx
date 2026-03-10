@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { DocumentAttachmentsPanel } from "@/components/DocumentAttachmentsPanel"
 import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
-import { CheckCircle, XCircle, CreditCard, FileText, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, CreditCard, FileText, Loader2, Banknote } from "lucide-react";
 import { PrintButton } from "@/components/PrintButton";
 import { printInvoicePdf } from "@/lib/pdf";
 
@@ -29,6 +30,7 @@ export function InvoiceDetailDialog({
 }: InvoiceDetailDialogProps) {
   const { isAdmin } = useAuth();
   const { activeCompany } = useCompany();
+  const navigate = useNavigate();
   const [acting, setActing] = useState(false);
 
   if (!invoice) return null;
@@ -71,9 +73,27 @@ export function InvoiceDetailDialog({
               )}
               {isValidated && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => handleAction(() => onMarkPaid(invoice.id))} disabled={acting} className="gap-1">
-                    <CreditCard className="h-4 w-4" /> Marquer payée
-                  </Button>
+                  {invoice.remaining_balance > 0 ? (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      onClose();
+                      navigate("/reglements/encaissements", {
+                        state: {
+                          prefill: {
+                            customerId: invoice.customer_id,
+                            invoiceId: invoice.id,
+                            invoiceNumber: invoice.invoice_number,
+                            remainingBalance: invoice.remaining_balance,
+                          },
+                        },
+                      });
+                    }} className="gap-1">
+                      <Banknote className="h-4 w-4" /> Payer la facture
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled className="gap-1">
+                      <CreditCard className="h-4 w-4" /> Cette facture est déjà totalement réglée.
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => { onCreateCreditNote(invoice); onClose(); }} className="gap-1">
                     <FileText className="h-4 w-4" /> Créer un avoir
                   </Button>

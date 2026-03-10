@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePayments, type Payment } from "@/hooks/usePayments";
-import { PaymentFormDialog } from "./PaymentFormDialog";
+import { PaymentFormDialog, type PaymentPrefill } from "./PaymentFormDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,11 +15,19 @@ const METHOD_LABELS: Record<string, string> = {
   lcn: "LCN",
 };
 
-export function PaymentList({ paymentType }: { paymentType: "client" | "supplier" }) {
+export function PaymentList({ paymentType, prefill }: { paymentType: "client" | "supplier"; prefill?: PaymentPrefill | null }) {
   const { payments, loading, create, remove, checkCashLimit } = usePayments(paymentType);
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [activePrefill, setActivePrefill] = useState<PaymentPrefill | null>(null);
+
+  useEffect(() => {
+    if (prefill) {
+      setActivePrefill(prefill);
+      setFormOpen(true);
+    }
+  }, [prefill]);
 
   const filtered = payments.filter((p) => {
     const q = search.toLowerCase();
@@ -86,10 +94,11 @@ export function PaymentList({ paymentType }: { paymentType: "client" | "supplier
 
       <PaymentFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(v) => { setFormOpen(v); if (!v) setActivePrefill(null); }}
         paymentType={paymentType}
         onSubmit={create}
         checkCashLimit={checkCashLimit}
+        prefill={activePrefill}
       />
     </div>
   );

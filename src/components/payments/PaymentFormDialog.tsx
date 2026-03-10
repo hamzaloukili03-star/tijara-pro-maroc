@@ -12,15 +12,23 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Payment } from "@/hooks/usePayments";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 
+export interface PaymentPrefill {
+  customerId?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  remainingBalance?: number;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   paymentType: "client" | "supplier";
   onSubmit: (payment: Partial<Payment>, allocations: { invoice_id: string; amount: number }[]) => Promise<any>;
   checkCashLimit: (customerId: string, amount: number, date: string) => Promise<{ allowed: boolean; totalToday: number }>;
+  prefill?: PaymentPrefill | null;
 }
 
-export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, checkCashLimit }: Props) {
+export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, checkCashLimit, prefill }: Props) {
   const { isAdmin } = useAuth();
   const { activeCompany } = useCompany();
   const companyId = activeCompany?.id ?? null;
@@ -49,6 +57,14 @@ export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, c
     (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => setBankAccounts(data || []));
   }, [open, paymentType, companyId]);
 
+  // Apply prefill when dialog opens with prefill data
+  useEffect(() => {
+    if (!open || !prefill) return;
+    if (prefill.customerId) setEntityId(prefill.customerId);
+    if (prefill.remainingBalance) setAmount(String(prefill.remainingBalance));
+    if (prefill.invoiceNumber) setReference(prefill.invoiceNumber);
+  }, [open, prefill]);
+
   useEffect(() => {
     if (!entityId || !companyId) { setOpenInvoices([]); return; }
     const col = paymentType === "client" ? "customer_id" : "supplier_id";
@@ -60,7 +76,16 @@ export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, c
       .gt("remaining_balance", 0)
       .in("status", ["validated"])
       .order("invoice_date")
-      .then(({ data }: any) => setOpenInvoices(data || []));
+      .then(({ data }: any) => {
+        setOpenInvoices(data || []);
+        // Auto-add allocation for prefilled invoice
+        if (prefill?.invoiceId && data?.length) {
+          const inv = data.find((i: any) => i.id === prefill.invoiceId);
+          if (inv && allocations.length === 0) {
+            setAllocations([{ invoice_id: inv.id, amount: Number(inv.remaining_balance) }]);
+          }
+        }
+      });
   }, [entityId, paymentType, companyId]);
 
   const addAllocation = () => setAllocations([...allocations, { invoice_id: "", amount: 0 }]);
