@@ -342,7 +342,7 @@ const SystemeUtilisateurs = () => {
                                   <Pencil className="h-4 w-4 mr-2" /> Modifier
                                 </DropdownMenuItem>
                               )}
-                              {isAdmin && (
+                              {isAdmin && !(u.roles.some(r => r === "super_admin" || r === "admin") && !isSuperAdmin) && (
                                 <DropdownMenuItem onClick={() => openForm("duplicate", u)}>
                                   <Copy className="h-4 w-4 mr-2" /> Dupliquer
                                 </DropdownMenuItem>

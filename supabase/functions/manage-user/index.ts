@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 });
 
 async function handleCreate(adminClient: any, callerId: string, isSuperAdmin: boolean, body: any) {
-  const { email, full_name, phone, password, is_active, global_role, role_ids, company_ids } = body;
+  const { email, full_name, phone, password, is_active, global_role, role_ids, company_ids, source_user_id } = body;
 
   if (!email || !full_name) {
     return jsonResponse({ error: "Email et nom complet requis" }, 400);
@@ -156,12 +156,16 @@ async function handleCreate(adminClient: any, callerId: string, isSuperAdmin: bo
   }
 
   // Audit log
+  const isDuplicate = !!source_user_id;
   await adminClient.from("audit_logs").insert({
     user_id: callerId,
-    action: "user_created",
+    action: isDuplicate ? "user_duplicated" : "user_created",
     table_name: "profiles",
     record_id: userId,
-    details: `Utilisateur créé: ${full_name} (${email})`,
+    details: isDuplicate
+      ? `Utilisateur dupliqué: ${full_name} (${email}) à partir de ${source_user_id}`
+      : `Utilisateur créé: ${full_name} (${email})`,
+    old_data: isDuplicate ? { source_user_id } : null,
     new_data: { full_name, email, global_role, role_ids, company_ids },
   });
 
