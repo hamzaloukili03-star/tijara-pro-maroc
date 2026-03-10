@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { DocumentAttachmentsPanel } from "@/components/DocumentAttachmentsPanel"
 import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceLine } from "@/types/invoice";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
-import { CheckCircle, XCircle, CreditCard, FileText, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, CreditCard, FileText, Loader2, Banknote } from "lucide-react";
 import { PrintButton } from "@/components/PrintButton";
 import { printInvoicePdf } from "@/lib/pdf";
 
