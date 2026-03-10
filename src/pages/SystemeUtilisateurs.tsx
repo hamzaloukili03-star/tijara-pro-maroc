@@ -16,10 +16,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { UserFormDialog } from "@/components/users/UserFormDialog";
+import { ChangePasswordDialog } from "@/components/users/ChangePasswordDialog";
 import {
   Search, Shield, RotateCcw, UserCheck, UserX, Loader2, Users, Trash2,
   Plus, ShieldCheck, Globe, Building2, CheckCircle2, XCircle, ShieldAlert,
-  MoreHorizontal, Eye, Pencil, Copy,
+  MoreHorizontal, Eye, Pencil, Copy, KeyRound,
 } from "lucide-react";
 
 const ALL_ROLES: AppRole[] = ["super_admin", "admin", "accountant", "sales", "stock_manager"];
@@ -184,6 +185,9 @@ const SystemeUtilisateurs = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
   const [formUser, setFormUser] = useState<ManagedUser | null>(null);
+
+  // Password dialog state
+  const [passwordTarget, setPasswordTarget] = useState<ManagedUser | null>(null);
 
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
@@ -357,9 +361,9 @@ const SystemeUtilisateurs = () => {
                                   )}
                                 </DropdownMenuItem>
                               )}
-                              {isAdmin && (
-                                <DropdownMenuItem onClick={() => resetPassword(u.email)}>
-                                  <RotateCcw className="h-4 w-4 mr-2" /> Réinitialiser mot de passe
+                              {canEdit && (
+                                <DropdownMenuItem onClick={() => setPasswordTarget(u)}>
+                                  <KeyRound className="h-4 w-4 mr-2" /> Modifier mot de passe
                                 </DropdownMenuItem>
                               )}
                               {canDelete && (
@@ -415,6 +419,13 @@ const SystemeUtilisateurs = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={!!passwordTarget}
+        onClose={() => setPasswordTarget(null)}
+        user={passwordTarget}
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
