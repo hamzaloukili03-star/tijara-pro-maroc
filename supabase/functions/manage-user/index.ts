@@ -156,12 +156,16 @@ async function handleCreate(adminClient: any, callerId: string, isSuperAdmin: bo
   }
 
   // Audit log
+  const isDuplicate = !!source_user_id;
   await adminClient.from("audit_logs").insert({
     user_id: callerId,
-    action: "user_created",
+    action: isDuplicate ? "user_duplicated" : "user_created",
     table_name: "profiles",
     record_id: userId,
-    details: `Utilisateur créé: ${full_name} (${email})`,
+    details: isDuplicate
+      ? `Utilisateur dupliqué: ${full_name} (${email}) à partir de ${source_user_id}`
+      : `Utilisateur créé: ${full_name} (${email})`,
+    old_data: isDuplicate ? { source_user_id } : null,
     new_data: { full_name, email, global_role, role_ids, company_ids },
   });
 

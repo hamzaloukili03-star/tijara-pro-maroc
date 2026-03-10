@@ -206,6 +206,7 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
             global_role: globalRole || null,
             role_ids: roleIds,
             company_ids: selectedCompanyIds,
+            ...(mode === "duplicate" && user ? { source_user_id: user.user_id } : {}),
           },
         });
 
