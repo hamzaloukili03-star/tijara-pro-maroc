@@ -396,20 +396,22 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Building2 className="h-4 w-4" /> Société(s) assignée(s)
+                    {mode === "duplicate" && <Badge variant="outline" className="text-[10px]">Copié — non modifiable</Badge>}
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {companies.map((company) => (
                       <label
                         key={company.id}
-                        className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2 p-2.5 rounded-lg border transition-colors ${
                           selectedCompanyIds.includes(company.id)
                             ? "border-primary bg-primary/5"
                             : "border-border hover:border-muted-foreground/30"
-                        }`}
+                        } ${mode === "duplicate" ? "pointer-events-none opacity-70" : "cursor-pointer"}`}
                       >
                         <Checkbox
                           checked={selectedCompanyIds.includes(company.id)}
                           onCheckedChange={() => toggleCompany(company.id)}
+                          disabled={mode === "duplicate"}
                         />
                         <span className="text-sm">{company.raison_sociale}</span>
                       </label>
