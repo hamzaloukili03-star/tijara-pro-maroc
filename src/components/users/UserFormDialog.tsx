@@ -441,12 +441,13 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
                       key={fp.module}
                       className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                         profile.enabled ? "border-primary/50 bg-primary/5" : "border-border"
-                      }`}
+                      } ${mode === "duplicate" ? "pointer-events-none opacity-70" : ""}`}
                     >
                       <label className="flex items-center gap-3 cursor-pointer flex-1">
                         <Checkbox
                           checked={profile.enabled}
                           onCheckedChange={() => toggleProfile(fp.module)}
+                          disabled={mode === "duplicate"}
                         />
                         <span className="text-sm font-medium">{fp.label}</span>
                       </label>
