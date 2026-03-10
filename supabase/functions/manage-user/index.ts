@@ -63,6 +63,8 @@ Deno.serve(async (req) => {
       return await handleCreate(adminClient, callerId, isSuperAdmin, body);
     } else if (action === "update") {
       return await handleUpdate(adminClient, callerId, isSuperAdmin, body);
+    } else if (action === "change_password") {
+      return await handleChangePassword(adminClient, callerId, isSuperAdmin, body);
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         status: 400,
