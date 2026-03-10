@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 });
 
 async function handleCreate(adminClient: any, callerId: string, isSuperAdmin: boolean, body: any) {
-  const { email, full_name, phone, password, is_active, global_role, role_ids, company_ids } = body;
+  const { email, full_name, phone, password, is_active, global_role, role_ids, company_ids, source_user_id } = body;
 
   if (!email || !full_name) {
     return jsonResponse({ error: "Email et nom complet requis" }, 400);
