@@ -214,10 +214,17 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
 
         if (error || data?.error) {
           const msg = data?.error || error?.message || "Erreur lors de la création";
+          console.error("[manage-user] Error:", msg, { error, data });
           if (msg.includes("existe déjà")) {
             setErrors({ email: "Cette adresse email existe déjà" });
           } else {
-            toast({ title: "Erreur", description: msg, variant: "destructive" });
+            toast({
+              title: "Erreur",
+              description: mode === "duplicate"
+                ? "Une erreur est survenue lors de la duplication. Veuillez réessayer."
+                : msg,
+              variant: "destructive",
+            });
           }
           setSaving(false);
           return;
