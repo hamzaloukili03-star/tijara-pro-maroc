@@ -60,9 +60,9 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "create") {
-      return await handleCreate(adminClient, caller.id, isSuperAdmin, body);
+      return await handleCreate(adminClient, callerId, isSuperAdmin, body);
     } else if (action === "update") {
-      return await handleUpdate(adminClient, caller.id, isSuperAdmin, body);
+      return await handleUpdate(adminClient, callerId, isSuperAdmin, body);
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         status: 400,
