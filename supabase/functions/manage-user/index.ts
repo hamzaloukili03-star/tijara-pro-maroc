@@ -22,17 +22,22 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user: caller } } = await userClient.auth.getUser();
-    if (!caller) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("JWT validation failed:", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const callerId = claimsData.claims.sub as string;
 
     const adminClient = createClient(supabaseUrl, supabaseKey);
 
@@ -40,7 +45,7 @@ Deno.serve(async (req) => {
     const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .in("role", ["super_admin", "admin"]);
 
     if (!callerRoles || callerRoles.length === 0) {
@@ -55,9 +60,9 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "create") {
-      return await handleCreate(adminClient, caller.id, isSuperAdmin, body);
+      return await handleCreate(adminClient, callerId, isSuperAdmin, body);
     } else if (action === "update") {
-      return await handleUpdate(adminClient, caller.id, isSuperAdmin, body);
+      return await handleUpdate(adminClient, callerId, isSuperAdmin, body);
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         status: 400,
