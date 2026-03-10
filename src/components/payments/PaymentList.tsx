@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePayments, type Payment } from "@/hooks/usePayments";
-import { PaymentFormDialog } from "./PaymentFormDialog";
+import { PaymentFormDialog, type PaymentPrefill } from "./PaymentFormDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
