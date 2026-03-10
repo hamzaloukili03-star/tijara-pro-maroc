@@ -490,9 +490,10 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" /> Rôle global
+                {mode === "duplicate" && <Badge variant="outline" className="text-[10px]">Copié — non modifiable</Badge>}
               </h3>
               <p className="text-xs text-muted-foreground">
-                Le rôle global détermine le niveau d'accès système de l'utilisateur.
+                {mode === "duplicate" ? "Le rôle global est copié de l'utilisateur source." : "Le rôle global détermine le niveau d'accès système de l'utilisateur."}
               </p>
               {errors.globalRole && <p className="text-xs text-destructive">{errors.globalRole}</p>}
 
