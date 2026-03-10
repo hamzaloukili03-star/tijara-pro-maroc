@@ -12,12 +12,20 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Payment } from "@/hooks/usePayments";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 
+export interface PaymentPrefill {
+  customerId?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  remainingBalance?: number;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   paymentType: "client" | "supplier";
   onSubmit: (payment: Partial<Payment>, allocations: { invoice_id: string; amount: number }[]) => Promise<any>;
   checkCashLimit: (customerId: string, amount: number, date: string) => Promise<{ allowed: boolean; totalToday: number }>;
+  prefill?: PaymentPrefill | null;
 }
 
 export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, checkCashLimit }: Props) {
