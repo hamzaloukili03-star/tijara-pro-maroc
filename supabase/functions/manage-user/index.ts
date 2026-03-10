@@ -257,6 +257,59 @@ async function handleUpdate(adminClient: any, callerId: string, isSuperAdmin: bo
   return jsonResponse({ success: true });
 }
 
+async function handleChangePassword(adminClient: any, callerId: string, isSuperAdmin: boolean, body: any) {
+  const { target_user_id, new_password } = body;
+
+  if (!target_user_id || !new_password) {
+    return jsonResponse({ error: "target_user_id et new_password requis" }, 400);
+  }
+
+  if (new_password.length < 8) {
+    return jsonResponse({ error: "Le mot de passe doit contenir au moins 8 caractères" }, 400);
+  }
+
+  // Check target user roles - prevent non-super-admin from changing super_admin password
+  const { data: targetRoles } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", target_user_id)
+    .in("role", ["super_admin", "admin"]);
+
+  const targetIsSuperAdmin = targetRoles?.some((r: any) => r.role === "super_admin");
+  const targetIsAdmin = targetRoles?.some((r: any) => r.role === "admin");
+
+  if (targetIsSuperAdmin && !isSuperAdmin) {
+    return jsonResponse({ error: "Seul un Super Admin peut modifier le mot de passe d'un Super Admin" }, 403);
+  }
+  if (targetIsAdmin && !isSuperAdmin) {
+    return jsonResponse({ error: "Seul un Super Admin peut modifier le mot de passe d'un Admin" }, 403);
+  }
+
+  // Update password via admin API
+  const { error: updateError } = await adminClient.auth.admin.updateUserById(target_user_id, {
+    password: new_password,
+  });
+
+  if (updateError) {
+    console.error("Password update error:", updateError);
+    return jsonResponse({ error: "Erreur lors de la modification du mot de passe" }, 500);
+  }
+
+  // Audit log (no password stored)
+  const { data: profile } = await adminClient.from("profiles").select("full_name, email").eq("user_id", target_user_id).single();
+  await adminClient.from("audit_logs").insert({
+    user_id: callerId,
+    action: "password_changed",
+    table_name: "profiles",
+    record_id: target_user_id,
+    details: `Mot de passe modifié pour: ${profile?.full_name || profile?.email || target_user_id}`,
+    old_data: null,
+    new_data: null,
+  });
+
+  return jsonResponse({ success: true });
+}
+
 function jsonResponse(data: any, status = 200) {
   return new Response(JSON.stringify(data), {
     status,

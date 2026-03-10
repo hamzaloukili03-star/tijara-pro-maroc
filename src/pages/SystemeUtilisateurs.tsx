@@ -420,6 +420,13 @@ const SystemeUtilisateurs = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={!!passwordTarget}
+        onClose={() => setPasswordTarget(null)}
+        user={passwordTarget}
+      />
+
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
