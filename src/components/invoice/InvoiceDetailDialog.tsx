@@ -30,6 +30,7 @@ export function InvoiceDetailDialog({
 }: InvoiceDetailDialogProps) {
   const { isAdmin } = useAuth();
   const { activeCompany } = useCompany();
+  const navigate = useNavigate();
   const [acting, setActing] = useState(false);
 
   if (!invoice) return null;
