@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .in("role", ["super_admin", "admin"]);
 
     if (!callerRoles || callerRoles.length === 0) {
