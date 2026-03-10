@@ -361,9 +361,9 @@ const SystemeUtilisateurs = () => {
                                   )}
                                 </DropdownMenuItem>
                               )}
-                              {isAdmin && (
-                                <DropdownMenuItem onClick={() => resetPassword(u.email)}>
-                                  <RotateCcw className="h-4 w-4 mr-2" /> Réinitialiser mot de passe
+                              {canEdit && (
+                                <DropdownMenuItem onClick={() => setPasswordTarget(u)}>
+                                  <KeyRound className="h-4 w-4 mr-2" /> Modifier mot de passe
                                 </DropdownMenuItem>
                               )}
                               {canDelete && (
