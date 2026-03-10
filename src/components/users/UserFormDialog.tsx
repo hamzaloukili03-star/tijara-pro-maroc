@@ -161,9 +161,11 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
       }
     }
 
-    const enabledProfiles = profiles.filter((p) => p.enabled);
-    if (enabledProfiles.length === 0) {
-      errs.profiles = "Veuillez sélectionner au moins un profil";
+    if (mode !== "duplicate") {
+      const enabledProfiles = profiles.filter((p) => p.enabled);
+      if (enabledProfiles.length === 0) {
+        errs.profiles = "Veuillez sélectionner au moins un profil";
+      }
     }
 
     // Check validator requires at least one profile
