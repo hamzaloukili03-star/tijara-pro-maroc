@@ -31,7 +31,7 @@ const Encaissements = () => {
       </div>
 
       {view === "list" ? (
-        <PaymentList paymentType="client" />
+        <PaymentList paymentType="client" prefill={prefill || null} />
       ) : (
         <KanbanBoard
           columns={PAYMENT_KANBAN_COLUMNS}

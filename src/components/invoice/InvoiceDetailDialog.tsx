@@ -73,9 +73,27 @@ export function InvoiceDetailDialog({
               )}
               {isValidated && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => handleAction(() => onMarkPaid(invoice.id))} disabled={acting} className="gap-1">
-                    <CreditCard className="h-4 w-4" /> Marquer payée
-                  </Button>
+                  {invoice.remaining_balance > 0 ? (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      onClose();
+                      navigate("/reglements/encaissements", {
+                        state: {
+                          prefill: {
+                            customerId: invoice.customer_id,
+                            invoiceId: invoice.id,
+                            invoiceNumber: invoice.invoice_number,
+                            remainingBalance: invoice.remaining_balance,
+                          },
+                        },
+                      });
+                    }} className="gap-1">
+                      <Banknote className="h-4 w-4" /> Payer la facture
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled className="gap-1">
+                      <CreditCard className="h-4 w-4" /> Cette facture est déjà totalement réglée.
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => { onCreateCreditNote(invoice); onClose(); }} className="gap-1">
                     <FileText className="h-4 w-4" /> Créer un avoir
                   </Button>

@@ -94,10 +94,11 @@ export function PaymentList({ paymentType, prefill }: { paymentType: "client" | 
 
       <PaymentFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(v) => { setFormOpen(v); if (!v) setActivePrefill(null); }}
         paymentType={paymentType}
         onSubmit={create}
         checkCashLimit={checkCashLimit}
+        prefill={activePrefill}
       />
     </div>
   );

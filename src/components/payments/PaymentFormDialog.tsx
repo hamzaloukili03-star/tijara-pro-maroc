@@ -76,7 +76,16 @@ export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, c
       .gt("remaining_balance", 0)
       .in("status", ["validated"])
       .order("invoice_date")
-      .then(({ data }: any) => setOpenInvoices(data || []));
+      .then(({ data }: any) => {
+        setOpenInvoices(data || []);
+        // Auto-add allocation for prefilled invoice
+        if (prefill?.invoiceId && data?.length) {
+          const inv = data.find((i: any) => i.id === prefill.invoiceId);
+          if (inv && allocations.length === 0) {
+            setAllocations([{ invoice_id: inv.id, amount: Number(inv.remaining_balance) }]);
+          }
+        }
+      });
   }, [entityId, paymentType, companyId]);
 
   const addAllocation = () => setAllocations([...allocations, { invoice_id: "", amount: 0 }]);
