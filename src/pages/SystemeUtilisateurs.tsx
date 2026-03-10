@@ -205,7 +205,7 @@ const SystemeUtilisateurs = () => {
 
   // Load user companies for display
   const [userCompaniesMap, setUserCompaniesMap] = useState<Record<string, string[]>>({});
-  useState(() => {
+  import("@/integrations/supabase/client").then(({ supabase: sb }) => {
     (async () => {
       if (companies.length === 0) return;
       const { data } = await (await import("@/integrations/supabase/client")).supabase
