@@ -186,6 +186,9 @@ const SystemeUtilisateurs = () => {
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
   const [formUser, setFormUser] = useState<ManagedUser | null>(null);
 
+  // Password dialog state
+  const [passwordTarget, setPasswordTarget] = useState<ManagedUser | null>(null);
+
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || (filterStatus === "active" ? u.is_active : !u.is_active);
