@@ -500,6 +500,7 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
               <Select
                 value={globalRole || ""}
                 onValueChange={(v) => { setGlobalRole(v as AppRole); setErrors((p) => ({ ...p, globalRole: "" })); }}
+                disabled={mode === "duplicate"}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un rôle global" />
