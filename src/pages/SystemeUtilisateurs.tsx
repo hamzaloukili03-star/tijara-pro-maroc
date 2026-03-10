@@ -205,10 +205,11 @@ const SystemeUtilisateurs = () => {
 
   // Load user companies for display
   const [userCompaniesMap, setUserCompaniesMap] = useState<Record<string, string[]>>({});
-  import("@/integrations/supabase/client").then(({ supabase: sb }) => {
+  useEffect(() => {
+    if (companies.length === 0) return;
     (async () => {
-      if (companies.length === 0) return;
-      const { data } = await (await import("@/integrations/supabase/client")).supabase
+      const { supabase: sb } = await import("@/integrations/supabase/client");
+      const { data } = await sb
         .from("user_companies" as any)
         .select("user_id, company_id");
       if (data) {
@@ -221,7 +222,7 @@ const SystemeUtilisateurs = () => {
         setUserCompaniesMap(map);
       }
     })();
-  });
+  }, [companies]);
 
   return (
     <AppLayout title="Utilisateurs & Rôles" subtitle="Gestion des utilisateurs, profils et permissions">
