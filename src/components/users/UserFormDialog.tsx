@@ -214,10 +214,17 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
 
         if (error || data?.error) {
           const msg = data?.error || error?.message || "Erreur lors de la création";
+          console.error("[manage-user] Error:", msg, { error, data });
           if (msg.includes("existe déjà")) {
             setErrors({ email: "Cette adresse email existe déjà" });
           } else {
-            toast({ title: "Erreur", description: msg, variant: "destructive" });
+            toast({
+              title: "Erreur",
+              description: mode === "duplicate"
+                ? "Une erreur est survenue lors de la duplication. Veuillez réessayer."
+                : msg,
+              variant: "destructive",
+            });
           }
           setSaving(false);
           return;
@@ -396,20 +403,22 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Building2 className="h-4 w-4" /> Société(s) assignée(s)
+                    {mode === "duplicate" && <Badge variant="outline" className="text-[10px]">Copié — non modifiable</Badge>}
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {companies.map((company) => (
                       <label
                         key={company.id}
-                        className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2 p-2.5 rounded-lg border transition-colors ${
                           selectedCompanyIds.includes(company.id)
                             ? "border-primary bg-primary/5"
                             : "border-border hover:border-muted-foreground/30"
-                        }`}
+                        } ${mode === "duplicate" ? "pointer-events-none opacity-70" : "cursor-pointer"}`}
                       >
                         <Checkbox
                           checked={selectedCompanyIds.includes(company.id)}
                           onCheckedChange={() => toggleCompany(company.id)}
+                          disabled={mode === "duplicate"}
                         />
                         <span className="text-sm">{company.raison_sociale}</span>
                       </label>
@@ -424,9 +433,10 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Shield className="h-4 w-4" /> Profils fonctionnels
+                {mode === "duplicate" && <Badge variant="outline" className="text-[10px]">Copié — non modifiable</Badge>}
               </h3>
               <p className="text-xs text-muted-foreground">
-                Sélectionnez les modules accessibles et le niveau de droit pour chacun.
+                {mode === "duplicate" ? "Les profils sont copiés de l'utilisateur source. Modifiables après création via \"Modifier\"." : "Sélectionnez les modules accessibles et le niveau de droit pour chacun."}
               </p>
               {errors.profiles && <p className="text-xs text-destructive">{errors.profiles}</p>}
 
@@ -438,12 +448,13 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
                       key={fp.module}
                       className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                         profile.enabled ? "border-primary/50 bg-primary/5" : "border-border"
-                      }`}
+                      } ${mode === "duplicate" ? "pointer-events-none opacity-70" : ""}`}
                     >
                       <label className="flex items-center gap-3 cursor-pointer flex-1">
                         <Checkbox
                           checked={profile.enabled}
                           onCheckedChange={() => toggleProfile(fp.module)}
+                          disabled={mode === "duplicate"}
                         />
                         <span className="text-sm font-medium">{fp.label}</span>
                       </label>
@@ -486,15 +497,17 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" /> Rôle global
+                {mode === "duplicate" && <Badge variant="outline" className="text-[10px]">Copié — non modifiable</Badge>}
               </h3>
               <p className="text-xs text-muted-foreground">
-                Le rôle global détermine le niveau d'accès système de l'utilisateur.
+                {mode === "duplicate" ? "Le rôle global est copié de l'utilisateur source." : "Le rôle global détermine le niveau d'accès système de l'utilisateur."}
               </p>
               {errors.globalRole && <p className="text-xs text-destructive">{errors.globalRole}</p>}
 
               <Select
                 value={globalRole || ""}
                 onValueChange={(v) => { setGlobalRole(v as AppRole); setErrors((p) => ({ ...p, globalRole: "" })); }}
+                disabled={mode === "duplicate"}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un rôle global" />
