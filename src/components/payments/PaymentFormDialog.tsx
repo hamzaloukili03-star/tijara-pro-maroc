@@ -57,6 +57,14 @@ export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, c
     (supabase as any).from("bank_accounts").select("id, account_name, bank_name").eq("is_active", true).eq("company_id", companyId).then(({ data }: any) => setBankAccounts(data || []));
   }, [open, paymentType, companyId]);
 
+  // Apply prefill when dialog opens with prefill data
+  useEffect(() => {
+    if (!open || !prefill) return;
+    if (prefill.customerId) setEntityId(prefill.customerId);
+    if (prefill.remainingBalance) setAmount(String(prefill.remainingBalance));
+    if (prefill.invoiceNumber) setReference(prefill.invoiceNumber);
+  }, [open, prefill]);
+
   useEffect(() => {
     if (!entityId || !companyId) { setOpenInvoices([]); return; }
     const col = paymentType === "client" ? "customer_id" : "supplier_id";
