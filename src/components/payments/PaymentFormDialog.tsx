@@ -28,7 +28,7 @@ interface Props {
   prefill?: PaymentPrefill | null;
 }
 
-export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, checkCashLimit }: Props) {
+export function PaymentFormDialog({ open, onOpenChange, paymentType, onSubmit, checkCashLimit, prefill }: Props) {
   const { isAdmin } = useAuth();
   const { activeCompany } = useCompany();
   const companyId = activeCompany?.id ?? null;
