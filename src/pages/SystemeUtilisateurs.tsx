@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useUserManagement, ManagedUser } from "@/hooks/useUserManagement";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,12 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { UserFormDialog } from "@/components/users/UserFormDialog";
 import {
   Search, Shield, RotateCcw, UserCheck, UserX, Loader2, Users, Trash2,
-  Plus, ShieldCheck, Globe, Building2, CheckCircle2, XCircle, ShieldAlert
+  Plus, ShieldCheck, Globe, Building2, CheckCircle2, XCircle, ShieldAlert,
+  MoreHorizontal, Eye, Pencil, Copy,
 } from "lucide-react";
 
 const ALL_ROLES: AppRole[] = ["super_admin", "admin", "accountant", "sales", "stock_manager"];
@@ -33,10 +34,7 @@ function EffectivePermissionsMatrix({ userId }: { userId: string }) {
   const { userRoles } = useUserRoles(userId);
   const { roles, permissions, rolePermissions, permissionsByResource } = useRolesManagement();
 
-  // Get all role_ids the user has
   const userRoleIds = userRoles.map((ur: any) => ur.role_id).filter(Boolean);
-
-  // Get all effective permission ids
   const effectiveRp = rolePermissions.filter((rp) => userRoleIds.includes(rp.role_id));
   const effectivePermIds = new Set(effectiveRp.map((rp) => rp.permission_id));
 
@@ -92,33 +90,11 @@ function EffectivePermissionsMatrix({ userId }: { userId: string }) {
   );
 }
 
-// User roles assignment panel
+// User roles assignment panel (view-only detail)
 function UserRolesPanel({ user, onClose }: { user: ManagedUser; onClose: () => void }) {
-  const { userRoles, assignRole, removeRole, isValidator, loading } = useUserRoles(user.user_id);
+  const { userRoles, isValidator, loading } = useUserRoles(user.user_id);
   const { roles } = useRolesManagement();
-  const { activeCompany } = useCompany();
-  const [selectedRoleId, setSelectedRoleId] = useState("");
-  const [scope, setScope] = useState<"global" | "company">("company");
   const [tab, setTab] = useState("roles");
-
-  const activeRoles = roles.filter((r) => r.is_active);
-
-  const handleAssign = async () => {
-    if (!selectedRoleId) return;
-    const companyId = scope === "company" ? (activeCompany?.id ?? null) : null;
-    const alreadyHas = userRoles.some(
-      (ur: any) => ur.role_id === selectedRoleId && ur.company_id === companyId
-    );
-    if (alreadyHas) return;
-    await assignRole(selectedRoleId, companyId, userRoles.length === 0);
-    setSelectedRoleId("");
-  };
-
-  const grouped = Object.entries(MODULE_LABELS).reduce((acc, [mod, label]) => {
-    const modRoles = activeRoles.filter((r) => r.module === mod);
-    if (modRoles.length > 0) acc[label] = modRoles;
-    return acc;
-  }, {} as Record<string, typeof activeRoles>);
 
   return (
     <div className="space-y-4">
@@ -129,7 +105,6 @@ function UserRolesPanel({ user, onClose }: { user: ManagedUser; onClose: () => v
         </TabsList>
 
         <TabsContent value="roles" className="space-y-4 mt-3">
-          {/* User type badge */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Type :</span>
             {isValidator ? (
@@ -143,7 +118,6 @@ function UserRolesPanel({ user, onClose }: { user: ManagedUser; onClose: () => v
             )}
           </div>
 
-          {/* Current roles */}
           {loading ? (
             <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : userRoles.length === 0 ? (
@@ -172,57 +146,11 @@ function UserRolesPanel({ user, onClose }: { user: ManagedUser; onClose: () => v
                       )}
                     </Badge>
                     {ur.is_primary && <Badge variant="secondary" className="text-[10px]">Principal</Badge>}
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeRole(ur.id)}>
-                      <XCircle className="h-3.5 w-3.5" />
-                    </Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-
-          {/* Assign new role */}
-          <div className="border-t pt-3 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Assigner un rôle</p>
-            <div className="flex gap-2">
-              <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Choisir un rôle..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(grouped).map(([label, groupRoles]) => (
-                    <div key={label}>
-                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">{label}</div>
-                      {groupRoles.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>
-                          <span className="flex items-center gap-2">
-                            {r.code.endsWith("_VALIDATOR") && <ShieldCheck className="h-3 w-3 text-violet-500" />}
-                            {r.name_fr}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={scope} onValueChange={(v) => setScope(v as "global" | "company")}>
-                <SelectTrigger className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="company">
-                    <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> Société active</span>
-                  </SelectItem>
-                  <SelectItem value="global">
-                    <span className="flex items-center gap-1"><Globe className="h-3 w-3" /> Toutes sociétés</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAssign} disabled={!selectedRoleId} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         </TabsContent>
 
         <TabsContent value="matrix" className="mt-3">
@@ -240,8 +168,9 @@ function UserRolesPanel({ user, onClose }: { user: ManagedUser; onClose: () => v
 // Main page
 // ============================================================
 const SystemeUtilisateurs = () => {
-  const { users, loading, toggleActive, setRole, resetPassword, deleteUser } = useUserManagement();
+  const { users, loading, toggleActive, setRole, resetPassword, deleteUser, fetch: refetchUsers } = useUserManagement();
   const { hasRole, user: currentUser } = useAuth();
+  const { companies } = useCompany();
   const isSuperAdmin = hasRole("super_admin");
   const isAdmin = hasRole("admin") || isSuperAdmin;
 
@@ -250,6 +179,11 @@ const SystemeUtilisateurs = () => {
 
   const [rolesDialogUser, setRolesDialogUser] = useState<ManagedUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ManagedUser | null>(null);
+
+  // Form dialog state
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
+  const [formUser, setFormUser] = useState<ManagedUser | null>(null);
 
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
@@ -262,6 +196,33 @@ const SystemeUtilisateurs = () => {
     await deleteUser(deleteTarget.user_id);
     setDeleteTarget(null);
   };
+
+  const openForm = (mode: "create" | "edit" | "duplicate", user?: ManagedUser) => {
+    setFormMode(mode);
+    setFormUser(user || null);
+    setFormOpen(true);
+  };
+
+  // Load user companies for display
+  const [userCompaniesMap, setUserCompaniesMap] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    if (companies.length === 0) return;
+    (async () => {
+      const { supabase: sb } = await import("@/integrations/supabase/client");
+      const { data } = await sb
+        .from("user_companies" as any)
+        .select("user_id, company_id");
+      if (data) {
+        const map: Record<string, string[]> = {};
+        (data as any[]).forEach((uc: any) => {
+          if (!map[uc.user_id]) map[uc.user_id] = [];
+          const company = companies.find((c) => c.id === uc.company_id);
+          if (company) map[uc.user_id].push(company.raison_sociale);
+        });
+        setUserCompaniesMap(map);
+      }
+    })();
+  }, [companies]);
 
   return (
     <AppLayout title="Utilisateurs & Rôles" subtitle="Gestion des utilisateurs, profils et permissions">
@@ -280,6 +241,11 @@ const SystemeUtilisateurs = () => {
               <SelectItem value="inactive">Inactifs</SelectItem>
             </SelectContent>
           </Select>
+          {isAdmin && (
+            <Button onClick={() => openForm("create")} className="gap-2">
+              <Plus className="h-4 w-4" /> Ajouter un utilisateur
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
@@ -299,12 +265,13 @@ const SystemeUtilisateurs = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Nom</TableHead>
+                  <TableHead>Nom complet</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Rôles (legacy)</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead>Créé le</TableHead>
+                  {companies.length > 1 && <TableHead>Société(s)</TableHead>}
+                  <TableHead>Profils</TableHead>
+                  <TableHead>Rôle global</TableHead>
+                  <TableHead>Date de création</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -314,17 +281,40 @@ const SystemeUtilisateurs = () => {
                   const isTargetSuperAdmin = u.roles.includes("super_admin");
                   const canToggle = isAdmin && !isSelf && !(isTargetSuperAdmin && !isSuperAdmin);
                   const canDelete = isSuperAdmin && !isSelf && !isTargetSuperAdmin;
+                  const canEdit = isAdmin && !(isTargetSuperAdmin && !isSuperAdmin);
 
                   return (
                     <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{u.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={u.is_active ? "default" : "destructive"} className="text-xs">
+                          {u.is_active ? "Actif" : "Inactif"}
+                        </Badge>
+                      </TableCell>
+                      {companies.length > 1 && (
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {(userCompaniesMap[u.user_id] || []).map((name) => (
+                              <Badge key={name} variant="outline" className="text-[10px]">
+                                {name}
+                              </Badge>
+                            ))}
+                            {!(userCompaniesMap[u.user_id]?.length) && (
+                              <span className="text-xs text-muted-foreground italic">Aucune</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <UserProfileBadges userId={u.user_id} />
+                      </TableCell>
                       <TableCell>
                         {u.roles.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {u.roles.map((r) => (
                               <Badge key={r} variant={r === "super_admin" ? "default" : "secondary"} className="text-xs">
-                                {ROLE_LABELS[r]}
+                                {ROLE_LABELS[r] || r}
                               </Badge>
                             ))}
                           </div>
@@ -332,41 +322,59 @@ const SystemeUtilisateurs = () => {
                           <span className="text-xs text-muted-foreground italic">Aucun</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <UserTypeBadge userId={u.user_id} />
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={u.is_active ? "default" : "destructive"} className="text-xs">
-                          {u.is_active ? "Actif" : "Inactif"}
-                        </Badge>
-                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(u.created_at).toLocaleDateString("fr-MA")}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost" size="sm"
-                            onClick={() => setRolesDialogUser(u)}
-                            title="Gérer les rôles & permissions"
-                          >
-                            <ShieldCheck className="h-4 w-4 text-primary" />
-                          </Button>
-                          {canToggle && (
-                            <Button variant="ghost" size="sm" onClick={() => toggleActive(u.user_id, u.is_active)} title={u.is_active ? "Désactiver" : "Activer"}>
-                              {u.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                            </Button>
-                          )}
-                          {isAdmin && (
-                            <Button variant="ghost" size="sm" onClick={() => resetPassword(u.email)} title="Réinitialiser mot de passe">
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(u)} title="Supprimer" className="text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => setRolesDialogUser(u)}>
+                                <Eye className="h-4 w-4 mr-2" /> Voir
+                              </DropdownMenuItem>
+                              {canEdit && (
+                                <DropdownMenuItem onClick={() => openForm("edit", u)}>
+                                  <Pencil className="h-4 w-4 mr-2" /> Modifier
+                                </DropdownMenuItem>
+                              )}
+                              {isAdmin && (
+                                <DropdownMenuItem onClick={() => openForm("duplicate", u)}>
+                                  <Copy className="h-4 w-4 mr-2" /> Dupliquer
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              {canToggle && (
+                                <DropdownMenuItem onClick={() => toggleActive(u.user_id, u.is_active)}>
+                                  {u.is_active ? (
+                                    <><UserX className="h-4 w-4 mr-2" /> Désactiver</>
+                                  ) : (
+                                    <><UserCheck className="h-4 w-4 mr-2" /> Activer</>
+                                  )}
+                                </DropdownMenuItem>
+                              )}
+                              {isAdmin && (
+                                <DropdownMenuItem onClick={() => resetPassword(u.email)}>
+                                  <RotateCcw className="h-4 w-4 mr-2" /> Réinitialiser mot de passe
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => setDeleteTarget(u)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" /> Supprimer
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -378,7 +386,16 @@ const SystemeUtilisateurs = () => {
         )}
       </div>
 
-      {/* Roles & Permissions dialog */}
+      {/* User Form Dialog (Add/Edit/Duplicate) */}
+      <UserFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSuccess={refetchUsers}
+        mode={formMode}
+        user={formUser}
+      />
+
+      {/* View Roles & Permissions dialog */}
       <Dialog open={!!rolesDialogUser} onOpenChange={() => setRolesDialogUser(null)}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
@@ -387,7 +404,7 @@ const SystemeUtilisateurs = () => {
               {rolesDialogUser?.full_name || rolesDialogUser?.email} — Rôles & Permissions
             </DialogTitle>
             <DialogDescription>
-              Assignez des rôles globaux ou spécifiques à la société active. Les permissions effectives sont l'union de tous les rôles.
+              Visualisez les rôles assignés et les permissions effectives de cet utilisateur.
             </DialogDescription>
           </DialogHeader>
           {rolesDialogUser && (
@@ -420,20 +437,38 @@ const SystemeUtilisateurs = () => {
   );
 };
 
-// Mini component to show user type badge (validates against new roles system)
-function UserTypeBadge({ userId }: { userId: string }) {
-  const { isValidator } = useUserRoles(userId);
-  if (isValidator) {
-    return (
-      <Badge variant="outline" className="text-xs gap-1 border-violet-300 text-violet-700">
-        <ShieldCheck className="h-3 w-3" /> Validateur
-      </Badge>
-    );
+// Mini component to show user functional profile badges
+function UserProfileBadges({ userId }: { userId: string }) {
+  const { userRoles, isValidator } = useUserRoles(userId);
+
+  const profileLabels = userRoles
+    .filter((ur: any) => ur.roles?.code && !ur.roles.code.startsWith("ADMIN"))
+    .map((ur: any) => {
+      const code = ur.roles?.code as string;
+      const isVal = code.endsWith("_VALIDATOR");
+      const name = ur.roles?.name_fr || code;
+      return { name, isVal, code };
+    });
+
+  if (profileLabels.length === 0) {
+    return <span className="text-xs text-muted-foreground italic">Aucun profil</span>;
   }
+
   return (
-    <Badge variant="outline" className="text-xs gap-1">
-      <Shield className="h-3 w-3" /> Utilisateur
-    </Badge>
+    <div className="flex flex-wrap gap-1">
+      {profileLabels.map((p) => (
+        <Badge
+          key={p.code}
+          variant="outline"
+          className={`text-[10px] gap-0.5 ${
+            p.isVal ? "border-violet-300 text-violet-700" : ""
+          }`}
+        >
+          {p.isVal && <ShieldCheck className="h-2.5 w-2.5" />}
+          {p.name}
+        </Badge>
+      ))}
+    </div>
   );
 }
 
