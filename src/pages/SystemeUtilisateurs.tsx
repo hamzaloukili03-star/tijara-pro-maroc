@@ -16,10 +16,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { UserFormDialog } from "@/components/users/UserFormDialog";
+import { ChangePasswordDialog } from "@/components/users/ChangePasswordDialog";
 import {
   Search, Shield, RotateCcw, UserCheck, UserX, Loader2, Users, Trash2,
   Plus, ShieldCheck, Globe, Building2, CheckCircle2, XCircle, ShieldAlert,
-  MoreHorizontal, Eye, Pencil, Copy,
+  MoreHorizontal, Eye, Pencil, Copy, KeyRound,
 } from "lucide-react";
 
 const ALL_ROLES: AppRole[] = ["super_admin", "admin", "accountant", "sales", "stock_manager"];
