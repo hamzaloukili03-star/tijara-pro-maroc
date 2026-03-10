@@ -426,9 +426,10 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Shield className="h-4 w-4" /> Profils fonctionnels
+                {mode === "duplicate" && <Badge variant="outline" className="text-[10px]">Copié — non modifiable</Badge>}
               </h3>
               <p className="text-xs text-muted-foreground">
-                Sélectionnez les modules accessibles et le niveau de droit pour chacun.
+                {mode === "duplicate" ? "Les profils sont copiés de l'utilisateur source. Modifiables après création via \"Modifier\"." : "Sélectionnez les modules accessibles et le niveau de droit pour chacun."}
               </p>
               {errors.profiles && <p className="text-xs text-destructive">{errors.profiles}</p>}
 
