@@ -156,8 +156,8 @@ export function UserFormDialog({ open, onClose, onSuccess, mode, user }: UserFor
     if (mode === "create" || mode === "duplicate") {
       if (!useInvite && !password.trim()) {
         errs.password = "Le mot de passe est requis";
-      } else if (!useInvite && password.length < 6) {
-        errs.password = "Le mot de passe doit contenir au moins 6 caractères";
+      } else if (!useInvite && password.length < 8) {
+        errs.password = "Le mot de passe doit contenir au moins 8 caractères";
       }
     }
 
