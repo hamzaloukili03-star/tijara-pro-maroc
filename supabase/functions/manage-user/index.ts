@@ -86,6 +86,11 @@ async function handleCreate(adminClient: any, callerId: string, isSuperAdmin: bo
     return jsonResponse({ error: "Email et nom complet requis" }, 400);
   }
 
+  // Server-side password length validation
+  if (password && password.length < 8) {
+    return jsonResponse({ error: "Le mot de passe doit contenir au moins 8 caractères" }, 400);
+  }
+
   // Prevent non-super-admin from creating super_admin/admin
   if (!isSuperAdmin && (global_role === "super_admin" || global_role === "admin")) {
     return jsonResponse({ error: "Action non autorisée : seul un Super Admin peut attribuer ce rôle" }, 403);

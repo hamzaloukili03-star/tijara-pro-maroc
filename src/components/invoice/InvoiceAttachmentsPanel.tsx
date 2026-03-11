@@ -4,6 +4,7 @@ import { Paperclip, Trash2, Download, Loader2 } from "lucide-react";
 import { fetchAttachments, uploadAttachment, deleteAttachment } from "@/lib/invoice-attachments";
 import type { InvoiceAttachment } from "@/types/invoice";
 import { useAuth } from "@/hooks/useAuth";
+import { useCompany } from "@/hooks/useCompany";
 
 interface InvoiceAttachmentsPanelProps {
   invoiceId?: string;
@@ -15,6 +16,7 @@ export function InvoiceAttachmentsPanel({ invoiceId, creditNoteId }: InvoiceAtta
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { isAdmin } = useAuth();
+  const { activeCompany } = useCompany();
 
   const load = async () => {
     const data = await fetchAttachments(invoiceId, creditNoteId);
@@ -27,7 +29,7 @@ export function InvoiceAttachmentsPanel({ invoiceId, creditNoteId }: InvoiceAtta
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    await uploadAttachment(file, invoiceId, creditNoteId);
+    await uploadAttachment(file, invoiceId, creditNoteId, activeCompany?.id);
     await load();
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
