@@ -82,6 +82,11 @@ interface ReceptionFormPageProps {
   stockEngine: any;
 }
 
+interface LineAllocation {
+  warehouse_id: string;
+  quantity: number;
+}
+
 interface ReceptionLine {
   id?: string;
   product_id: string | null;
@@ -90,6 +95,7 @@ interface ReceptionLine {
   quantity_received: number;      // "Qté reçue"
   unit: string;
   purchase_order_line_id?: string | null;
+  allocations: LineAllocation[];
 }
 
 export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved, stockEngine }: ReceptionFormPageProps) {
