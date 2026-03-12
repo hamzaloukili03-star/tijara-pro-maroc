@@ -401,7 +401,19 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
         }
       }
 
-      // Create stock movements IN + update PO line received_qty
+      // Validate allocations
+      for (const l of lines) {
+        if (!l.product_id || l.quantity_received <= 0) continue;
+        for (const alloc of l.allocations) {
+          if (alloc.quantity > 0 && !alloc.warehouse_id) {
+            toast({ title: "Veuillez sélectionner un dépôt.", variant: "destructive" });
+            setValidating(false);
+            return;
+          }
+        }
+      }
+
+      // Create stock movements IN + update PO line received_qty + save allocations
       for (const l of lines) {
         if (!l.product_id || l.quantity_received <= 0) continue;
 
@@ -420,7 +432,42 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
           }
         }
 
-        await stockEngine.addStock(l.product_id, warehouseId, l.quantity_received, unitPrice, "reception", reception.id);
+        // Merge duplicate warehouse allocations
+        const whMap = new Map<string, number>();
+        for (const alloc of l.allocations) {
+          if (alloc.warehouse_id && alloc.quantity > 0) {
+            whMap.set(alloc.warehouse_id, (whMap.get(alloc.warehouse_id) || 0) + alloc.quantity);
+          }
+        }
+
+        // Fallback to header warehouse if no allocations set
+        if (whMap.size === 0 && warehouseId) {
+          whMap.set(warehouseId, l.quantity_received);
+        }
+
+        // Get reception_line id for allocation records
+        const { data: recLineData } = await (supabase as any)
+          .from("reception_lines")
+          .select("id")
+          .eq("reception_id", reception.id)
+          .eq("product_id", l.product_id)
+          .eq("sort_order", lines.indexOf(l))
+          .maybeSingle();
+
+        for (const [whId, qty] of whMap) {
+          await stockEngine.addStock(l.product_id, whId, qty, unitPrice, "reception", reception.id);
+          // Save allocation record
+          if (recLineData?.id) {
+            await (supabase as any).from("reception_line_allocations").insert({
+              reception_id: reception.id,
+              reception_line_id: recLineData.id,
+              product_id: l.product_id,
+              warehouse_id: whId,
+              quantity: qty,
+              company_id: companyId,
+            });
+          }
+        }
       }
 
       // Mark reception validated
