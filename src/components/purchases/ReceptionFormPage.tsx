@@ -676,7 +676,8 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
                     </TableRow>
                   )}
                   {lines.map((line, idx) => (
-                    <TableRow key={idx} className="hover:bg-muted/20">
+                    <Fragment key={idx}>
+                    <TableRow className="hover:bg-muted/20">
                       <TableCell className="py-2">
                         {canEdit ? (
                           <SearchableSelect
@@ -716,20 +717,9 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
                         )}
                       </TableCell>
                       <TableCell className="py-2 text-right">
-                        {canEdit ? (
-                          <Input
-                            type="number" min={0} max={line.quantity_done}
-                            value={line.quantity_received}
-                            onChange={e => updateLine(idx, "quantity_received", Math.min(Number(e.target.value), line.quantity_done))}
-                            className={`h-8 text-sm text-right w-24 ml-auto ${
-                              line.quantity_received > line.quantity_done ? "border-destructive" : ""
-                            }`}
-                          />
-                        ) : (
-                          <span className={`text-sm font-medium ${line.quantity_received < line.quantity_done ? "text-warning-foreground" : "text-success"}`}>
-                            {line.quantity_received}
-                          </span>
-                        )}
+                        <span className={`text-sm font-medium ${line.quantity_received < line.quantity_done ? "text-warning-foreground" : "text-success"}`}>
+                          {line.quantity_received}
+                        </span>
                       </TableCell>
                       <TableCell className="py-2">
                         {canEdit ? (
@@ -751,6 +741,50 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
                         </TableCell>
                       )}
                     </TableRow>
+                    {/* Warehouse allocation sub-rows */}
+                    {canEdit && (
+                      <TableRow className="border-t-0 bg-muted/10">
+                        <TableCell colSpan={6} className="pt-0 pb-3 px-6">
+                          <div className="ml-2 space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground">Répartition par dépôt :</p>
+                            {line.allocations.map((alloc, ai) => (
+                              <div key={ai} className="flex items-center gap-2">
+                                <div className="w-48">
+                                  <SearchableSelect
+                                    options={warehouseOptions}
+                                    value={alloc.warehouse_id}
+                                    onValueChange={v => updateAllocation(idx, ai, "warehouse_id", v)}
+                                    placeholder="Sélectionner dépôt…"
+                                  />
+                                </div>
+                                <Input
+                                  type="number"
+                                  className="w-24 h-8 text-sm"
+                                  min={0}
+                                  max={line.quantity_done}
+                                  value={alloc.quantity}
+                                  onChange={e => updateAllocation(idx, ai, "quantity", Math.max(0, Number(e.target.value)))}
+                                />
+                                {line.allocations.length > 1 && (
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                    onClick={() => removeLineAllocation(idx, ai)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button variant="ghost" size="sm" className="text-xs text-primary gap-1 h-7"
+                              onClick={() => addLineAllocation(idx)}>
+                              <Plus className="h-3 w-3" /> Ajouter un dépôt
+                            </Button>
+                            {line.quantity_received > line.quantity_done && (
+                              <p className="text-xs text-destructive">La quantité totale reçue dépasse la quantité restante.</p>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
