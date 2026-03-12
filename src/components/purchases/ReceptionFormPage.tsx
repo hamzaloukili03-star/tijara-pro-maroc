@@ -214,7 +214,7 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
     } else if (purchaseOrderId) {
       loadFromPO(purchaseOrderId);
     } else {
-      setLines([{ product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité" }]);
+      setLines([{ product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité", allocations: [{ warehouse_id: "", quantity: 1 }] }]);
     }
   }, [reception?.id, purchaseOrderId, loadLines, loadFromPO]);
 
