@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isSupplierBlocked } from "@/lib/blocked-check";
 import { Button } from "@/components/ui/button";
