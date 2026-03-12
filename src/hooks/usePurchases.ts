@@ -477,7 +477,7 @@ export function usePurchaseOrders() {
    */
   const createReception = async (
     orderId: string,
-    receptionLines: { purchase_order_line_id: string; product_id: string; description: string; quantity: number; unit_price: number; discount_percent: number; tva_rate: number }[],
+    receptionLines: { purchase_order_line_id: string; product_id: string; description: string; quantity: number; unit_price: number; discount_percent: number; tva_rate: number; allocations?: { warehouse_id: string; quantity: number }[] }[],
     addStockFn: (productId: string, warehouseId: string, qty: number, unitCost: number, refType: string, refId?: string) => Promise<void>
   ) => {
     const { data: po } = await (supabase as any).from("purchase_orders").select("supplier_id, warehouse_id, order_number").eq("id", orderId).single();
@@ -493,18 +493,18 @@ export function usePurchaseOrders() {
 
     if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return null; }
 
-    // Insert reception lines + update PO line quantities + add stock
+    // Insert reception lines + update PO line quantities + add stock per warehouse allocation
     for (let i = 0; i < receptionLines.length; i++) {
       const rl = receptionLines[i];
       const ht = rl.quantity * rl.unit_price * (1 - (rl.discount_percent || 0) / 100);
       const tvaAmt = ht * rl.tva_rate / 100;
-      await (supabase as any).from("reception_lines").insert({
+      const { data: recLine } = await (supabase as any).from("reception_lines").insert({
         reception_id: rec.id, purchase_order_line_id: rl.purchase_order_line_id, product_id: rl.product_id,
         description: rl.description, quantity: rl.quantity, unit_price: rl.unit_price,
         discount_percent: rl.discount_percent, tva_rate: rl.tva_rate,
         total_ht: Math.round(ht * 100) / 100, total_tva: Math.round(tvaAmt * 100) / 100,
         total_ttc: Math.round((ht + tvaAmt) * 100) / 100, sort_order: i, company_id: companyId,
-      });
+      }).select("id").single();
 
       // Increment received_qty on PO line
       const { data: polData } = await (supabase as any).from("purchase_order_lines").select("received_qty").eq("id", rl.purchase_order_line_id).single();
@@ -512,9 +512,23 @@ export function usePurchaseOrders() {
         await (supabase as any).from("purchase_order_lines").update({ received_qty: Number(polData.received_qty) + rl.quantity }).eq("id", rl.purchase_order_line_id);
       }
 
-      // Add stock via injected stock engine
-      if (rl.product_id && po.warehouse_id) {
-        await addStockFn(rl.product_id, po.warehouse_id, rl.quantity, rl.unit_price, "reception", rec.id);
+      // Add stock per warehouse allocation
+      const lineAllocations = rl.allocations && rl.allocations.length > 0
+        ? rl.allocations
+        : (po.warehouse_id ? [{ warehouse_id: po.warehouse_id, quantity: rl.quantity }] : []);
+
+      for (const alloc of lineAllocations) {
+        if (rl.product_id && alloc.warehouse_id && alloc.quantity > 0) {
+          await addStockFn(rl.product_id, alloc.warehouse_id, alloc.quantity, rl.unit_price, "reception", rec.id);
+          // Save allocation record
+          if (recLine?.id) {
+            await (supabase as any).from("reception_line_allocations").insert({
+              reception_id: rec.id, reception_line_id: recLine.id,
+              product_id: rl.product_id, warehouse_id: alloc.warehouse_id,
+              quantity: alloc.quantity, company_id: companyId,
+            });
+          }
+        }
       }
     }
 
