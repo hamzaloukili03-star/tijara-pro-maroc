@@ -2952,6 +2952,75 @@ export type Database = {
           },
         ]
       }
+      reception_line_allocations: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          product_id: string | null
+          quantity: number
+          reception_id: string
+          reception_line_id: string
+          warehouse_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          reception_id: string
+          reception_line_id: string
+          warehouse_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          reception_id?: string
+          reception_line_id?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reception_line_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reception_line_allocations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reception_line_allocations_reception_id_fkey"
+            columns: ["reception_id"]
+            isOneToOne: false
+            referencedRelation: "receptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reception_line_allocations_reception_line_id_fkey"
+            columns: ["reception_line_id"]
+            isOneToOne: false
+            referencedRelation: "reception_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reception_line_allocations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reception_lines: {
         Row: {
           company_id: string | null

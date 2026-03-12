@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isSupplierBlocked } from "@/lib/blocked-check";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,11 @@ interface ReceptionFormPageProps {
   stockEngine: any;
 }
 
+interface LineAllocation {
+  warehouse_id: string;
+  quantity: number;
+}
+
 interface ReceptionLine {
   id?: string;
   product_id: string | null;
@@ -90,6 +95,7 @@ interface ReceptionLine {
   quantity_received: number;      // "Qté reçue"
   unit: string;
   purchase_order_line_id?: string | null;
+  allocations: LineAllocation[];
 }
 
 export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved, stockEngine }: ReceptionFormPageProps) {
@@ -154,6 +160,7 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
         quantity_received: Number(l.quantity),
         unit: l.unit || "Unité",
         purchase_order_line_id: l.purchase_order_line_id || null,
+        allocations: [{ warehouse_id: reception?.warehouse_id || "", quantity: Number(l.quantity) }],
       })));
     }
   }, [reception?.id]);
@@ -181,14 +188,18 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
           const remaining = Number(l.quantity) - Number(l.received_qty || 0);
           return remaining > 0;
         })
-        .map((l: any) => ({
-          product_id: l.product_id,
-          description: l.description || l.product?.name || "",
-          quantity_done: Number(l.quantity) - Number(l.received_qty || 0),
-          quantity_received: Number(l.quantity) - Number(l.received_qty || 0),
-          unit: l.unit || "Unité",
-          purchase_order_line_id: l.id,
-        }))
+        .map((l: any) => {
+          const remaining = Number(l.quantity) - Number(l.received_qty || 0);
+          return {
+            product_id: l.product_id,
+            description: l.description || l.product?.name || "",
+            quantity_done: remaining,
+            quantity_received: remaining,
+            unit: l.unit || "Unité",
+            purchase_order_line_id: l.id,
+            allocations: [{ warehouse_id: po.warehouse_id || "", quantity: remaining }],
+          };
+        })
       );
     }
   }, []);
@@ -203,17 +214,50 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
     } else if (purchaseOrderId) {
       loadFromPO(purchaseOrderId);
     } else {
-      setLines([{ product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité" }]);
+      setLines([{ product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité", allocations: [{ warehouse_id: "", quantity: 1 }] }]);
     }
   }, [reception?.id, purchaseOrderId, loadLines, loadFromPO]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const addLine = () => {
-    setLines(prev => [...prev, { product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité" }]);
+    setLines(prev => [...prev, { product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité", allocations: [{ warehouse_id: warehouseId || "", quantity: 1 }] }]);
   };
 
   const removeLine = (idx: number) => {
     setLines(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // ── Allocation management ────────────────────────────────────────────────
+  const updateAllocation = (lineIdx: number, allocIdx: number, field: keyof LineAllocation, value: any) => {
+    setLines(prev => {
+      const next = [...prev];
+      const allocs = [...next[lineIdx].allocations];
+      allocs[allocIdx] = { ...allocs[allocIdx], [field]: value };
+      next[lineIdx] = { ...next[lineIdx], allocations: allocs };
+      // Auto-sync quantity_received with total of allocations
+      const totalAlloc = allocs.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
+      next[lineIdx].quantity_received = totalAlloc;
+      return next;
+    });
+  };
+
+  const addLineAllocation = (lineIdx: number) => {
+    setLines(prev => {
+      const next = [...prev];
+      next[lineIdx] = { ...next[lineIdx], allocations: [...next[lineIdx].allocations, { warehouse_id: "", quantity: 0 }] };
+      return next;
+    });
+  };
+
+  const removeLineAllocation = (lineIdx: number, allocIdx: number) => {
+    setLines(prev => {
+      const next = [...prev];
+      const allocs = next[lineIdx].allocations.filter((_, i) => i !== allocIdx);
+      next[lineIdx] = { ...next[lineIdx], allocations: allocs };
+      const totalAlloc = allocs.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
+      next[lineIdx].quantity_received = totalAlloc;
+      return next;
+    });
   };
 
   const updateLine = (idx: number, field: keyof ReceptionLine, value: any) => {
@@ -357,7 +401,19 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
         }
       }
 
-      // Create stock movements IN + update PO line received_qty
+      // Validate allocations
+      for (const l of lines) {
+        if (!l.product_id || l.quantity_received <= 0) continue;
+        for (const alloc of l.allocations) {
+          if (alloc.quantity > 0 && !alloc.warehouse_id) {
+            toast({ title: "Veuillez sélectionner un dépôt.", variant: "destructive" });
+            setValidating(false);
+            return;
+          }
+        }
+      }
+
+      // Create stock movements IN + update PO line received_qty + save allocations
       for (const l of lines) {
         if (!l.product_id || l.quantity_received <= 0) continue;
 
@@ -376,7 +432,42 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
           }
         }
 
-        await stockEngine.addStock(l.product_id, warehouseId, l.quantity_received, unitPrice, "reception", reception.id);
+        // Merge duplicate warehouse allocations
+        const whMap = new Map<string, number>();
+        for (const alloc of l.allocations) {
+          if (alloc.warehouse_id && alloc.quantity > 0) {
+            whMap.set(alloc.warehouse_id, (whMap.get(alloc.warehouse_id) || 0) + alloc.quantity);
+          }
+        }
+
+        // Fallback to header warehouse if no allocations set
+        if (whMap.size === 0 && warehouseId) {
+          whMap.set(warehouseId, l.quantity_received);
+        }
+
+        // Get reception_line id for allocation records
+        const { data: recLineData } = await (supabase as any)
+          .from("reception_lines")
+          .select("id")
+          .eq("reception_id", reception.id)
+          .eq("product_id", l.product_id)
+          .eq("sort_order", lines.indexOf(l))
+          .maybeSingle();
+
+        for (const [whId, qty] of whMap) {
+          await stockEngine.addStock(l.product_id, whId, qty, unitPrice, "reception", reception.id);
+          // Save allocation record
+          if (recLineData?.id) {
+            await (supabase as any).from("reception_line_allocations").insert({
+              reception_id: reception.id,
+              reception_line_id: recLineData.id,
+              product_id: l.product_id,
+              warehouse_id: whId,
+              quantity: qty,
+              company_id: companyId,
+            });
+          }
+        }
       }
 
       // Mark reception validated
@@ -585,7 +676,8 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
                     </TableRow>
                   )}
                   {lines.map((line, idx) => (
-                    <TableRow key={idx} className="hover:bg-muted/20">
+                    <Fragment key={idx}>
+                    <TableRow className="hover:bg-muted/20">
                       <TableCell className="py-2">
                         {canEdit ? (
                           <SearchableSelect
@@ -625,20 +717,9 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
                         )}
                       </TableCell>
                       <TableCell className="py-2 text-right">
-                        {canEdit ? (
-                          <Input
-                            type="number" min={0} max={line.quantity_done}
-                            value={line.quantity_received}
-                            onChange={e => updateLine(idx, "quantity_received", Math.min(Number(e.target.value), line.quantity_done))}
-                            className={`h-8 text-sm text-right w-24 ml-auto ${
-                              line.quantity_received > line.quantity_done ? "border-destructive" : ""
-                            }`}
-                          />
-                        ) : (
-                          <span className={`text-sm font-medium ${line.quantity_received < line.quantity_done ? "text-warning-foreground" : "text-success"}`}>
-                            {line.quantity_received}
-                          </span>
-                        )}
+                        <span className={`text-sm font-medium ${line.quantity_received < line.quantity_done ? "text-warning-foreground" : "text-success"}`}>
+                          {line.quantity_received}
+                        </span>
                       </TableCell>
                       <TableCell className="py-2">
                         {canEdit ? (
@@ -660,6 +741,50 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
                         </TableCell>
                       )}
                     </TableRow>
+                    {/* Warehouse allocation sub-rows */}
+                    {canEdit && (
+                      <TableRow className="border-t-0 bg-muted/10">
+                        <TableCell colSpan={6} className="pt-0 pb-3 px-6">
+                          <div className="ml-2 space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground">Répartition par dépôt :</p>
+                            {line.allocations.map((alloc, ai) => (
+                              <div key={ai} className="flex items-center gap-2">
+                                <div className="w-48">
+                                  <SearchableSelect
+                                    options={warehouseOptions}
+                                    value={alloc.warehouse_id}
+                                    onValueChange={v => updateAllocation(idx, ai, "warehouse_id", v)}
+                                    placeholder="Sélectionner dépôt…"
+                                  />
+                                </div>
+                                <Input
+                                  type="number"
+                                  className="w-24 h-8 text-sm"
+                                  min={0}
+                                  max={line.quantity_done}
+                                  value={alloc.quantity}
+                                  onChange={e => updateAllocation(idx, ai, "quantity", Math.max(0, Number(e.target.value)))}
+                                />
+                                {line.allocations.length > 1 && (
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                    onClick={() => removeLineAllocation(idx, ai)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button variant="ghost" size="sm" className="text-xs text-primary gap-1 h-7"
+                              onClick={() => addLineAllocation(idx)}>
+                              <Plus className="h-3 w-3" /> Ajouter un dépôt
+                            </Button>
+                            {line.quantity_received > line.quantity_done && (
+                              <p className="text-xs text-destructive">La quantité totale reçue dépasse la quantité restante.</p>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
