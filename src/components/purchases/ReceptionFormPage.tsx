@@ -188,14 +188,18 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
           const remaining = Number(l.quantity) - Number(l.received_qty || 0);
           return remaining > 0;
         })
-        .map((l: any) => ({
-          product_id: l.product_id,
-          description: l.description || l.product?.name || "",
-          quantity_done: Number(l.quantity) - Number(l.received_qty || 0),
-          quantity_received: Number(l.quantity) - Number(l.received_qty || 0),
-          unit: l.unit || "Unité",
-          purchase_order_line_id: l.id,
-        }))
+        .map((l: any) => {
+          const remaining = Number(l.quantity) - Number(l.received_qty || 0);
+          return {
+            product_id: l.product_id,
+            description: l.description || l.product?.name || "",
+            quantity_done: remaining,
+            quantity_received: remaining,
+            unit: l.unit || "Unité",
+            purchase_order_line_id: l.id,
+            allocations: [{ warehouse_id: po.warehouse_id || "", quantity: remaining }],
+          };
+        })
       );
     }
   }, []);
