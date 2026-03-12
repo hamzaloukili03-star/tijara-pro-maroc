@@ -160,6 +160,7 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
         quantity_received: Number(l.quantity),
         unit: l.unit || "Unité",
         purchase_order_line_id: l.purchase_order_line_id || null,
+        allocations: [{ warehouse_id: reception?.warehouse_id || "", quantity: Number(l.quantity) }],
       })));
     }
   }, [reception?.id]);
