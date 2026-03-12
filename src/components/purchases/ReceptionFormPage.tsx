@@ -220,11 +220,44 @@ export function ReceptionFormPage({ reception, purchaseOrderId, onBack, onSaved,
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const addLine = () => {
-    setLines(prev => [...prev, { product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité" }]);
+    setLines(prev => [...prev, { product_id: null, description: "", quantity_done: 1, quantity_received: 1, unit: "Unité", allocations: [{ warehouse_id: warehouseId || "", quantity: 1 }] }]);
   };
 
   const removeLine = (idx: number) => {
     setLines(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // ── Allocation management ────────────────────────────────────────────────
+  const updateAllocation = (lineIdx: number, allocIdx: number, field: keyof LineAllocation, value: any) => {
+    setLines(prev => {
+      const next = [...prev];
+      const allocs = [...next[lineIdx].allocations];
+      allocs[allocIdx] = { ...allocs[allocIdx], [field]: value };
+      next[lineIdx] = { ...next[lineIdx], allocations: allocs };
+      // Auto-sync quantity_received with total of allocations
+      const totalAlloc = allocs.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
+      next[lineIdx].quantity_received = totalAlloc;
+      return next;
+    });
+  };
+
+  const addLineAllocation = (lineIdx: number) => {
+    setLines(prev => {
+      const next = [...prev];
+      next[lineIdx] = { ...next[lineIdx], allocations: [...next[lineIdx].allocations, { warehouse_id: "", quantity: 0 }] };
+      return next;
+    });
+  };
+
+  const removeLineAllocation = (lineIdx: number, allocIdx: number) => {
+    setLines(prev => {
+      const next = [...prev];
+      const allocs = next[lineIdx].allocations.filter((_, i) => i !== allocIdx);
+      next[lineIdx] = { ...next[lineIdx], allocations: allocs };
+      const totalAlloc = allocs.reduce((s, a) => s + (Number(a.quantity) || 0), 0);
+      next[lineIdx].quantity_received = totalAlloc;
+      return next;
+    });
   };
 
   const updateLine = (idx: number, field: keyof ReceptionLine, value: any) => {
