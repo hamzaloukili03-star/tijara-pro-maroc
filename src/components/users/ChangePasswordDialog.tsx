@@ -21,6 +21,19 @@ const PASSWORD_RULES = [
   { label: "Un chiffre", test: (p: string) => /[0-9]/.test(p) },
 ];
 
+async function getFunctionErrorMessage(error: any, fallback: string) {
+  const response = error?.context || error?.response;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json();
+      if (payload?.error) return payload.error;
+    } catch {
+      // Keep fallback when the function response body is not JSON.
+    }
+  }
+  return error?.message || fallback;
+}
+
 export function ChangePasswordDialog({ open, onClose, user }: ChangePasswordDialogProps) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -65,9 +78,10 @@ export function ChangePasswordDialog({ open, onClose, user }: ChangePasswordDial
       });
 
       if (error || data?.error) {
+        const message = data?.error || await getFunctionErrorMessage(error, "Une erreur est survenue lors de la modification du mot de passe");
         toast({
           title: "Erreur",
-          description: data?.error || "Une erreur est survenue lors de la modification du mot de passe",
+          description: message,
           variant: "destructive",
         });
       } else {
