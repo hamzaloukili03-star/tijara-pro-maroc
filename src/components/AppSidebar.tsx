@@ -132,6 +132,7 @@ const sections: SidebarSection[] = [
       { title: "Liste des TVA", icon: Percent, path: "/config/tva" },
       { title: "Banques", icon: Building, path: "/config/banques" },
       { title: "Devises", icon: Coins, path: "/config/devises" },
+      { title: "Catégories des dépenses", icon: Tag, path: "/config/categories-depenses" },
     ],
   },
   {
