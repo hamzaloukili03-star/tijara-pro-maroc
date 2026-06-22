@@ -45,6 +45,7 @@ import UnitsOfMeasurePage from "./pages/config/UnitsOfMeasurePage";
 import TvaRatesPage from "./pages/config/TvaRatesPage";
 import BanksPage from "./pages/config/BanksPage";
 import CurrenciesPage from "./pages/config/CurrenciesPage";
+import ExpenseCategoriesPage from "./pages/config/ExpenseCategoriesPage";
 
 // Achats
 import DemandesAchat from "./pages/achats/DemandesAchat";
