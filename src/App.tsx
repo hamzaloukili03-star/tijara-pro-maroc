@@ -45,6 +45,7 @@ import UnitsOfMeasurePage from "./pages/config/UnitsOfMeasurePage";
 import TvaRatesPage from "./pages/config/TvaRatesPage";
 import BanksPage from "./pages/config/BanksPage";
 import CurrenciesPage from "./pages/config/CurrenciesPage";
+import ExpenseCategoriesPage from "./pages/config/ExpenseCategoriesPage";
 
 // Achats
 import DemandesAchat from "./pages/achats/DemandesAchat";
@@ -126,6 +127,7 @@ const App = () => (
             <Route path="/config/tva" element={<ProtectedRoute><TvaRatesPage /></ProtectedRoute>} />
             <Route path="/config/banques" element={<ProtectedRoute><BanksPage /></ProtectedRoute>} />
             <Route path="/config/devises" element={<ProtectedRoute><CurrenciesPage /></ProtectedRoute>} />
+            <Route path="/config/categories-depenses" element={<ProtectedRoute><ExpenseCategoriesPage /></ProtectedRoute>} />
 
             {/* Achats */}
             <Route path="/achats" element={<Navigate to="/achats/demandes" replace />} />
