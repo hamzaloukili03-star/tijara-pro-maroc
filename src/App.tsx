@@ -127,6 +127,7 @@ const App = () => (
             <Route path="/config/tva" element={<ProtectedRoute><TvaRatesPage /></ProtectedRoute>} />
             <Route path="/config/banques" element={<ProtectedRoute><BanksPage /></ProtectedRoute>} />
             <Route path="/config/devises" element={<ProtectedRoute><CurrenciesPage /></ProtectedRoute>} />
+            <Route path="/config/categories-depenses" element={<ProtectedRoute><ExpenseCategoriesPage /></ProtectedRoute>} />
 
             {/* Achats */}
             <Route path="/achats" element={<Navigate to="/achats/demandes" replace />} />
