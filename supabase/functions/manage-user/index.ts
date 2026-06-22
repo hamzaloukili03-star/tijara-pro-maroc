@@ -298,7 +298,18 @@ async function handleChangePassword(adminClient: any, callerId: string, isSuperA
   if (updateError) {
     console.error("Password update error:", updateError);
     const code = (updateError as any).code;
-    if (code === "weak_password") {
+    const status = (updateError as any).status;
+    const errorName = (updateError as any).name;
+    const reasons = (updateError as any).reasons;
+    const message = updateError.message || "";
+    const isWeakPassword =
+      code === "weak_password" ||
+      status === 422 ||
+      errorName === "AuthWeakPasswordError" ||
+      (Array.isArray(reasons) && reasons.includes("pwned")) ||
+      message.toLowerCase().includes("known to be weak");
+
+    if (isWeakPassword) {
       return jsonResponse({
         error: "Mot de passe trop faible : il figure dans une base de mots de passe compromis. Veuillez en choisir un autre.",
         code: "weak_password",
