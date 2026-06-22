@@ -54,7 +54,7 @@ export function useExpenseCategories() {
       .from("expense_categories")
       .select("*")
       .eq("is_active", true)
-      .eq("company_id", activeCompany.id)
+      .or(`company_id.is.null,company_id.eq.${activeCompany.id}`)
       .order("name");
     if (!error) setCategories((data || []) as ExpenseCategory[]);
     setLoading(false);
