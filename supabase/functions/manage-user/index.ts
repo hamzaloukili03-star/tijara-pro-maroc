@@ -297,7 +297,14 @@ async function handleChangePassword(adminClient: any, callerId: string, isSuperA
 
   if (updateError) {
     console.error("Password update error:", updateError);
-    return jsonResponse({ error: "Erreur lors de la modification du mot de passe" }, 500);
+    const code = (updateError as any).code;
+    if (code === "weak_password") {
+      return jsonResponse({
+        error: "Mot de passe trop faible : il figure dans une base de mots de passe compromis. Veuillez en choisir un autre.",
+        code: "weak_password",
+      }, 422);
+    }
+    return jsonResponse({ error: updateError.message || "Erreur lors de la modification du mot de passe" }, 500);
   }
 
   // Audit log (no password stored)
