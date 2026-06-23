@@ -82,7 +82,7 @@ export const ROLE_MODULE_ACCESS: Record<string, AppRole[]> = {
 
   // Administration — Super Admin scope (platform-level)
   "/systeme": ["super_admin", "admin"],
-  "/systeme/utilisateurs": ["super_admin"],
+  "/systeme/utilisateurs": ["super_admin", "admin"],
   "/systeme/profils": ["super_admin"],
   "/systeme/societes": ["super_admin"],
   "/systeme/conception": ["super_admin"],
