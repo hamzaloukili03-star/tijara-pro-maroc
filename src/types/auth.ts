@@ -89,6 +89,6 @@ export const ROLE_MODULE_ACCESS: Record<string, AppRole[]> = {
 
   // Administration — shared with Admin (company-level settings)
   "/systeme/societe": ["super_admin", "admin"],
-  "/systeme/parametres": ["super_admin", "admin"],
+  "/systeme/parametres": ["super_admin"],
   "/systeme/logs": ["super_admin", "admin"],
 };
