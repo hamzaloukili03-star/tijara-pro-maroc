@@ -157,6 +157,7 @@ const sections: SidebarSection[] = [
       { title: "Utilisateurs", icon: Users, path: "/systeme/utilisateurs" },
       { title: "Profils & Rôles", icon: ShieldCheck, path: "/systeme/profils" },
       { title: "Gestion des Sociétés", icon: Building2, path: "/systeme/societes" },
+      { title: "Paramètres Société", icon: Building2, path: "/systeme/societe" },
       { title: "Conception", icon: SlidersHorizontal, path: "/systeme/conception" },
       { title: "Paramètres Système", icon: Cog, path: "/systeme/parametres" },
       { title: "Logs d'activité", icon: ClipboardList, path: "/systeme/logs" },
